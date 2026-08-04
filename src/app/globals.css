@@ -1,0 +1,262 @@
+@import "tailwindcss";
+
+:root {
+  --color-navy: #10183d;
+  --color-hairline: #d4daed;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  background: #ffffff;
+  color: var(--color-navy);
+}
+
+/* Typography helpers mapped to the fonts used in the Figma design */
+.font-archivo {
+  font-family: var(--font-archivo), sans-serif;
+}
+
+.font-jbmono {
+  font-family: var(--font-jbmono), monospace;
+}
+
+.font-asta {
+  font-family: "Asta Sans", "Pretendard Variable", Pretendard, sans-serif;
+}
+
+.font-gothic {
+  font-family: "Special Gothic", sans-serif;
+  font-stretch: 112.5%;
+}
+
+.font-pretendard {
+  font-family: "Pretendard Variable", Pretendard, -apple-system, sans-serif;
+}
+
+/* ---------------------------------------------------------------- */
+/* Interactions & animations (patterned after the reference build)   */
+/* ---------------------------------------------------------------- */
+
+/* fixed 3px scroll progress bar */
+.scroll-progress {
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 9999;
+  height: 3px;
+  width: 100%;
+  transform-origin: 0;
+  background: linear-gradient(90deg, #ff2966, #ffd666, #96d2ff);
+  transition: transform 0.1s linear;
+}
+
+/* "▼ CLICK ▼" caption floats up and down */
+.click-float {
+  animation: click-float 1.4s ease-in-out infinite;
+}
+@keyframes click-float {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-6px);
+  }
+}
+
+/* infinite marquee (content must be duplicated once: -50% loops seamlessly) */
+.marquee-track {
+  width: max-content;
+  animation: marquee 40s linear infinite;
+}
+@keyframes marquee {
+  0% {
+    transform: translateX(0);
+  }
+  100% {
+    transform: translateX(-50%);
+  }
+}
+
+/* session card: badge inverts while the card floods with its color */
+.group:hover .session-badge {
+  background: #ffffff !important;
+  color: var(--badge-color) !important;
+}
+
+/* sponsor cells: grayscale at rest, lift + color on hover */
+.sponsor-cell {
+  transition:
+    transform 0.4s cubic-bezier(0.16, 1, 0.3, 1),
+    box-shadow 0.4s;
+}
+.sponsor-cell img {
+  filter: grayscale(0.3);
+  transition:
+    filter 0.3s,
+    transform 0.4s;
+}
+.sponsor-cell:hover {
+  position: relative;
+  z-index: 1;
+  transform: translateY(-6px) scale(1.02);
+  box-shadow: 0 16px 40px rgba(16, 24, 61, 0.1);
+}
+.sponsor-cell:hover img {
+  filter: grayscale(0);
+  transform: scale(1.05);
+}
+
+/* click button: rainbow beam that orbits the box border on hover */
+.bt-spin {
+  background: conic-gradient(
+    transparent 0%,
+    transparent 15%,
+    rgba(255, 41, 102, 0.05) 25%,
+    #ff2966 38%,
+    #ffd666 50%,
+    #96d2ff 62%,
+    rgba(150, 210, 255, 0.05) 75%,
+    transparent 85%,
+    transparent 100%
+  );
+  animation: bt-rotate 2.2s linear infinite;
+}
+@keyframes bt-rotate {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* hide scrollbars on horizontally scrollable tables */
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
+/* simple entrance for the hero wordmark */
+.animate-fade-in-up {
+  animation: fade-in-up 0.8s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+@keyframes fade-in-up {
+  0% {
+    opacity: 0;
+    transform: translateY(40px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ---------------------------------------------------------------- */
+/* Quote section scroll sequence ("fc")                              */
+/* ---------------------------------------------------------------- */
+
+.fc-run .fc-vl {
+  animation: fcSlideL 1.15s forwards;
+}
+.fc-run .fc-vr {
+  animation: fcSlideR 1.15s forwards;
+}
+.fc-run .fc-hline {
+  animation: fcGrowH 1.15s forwards;
+}
+.fc-car-loop {
+  animation:
+    fcCarPass 2s cubic-bezier(0.22, 1.2, 0.64, 1) infinite,
+    fcCarBounce 0.35s ease-in-out infinite;
+}
+
+.fc-closing .fc-vl,
+.fc-closing .fc-vr,
+.fc-closing .fc-hline {
+  opacity: 0 !important;
+  transition: opacity 0.8s ease !important;
+}
+
+.fc-text-rollup {
+  animation: fcTextRollUp 1.6s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@keyframes fcTextRollUp {
+  0% {
+    transform: translateY(50%);
+    opacity: 0;
+  }
+  100% {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+@keyframes fcSlideL {
+  0% {
+    opacity: 0;
+    left: 50%;
+  }
+  18% {
+    opacity: 1;
+    left: 50%;
+    animation-timing-function: cubic-bezier(0.72, 0, 0.16, 1);
+  }
+  100% {
+    opacity: 1;
+    left: 25%;
+  }
+}
+@keyframes fcSlideR {
+  0% {
+    opacity: 0;
+    right: 50%;
+  }
+  18% {
+    opacity: 1;
+    right: 50%;
+    animation-timing-function: cubic-bezier(0.72, 0, 0.16, 1);
+  }
+  100% {
+    opacity: 1;
+    right: 25%;
+  }
+}
+@keyframes fcGrowH {
+  0% {
+    opacity: 0;
+    transform: scaleX(0.05);
+  }
+  18% {
+    opacity: 1;
+    transform: scaleX(0.05);
+    animation-timing-function: cubic-bezier(0.72, 0, 0.16, 1);
+  }
+  100% {
+    opacity: 1;
+    transform: scaleX(1);
+  }
+}
+@keyframes fcCarPass {
+  0% {
+    transform: translateX(-120vw);
+  }
+  100% {
+    transform: translateX(100vw);
+  }
+}
+@keyframes fcCarBounce {
+  0%,
+  100% {
+    margin-top: 0;
+  }
+  50% {
+    margin-top: -4px;
+  }
+}
