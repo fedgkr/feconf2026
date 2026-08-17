@@ -6,7 +6,7 @@ import { BUDDY } from "@/data/site";
 
 export default function BuddySection() {
   return (
-    <section className="flex flex-col items-center overflow-hidden bg-surface py-[clamp(56px,7.3vw,100px)]">
+    <section className="relative flex flex-col items-center overflow-hidden bg-surface py-[clamp(56px,7.3vw,100px)]">
       <div className="flex w-full flex-col gap-[clamp(48px,5.86vw,80px)]">
         <div className="flex w-full flex-col items-center gap-[40px]">
           <Reveal direction="left" className="w-full">

@@ -33,6 +33,20 @@ html {
   scroll-behavior: smooth;
 }
 
+/* Cover transition: the pane stops and the next section rides up over it.
+ * `min()` keeps a pane taller than the window scrolling until its own bottom,
+ * so nothing is cut off on short screens.
+ * TODO(디자이너 확인 필요): hero only — it is the one section with a known
+ * height. The other boundaries need fixed pane heights or measurement. */
+:root {
+  --hero-h: clamp(480px, 57.1vw, 780px);
+}
+
+.cover-pane {
+  position: sticky;
+  top: min(0px, calc(100dvh - var(--hero-h)));
+}
+
 body {
   background: var(--color-white);
   color: var(--color-navy);

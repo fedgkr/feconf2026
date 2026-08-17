@@ -41,7 +41,11 @@ export default function SiteNav() {
       const el = document.getElementById(id);
       if (!el) return false;
       const rect = el.getBoundingClientRect();
-      return rect.top < NAV_LINE && rect.bottom > 0;
+      if (rect.top >= NAV_LINE || rect.bottom <= 0) return false;
+      // A pinned pane keeps its box under the nav even after the next section
+      // has covered it, so it only counts while nothing is drawn over there.
+      const next = el.nextElementSibling;
+      return !next || next.getBoundingClientRect().top > NAV_LINE;
     });
     setOnLight(!overPink);
   });
@@ -64,7 +68,12 @@ export default function SiteNav() {
           <a
             key={id}
             href={`#${id}`}
-            onClick={() => holdSelection(id)}
+            onClick={() => {
+              holdSelection(id);
+              // The first pane is pinned, so its own anchor is always in view
+              // and the browser has nowhere to scroll it to.
+              if (id === NAV_MENU[0].id) window.scrollTo({ top: 0 });
+            }}
             className={`transition-colors duration-200 ${itemClass(id)}`}
           >
             {label}
