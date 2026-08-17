@@ -17,6 +17,7 @@ export default function QuoteSection() {
   const sectionRef = useRef<HTMLElement | null>(null);
   const [progress, setProgress] = useState(0);
   const [phase, setPhase] = useState(0);
+  const [damping, setDamping] = useState(false);
   const [textReady, setTextReady] = useState(false);
 
   useScrollEffect(() => {
@@ -24,13 +25,27 @@ export default function QuoteSection() {
     if (!el) return;
     const scrollable = el.offsetHeight - window.innerHeight;
     if (scrollable <= 0) return;
-    const p = Math.max(
-      0,
-      Math.min(1, -el.getBoundingClientRect().top / scrollable),
-    );
+    const rect = el.getBoundingClientRect();
+    const p = Math.max(0, Math.min(1, -rect.top / scrollable));
     setProgress(p);
     setPhase(Math.min(4, Math.floor(5 * p)));
+    // Damping runs from the second quote until the section leaves the
+    // viewport, the same stretch as before (p >= 0.2 is phase >= 1).
+    setDamping(p >= 0.2 && rect.bottom > 0);
   });
+
+  // Dampen the wheel while the quote sequence is playing so each line gets
+  // read. The listener is bound only for that stretch: left on the whole page
+  // it makes every wheel event elsewhere wait on this handler.
+  useEffect(() => {
+    if (!damping) return;
+    const onWheel = (e: WheelEvent) => {
+      e.preventDefault();
+      window.scrollBy({ top: 0.3 * e.deltaY, behavior: "instant" });
+    };
+    window.addEventListener("wheel", onWheel, { passive: false });
+    return () => window.removeEventListener("wheel", onWheel);
+  }, [damping]);
 
   const { ref: stageRef, inView } = useInView<HTMLDivElement>({
     threshold: 0.3,
