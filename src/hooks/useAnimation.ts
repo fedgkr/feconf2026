@@ -38,6 +38,58 @@ export function useInView<T extends HTMLElement = HTMLDivElement>({
   return { ref, inView };
 }
 
+/**
+ * One window listener pair and one animation frame for the whole page: every
+ * subscriber runs together, once per frame, so a frame reads layout only once.
+ */
+const scrollSubscribers = new Set<() => void>();
+let scrollFrame = 0;
+
+const runScrollSubscribers = () => {
+  scrollFrame = 0;
+  for (const run of scrollSubscribers) run();
+};
+
+const scheduleScrollRun = () => {
+  if (scrollFrame) return;
+  scrollFrame = requestAnimationFrame(runScrollSubscribers);
+};
+
+function subscribeToScroll(run: () => void) {
+  if (scrollSubscribers.size === 0) {
+    window.addEventListener("scroll", scheduleScrollRun, { passive: true });
+    window.addEventListener("resize", scheduleScrollRun);
+  }
+  scrollSubscribers.add(run);
+  scheduleScrollRun();
+
+  return () => {
+    scrollSubscribers.delete(run);
+    if (scrollSubscribers.size > 0) return;
+    window.removeEventListener("scroll", scheduleScrollRun);
+    window.removeEventListener("resize", scheduleScrollRun);
+    if (scrollFrame) {
+      cancelAnimationFrame(scrollFrame);
+      scrollFrame = 0;
+    }
+  };
+}
+
+/**
+ * Runs `update` on scroll and resize, coalesced with every other subscriber
+ * into a single frame. The callback is read through a ref so re-renders never
+ * re-subscribe.
+ */
+export function useScrollEffect(update: () => void) {
+  const latest = useRef(update);
+
+  useEffect(() => {
+    latest.current = update;
+  });
+
+  useEffect(() => subscribeToScroll(() => latest.current()), []);
+}
+
 /** Per-child styles for a staggered fade-up entrance. */
 export function useStaggerChildren(
   inView: boolean,
@@ -55,16 +107,10 @@ export function useStaggerChildren(
 export function useScrollProgress() {
   const [progress, setProgress] = useState(0);
 
-  useEffect(() => {
-    const update = () => {
-      const max =
-        document.documentElement.scrollHeight - window.innerHeight;
-      setProgress(max > 0 ? window.scrollY / max : 0);
-    };
-    window.addEventListener("scroll", update, { passive: true });
-    update();
-    return () => window.removeEventListener("scroll", update);
-  }, []);
+  useScrollEffect(() => {
+    const max = document.documentElement.scrollHeight - window.innerHeight;
+    setProgress(max > 0 ? window.scrollY / max : 0);
+  });
 
   return progress;
 }

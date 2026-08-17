@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { useInView } from "@/hooks/useAnimation";
+import { useInView, useScrollEffect } from "@/hooks/useAnimation";
 import { QUOTES, QUOTE_ASSETS, QUOTE_FINALE } from "@/data/site";
 
 const HAIRLINE = "#dee2ec";
@@ -15,39 +15,22 @@ const HAIRLINE = "#dee2ec";
  */
 export default function QuoteSection() {
   const sectionRef = useRef<HTMLElement | null>(null);
-  const inSequence = useRef(false);
   const [progress, setProgress] = useState(0);
   const [phase, setPhase] = useState(0);
   const [textReady, setTextReady] = useState(false);
 
-  useEffect(() => {
-    const update = () => {
-      const el = sectionRef.current;
-      if (!el) return;
-      const rect = el.getBoundingClientRect();
-      const scrollable = el.offsetHeight - window.innerHeight;
-      if (scrollable <= 0) return;
-      const p = Math.max(0, Math.min(1, -rect.top / scrollable));
-      setProgress(p);
-      inSequence.current = rect.top < window.innerHeight && rect.bottom > 0;
-      setPhase(Math.min(4, Math.floor(5 * p)));
-    };
-    window.addEventListener("scroll", update, { passive: true });
-    update();
-    return () => window.removeEventListener("scroll", update);
-  }, []);
-
-  // dampen the wheel while the quote sequence is playing so each line gets read
-  useEffect(() => {
-    const onWheel = (e: WheelEvent) => {
-      if (inSequence.current && phase >= 1) {
-        e.preventDefault();
-        window.scrollBy({ top: 0.3 * e.deltaY, behavior: "instant" });
-      }
-    };
-    window.addEventListener("wheel", onWheel, { passive: false });
-    return () => window.removeEventListener("wheel", onWheel);
-  }, [phase]);
+  useScrollEffect(() => {
+    const el = sectionRef.current;
+    if (!el) return;
+    const scrollable = el.offsetHeight - window.innerHeight;
+    if (scrollable <= 0) return;
+    const p = Math.max(
+      0,
+      Math.min(1, -el.getBoundingClientRect().top / scrollable),
+    );
+    setProgress(p);
+    setPhase(Math.min(4, Math.floor(5 * p)));
+  });
 
   const { ref: stageRef, inView } = useInView<HTMLDivElement>({
     threshold: 0.3,

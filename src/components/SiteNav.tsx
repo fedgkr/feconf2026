@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
+import { useScrollEffect } from "@/hooks/useAnimation";
 import { BUY_TICKET, NAV_MENU, PINK_SECTION_IDS } from "@/data/site";
 
 /** Viewport-top band the fixed nav occupies (25px offset + 48px bar). */
@@ -10,38 +11,23 @@ export default function SiteNav() {
   const [active, setActive] = useState<string>(NAV_MENU[0].id);
   const [onLight, setOnLight] = useState(false);
 
-  useEffect(() => {
-    let raf = 0;
-    const update = () => {
-      raf = 0;
-      // Selected menu: the last panel whose top has passed the nav band.
-      let current: string = NAV_MENU[0].id;
-      for (const { id } of NAV_MENU) {
-        const el = document.getElementById(id);
-        if (el && el.getBoundingClientRect().top <= NAV_LINE) current = id;
-      }
-      setActive(current);
-      // Invert colors whenever the nav is not over a pink section.
-      const overPink = PINK_SECTION_IDS.some((id) => {
-        const el = document.getElementById(id);
-        if (!el) return false;
-        const rect = el.getBoundingClientRect();
-        return rect.top < NAV_LINE && rect.bottom > 0;
-      });
-      setOnLight(!overPink);
-    };
-    const onScroll = () => {
-      if (!raf) raf = requestAnimationFrame(update);
-    };
-    update();
-    window.addEventListener("scroll", onScroll, { passive: true });
-    window.addEventListener("resize", onScroll);
-    return () => {
-      window.removeEventListener("scroll", onScroll);
-      window.removeEventListener("resize", onScroll);
-      if (raf) cancelAnimationFrame(raf);
-    };
-  }, []);
+  useScrollEffect(() => {
+    // Selected menu: the last panel whose top has passed the nav band.
+    let current: string = NAV_MENU[0].id;
+    for (const { id } of NAV_MENU) {
+      const el = document.getElementById(id);
+      if (el && el.getBoundingClientRect().top <= NAV_LINE) current = id;
+    }
+    setActive(current);
+    // Invert colors whenever the nav is not over a pink section.
+    const overPink = PINK_SECTION_IDS.some((id) => {
+      const el = document.getElementById(id);
+      if (!el) return false;
+      const rect = el.getBoundingClientRect();
+      return rect.top < NAV_LINE && rect.bottom > 0;
+    });
+    setOnLight(!overPink);
+  });
 
   const itemClass = (id: string) => {
     if (active === id) {
