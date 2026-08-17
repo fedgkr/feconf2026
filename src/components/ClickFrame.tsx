@@ -36,7 +36,7 @@ export default function ClickFrame({
           alt=""
           className="h-[17px] w-[27px]"
         />
-        <p className="font-gothic text-[clamp(24px,2.35vw,32px)] font-medium uppercase leading-[1.2] tracking-[-0.64px] text-[#bdc1cf]">
+        <p className="font-gothic text-[clamp(24px,2.35vw,32px)] font-medium uppercase leading-[1.2] tracking-[-0.64px] text-muted">
           click
         </p>
         <img
@@ -46,10 +46,10 @@ export default function ClickFrame({
         />
       </div>
       <div className="group relative h-[129px] w-full">
-        <div className="absolute inset-x-0 top-[39px] h-px bg-[#d4daed]" />
-        <div className="absolute inset-x-0 top-[90px] h-px bg-[#d4daed]" />
-        <div className="absolute inset-y-0 left-[8.8%] w-px bg-[#d4daed]" />
-        <div className="absolute inset-y-0 right-[8.8%] w-px bg-[#d4daed]" />
+        <div className="absolute inset-x-0 top-[39px] h-px bg-hairline" />
+        <div className="absolute inset-x-0 top-[90px] h-px bg-hairline" />
+        <div className="absolute inset-y-0 left-[8.8%] w-px bg-hairline" />
+        <div className="absolute inset-y-0 right-[8.8%] w-px bg-hairline" />
         {/* rotating rainbow border: the 1px rim shows the beam, the cover hides the rest */}
         <div className="pointer-events-none absolute inset-y-[39px] left-[8.8%] right-[8.8%] z-30 overflow-hidden">
           <div className="bt-spin absolute left-1/2 top-1/2 aspect-square w-[300%] -translate-x-1/2 -translate-y-1/2 opacity-0 transition-opacity duration-[350ms] group-hover:opacity-100" />
@@ -62,7 +62,7 @@ export default function ClickFrame({
           className="absolute left-[calc(8.8%+1px)] right-[calc(8.8%+1px)] top-[40px] z-40 flex h-[50px] items-center justify-center gap-[10px]"
         >
           <span
-            className={`font-asta font-semibold leading-[1.4] tracking-[-0.08px] text-[#10183d] ${labelClassName}`}
+            className={`font-asta font-semibold leading-[1.4] tracking-[-0.08px] text-navy ${labelClassName}`}
           >
             {label}
           </span>

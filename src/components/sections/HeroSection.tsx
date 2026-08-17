@@ -4,7 +4,7 @@ export default function HeroSection() {
   return (
     <section
       id="home"
-      className="relative h-[clamp(480px,57.1vw,780px)] overflow-hidden bg-[#fb4967]"
+      className="relative h-[clamp(480px,57.1vw,780px)] overflow-hidden bg-hero"
     >
       <img
         src={HERO.bgSrc}

@@ -12,7 +12,7 @@ export default function FooterSection() {
     <footer
       ref={ref}
       id="site-footer"
-      className="relative h-[clamp(520px,57.1vw,780px)] overflow-hidden bg-[#fb4967]"
+      className="relative h-[clamp(520px,57.1vw,780px)] overflow-hidden bg-hero"
     >
       <img
         src={FOOTER.bgSrc}
@@ -39,7 +39,7 @@ export default function FooterSection() {
           </div>
           <a
             href={FOOTER.ticket.href}
-            className="font-asta flex items-center justify-center bg-white px-[clamp(14px,1.76vw,24px)] py-[10px] text-[clamp(15px,1.76vw,24px)] font-semibold uppercase leading-[1.4] tracking-[-0.2px] text-[#151515] transition-all duration-300 hover:bg-[#151515] hover:text-white"
+            className="font-asta flex items-center justify-center bg-white px-[clamp(14px,1.76vw,24px)] py-[10px] text-[clamp(15px,1.76vw,24px)] font-semibold uppercase leading-[1.4] tracking-[-0.2px] text-ink transition-all duration-300 hover:bg-ink hover:text-white"
           >
             {FOOTER.ticket.label}&nbsp;
             <span className="font-bold">{FOOTER.ticket.dday}</span>

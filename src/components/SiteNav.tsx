@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useScrollEffect } from "@/hooks/useAnimation";
 import { BUY_TICKET, NAV_MENU, PINK_SECTION_IDS } from "@/data/site";
 
@@ -10,6 +10,22 @@ const NAV_LINE = 73;
 export default function SiteNav() {
   const [active, setActive] = useState<string>(NAV_MENU[0].id);
   const [onLight, setOnLight] = useState(false);
+  // A clicked menu stays selected until scrolling goes quiet. Without it the
+  // scroll pass overwrites the click within a frame and the label flicks
+  // through every section on the way down to the target.
+  const [clicked, setClicked] = useState<string | null>(null);
+  const settle = useRef<ReturnType<typeof setTimeout>>(undefined);
+
+  // Each scroll frame pushes the release further out, so the hold lasts exactly
+  // as long as the scroll does. Arming it on click too means a click that never
+  // scrolls anywhere still lets go.
+  const holdSelection = (id: string) => {
+    setClicked(id);
+    clearTimeout(settle.current);
+    settle.current = setTimeout(() => setClicked(null), 150);
+  };
+
+  useEffect(() => () => clearTimeout(settle.current), []);
 
   useScrollEffect(() => {
     // Selected menu: the last panel whose top has passed the nav band.
@@ -19,6 +35,7 @@ export default function SiteNav() {
       if (el && el.getBoundingClientRect().top <= NAV_LINE) current = id;
     }
     setActive(current);
+    if (clicked) holdSelection(clicked);
     // Invert colors whenever the nav is not over a pink section.
     const overPink = PINK_SECTION_IDS.some((id) => {
       const el = document.getElementById(id);
@@ -29,12 +46,14 @@ export default function SiteNav() {
     setOnLight(!overPink);
   });
 
+  const selected = clicked ?? active;
+
   const itemClass = (id: string) => {
-    if (active === id) {
-      return onLight ? "text-[#10183d]" : "text-white";
+    if (selected === id) {
+      return onLight ? "text-navy" : "text-white";
     }
     return onLight
-      ? "text-[#10183d]/30 hover:text-[#10183d]"
+      ? "text-navy/30 hover:text-navy"
       : "text-white/30 hover:text-white";
   };
 
@@ -45,7 +64,7 @@ export default function SiteNav() {
           <a
             key={id}
             href={`#${id}`}
-            onClick={() => setActive(id)}
+            onClick={() => holdSelection(id)}
             className={`transition-colors duration-200 ${itemClass(id)}`}
           >
             {label}
@@ -56,7 +75,7 @@ export default function SiteNav() {
         href={BUY_TICKET.href}
         className={`font-gothic whitespace-nowrap text-[clamp(13px,2.35vw,32px)] font-semibold uppercase leading-[1.5] tracking-[-0.04px] transition-colors duration-200 ${
           onLight
-            ? "text-[#10183d] hover:text-[#10183d]/60"
+            ? "text-navy hover:text-navy/60"
             : "text-white hover:text-white/60"
         }`}
       >

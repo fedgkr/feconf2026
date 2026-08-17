@@ -19,14 +19,14 @@ export default function ShareContactSection() {
             <Reveal key={title} className="w-full">
               <div className="flex w-full flex-col items-start gap-[32px] lg:flex-row lg:items-center lg:justify-center lg:gap-[80px]">
                 <div className="flex min-w-px flex-1 flex-col gap-[20px]">
-                  <h3 className="font-asta text-[clamp(28px,2.93vw,40px)] font-medium leading-[1.4] text-[#151515]">
+                  <h3 className="font-asta text-[clamp(28px,2.93vw,40px)] font-medium leading-[1.4] text-ink">
                     {title}
                   </h3>
-                  <p className="font-pretendard text-[clamp(15px,1.32vw,18px)] leading-[1.5] text-[#151515]/80">
+                  <p className="font-pretendard text-[clamp(15px,1.32vw,18px)] leading-[1.5] text-ink/80">
                     <MultiLine lines={lines} />
                   </p>
                   {mail && (
-                    <p className="font-pretendard text-[clamp(16px,1.46vw,20px)] font-medium leading-[1.5] text-[#151515]/40">
+                    <p className="font-pretendard text-[clamp(16px,1.46vw,20px)] font-medium leading-[1.5] text-ink/40">
                       {mail}
                     </p>
                   )}

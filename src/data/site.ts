@@ -58,11 +58,11 @@ export interface Session {
   badge: SessionBadge;
 }
 
-/** badge circle color + card hover flood color */
+/** badge circle color + card hover flood color; values live in globals.css */
 export const BADGE_STYLE: Record<SessionBadge, { badge: string; hover: string }> = {
-  A: { badge: "#ff1762", hover: "#ff1762" },
-  B: { badge: "#32cbf8", hover: "#32cbf8" },
-  toss: { badge: "#0064ff", hover: "#0064ff" },
+  A: { badge: "var(--color-pink)", hover: "var(--color-pink)" },
+  B: { badge: "var(--color-blue)", hover: "var(--color-blue)" },
+  toss: { badge: "var(--color-toss)", hover: "var(--color-toss)" },
 };
 
 export const TOSS_BADGE_SRC = "/assets/toss-badge-square.png";

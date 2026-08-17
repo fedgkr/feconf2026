@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { useInView, useScrollEffect } from "@/hooks/useAnimation";
 import { QUOTES, QUOTE_ASSETS, QUOTE_FINALE } from "@/data/site";
 
-const HAIRLINE = "#dee2ec";
+const HAIRLINE = "var(--color-hairline-soft)";
 
 /**
  * Sticky scroll sequence (from the reference build): the section is 1200vh
@@ -78,7 +78,7 @@ export default function QuoteSection() {
     <section ref={sectionRef} className="relative" style={{ height: "1200vh" }}>
       <div
         ref={stageRef}
-        className={`sticky top-0 flex h-screen w-full items-center justify-center overflow-hidden border-b border-[#10183d]/30 bg-[#fafafd] ${
+        className={`sticky top-0 flex h-screen w-full items-center justify-center overflow-hidden border-b border-navy/30 bg-surface ${
           inView ? "fc-run" : ""
         } ${closing ? "fc-closing" : ""}`}
       >
@@ -123,7 +123,7 @@ export default function QuoteSection() {
         >
           {textReady && phase < QUOTES.length && (
             <div key={phase} className="overflow-hidden">
-              <p className="fc-text-rollup font-asta min-h-[60px] text-center text-[clamp(20px,2.35vw,32px)] font-semibold leading-[1.4] tracking-[-1.2px] text-[#10183d] sm:min-h-[90px]">
+              <p className="fc-text-rollup font-asta min-h-[60px] text-center text-[clamp(20px,2.35vw,32px)] font-semibold leading-[1.4] tracking-[-1.2px] text-navy sm:min-h-[90px]">
                 {lines.map((line, i) => (
                   <span key={i}>
                     {i > 0 && <br />}
@@ -140,7 +140,7 @@ export default function QuoteSection() {
           style={{ opacity: messageOpacity }}
         >
           <p
-            className="font-asta text-center text-[clamp(28px,4vw,60px)] font-semibold leading-[1.4] tracking-[-0.02em] text-[#10183d]"
+            className="font-asta text-center text-[clamp(28px,4vw,60px)] font-semibold leading-[1.4] tracking-[-0.02em] text-navy"
             style={{
               transform: `translateY(${messageRise}px)`,
               transition: "transform 0.4s ease-out",
@@ -151,7 +151,7 @@ export default function QuoteSection() {
                 {i > 0 && <br />}
                 {line.map((seg, j) =>
                   seg.highlight ? (
-                    <span key={j} className="font-bold text-[#ff1762]">
+                    <span key={j} className="font-bold text-pink">
                       {seg.text}
                     </span>
                   ) : (
