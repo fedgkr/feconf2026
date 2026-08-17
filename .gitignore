@@ -24,6 +24,9 @@
 .DS_Store
 *.pem
 
+# local scratch (browser verification captures, review artifacts)
+/.tmp/
+
 # debug
 npm-debug.log*
 yarn-debug.log*
