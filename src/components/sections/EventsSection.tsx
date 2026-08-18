@@ -20,6 +20,7 @@ function SessionBadgeMark({ badge }: { badge: SessionBadge }) {
       <div className="size-[50px] shrink-0 overflow-hidden rounded-[12px] transition-all duration-[400ms]">
         <img
           src={TOSS_BADGE_SRC}
+          loading="lazy"
           alt="TOSS"
           className="size-full object-cover transition-all duration-[400ms] group-hover:brightness-0 group-hover:invert"
         />
@@ -54,6 +55,14 @@ function SessionCard({
     // treatment but nothing happens on click. Either it should open a session
     // detail, or the pointer cursor is misleading.
     <div className="group w-full cursor-pointer overflow-hidden" style={style}>
+      {/* TODO(디자이너 확인 필요): 220px is fixed on purpose — the reveal staggers
+          by row index, so row N of all three halls rises together and only
+          lines up while every card is the same height. The cost is that a title
+          past roughly four lines is clipped: at the narrowest three-column card
+          (299px at a 1024px window) 64 characters already fill the box and 82
+          overflow it by 59px. The placeholder titles are all the same length so
+          this never shows. Either titles stay within that budget or the row
+          alignment has to give. */}
       <div className="relative flex h-[220px] w-full flex-col justify-between p-[24px]">
         {/* resting / hover background layers */}
         <div className="absolute inset-0 bg-card transition-opacity duration-[400ms] group-hover:opacity-0" />
@@ -100,8 +109,9 @@ export default function EventsSection() {
           />
         </Reveal>
         <div className="mx-auto w-full max-w-[1246px]">
-          {/* hall header bar */}
-          <Reveal delay={100}>
+          {/* hall header bar, for the three-column layout only — below lg the
+              cards stack into one column and each hall carries its own title */}
+          <Reveal delay={100} className="hidden lg:block">
             <div className="relative py-[16px]">
               <div className="absolute inset-y-0 left-0 w-px bg-hairline" />
               <div className="absolute inset-y-0 left-[33.333%] w-px bg-hairline" />
@@ -130,6 +140,13 @@ export default function EventsSection() {
                 key={hall}
                 className="flex flex-col gap-[32px] px-[16px] pt-[32px]"
               >
+                <div className="lg:hidden">
+                  <div className="h-px w-full bg-hairline" />
+                  <p className="py-[26px] text-center font-asta text-[20px] font-semibold uppercase leading-[1.4] tracking-[-0.08px] text-navy">
+                    {hall}
+                  </p>
+                  <div className="h-px w-full bg-hairline" />
+                </div>
                 {sessions.map((session, row) => (
                   <SessionCard
                     key={row}
