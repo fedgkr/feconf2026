@@ -129,16 +129,33 @@ body {
   }
 }
 
-/* session card: badge inverts while the card floods with its color */
-.group:hover .session-badge {
-  background: var(--color-white) !important;
-  color: var(--badge-color) !important;
-}
+/* Hover rules live behind the same query Tailwind puts its own hover variants
+ * behind. Without it a tap on a touch device fires these but not the Tailwind
+ * ones, so half of each hover state applies and then sticks. */
+@media (hover: hover) {
+  /* session card: badge inverts while the card floods with its color */
+  .group:hover .session-badge {
+    background: var(--color-white) !important;
+    color: var(--badge-color) !important;
+  }
 
-/* The reveal wrapper carries a transform, which makes it a stacking context:
- * without lifting the wrapper the enlarged cell paints under the next one. */
-.sponsor-slot:hover {
-  z-index: 1;
+  /* The reveal wrapper carries a transform, which makes it a stacking context:
+   * without lifting the wrapper the enlarged cell paints under the next one. */
+  .sponsor-slot:hover {
+    z-index: 1;
+  }
+
+  .sponsor-cell:hover {
+    position: relative;
+    z-index: 1;
+    transform: translateY(-6px) scale(1.02);
+    box-shadow: 0 16px 40px rgba(16, 24, 61, 0.1);
+  }
+
+  .sponsor-cell:hover img {
+    filter: grayscale(0);
+    transform: scale(1.05);
+  }
 }
 
 /* sponsor cells: grayscale at rest, lift + color on hover */
@@ -152,16 +169,6 @@ body {
   transition:
     filter 0.3s,
     transform 0.4s;
-}
-.sponsor-cell:hover {
-  position: relative;
-  z-index: 1;
-  transform: translateY(-6px) scale(1.02);
-  box-shadow: 0 16px 40px rgba(16, 24, 61, 0.1);
-}
-.sponsor-cell:hover img {
-  filter: grayscale(0);
-  transform: scale(1.05);
 }
 
 /* click button: rainbow beam that orbits the box border on hover */
