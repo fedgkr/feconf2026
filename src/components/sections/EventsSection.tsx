@@ -89,7 +89,7 @@ export default function EventsSection() {
   return (
     <section
       id="events"
-      className="relative bg-white px-[16px] py-[clamp(56px,7.3vw,100px)]"
+      className="bg-white px-[16px] py-[clamp(56px,7.3vw,100px)]"
     >
       <div className="mx-auto w-full max-w-[1366px]">
         <Reveal direction="left" className="mb-[32px] w-full">

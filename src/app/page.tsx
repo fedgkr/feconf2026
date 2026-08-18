@@ -1,3 +1,4 @@
+import CoverPane from "@/components/CoverPane";
 import ScrollProgress from "@/components/ScrollProgress";
 import SiteNav from "@/components/SiteNav";
 import HeroSection from "@/components/sections/HeroSection";
@@ -14,13 +15,29 @@ export default function Home() {
     <div className="overflow-x-clip">
       <ScrollProgress />
       <SiteNav />
-      <HeroSection />
-      <QuoteSection />
-      <EventsSection />
-      <BuddySection />
-      <SponsorsSection />
-      <ConductSection />
-      <ShareContactSection />
+      {/* Each pane stops at the end of its own scroll and the next one covers
+          it. The footer is last, so nothing needs to hold it. */}
+      <CoverPane>
+        <HeroSection />
+      </CoverPane>
+      <CoverPane>
+        <QuoteSection />
+      </CoverPane>
+      <CoverPane>
+        <EventsSection />
+      </CoverPane>
+      <CoverPane>
+        <BuddySection />
+      </CoverPane>
+      <CoverPane>
+        <SponsorsSection />
+      </CoverPane>
+      <CoverPane>
+        <ConductSection />
+      </CoverPane>
+      <CoverPane>
+        <ShareContactSection />
+      </CoverPane>
       <FooterSection />
     </div>
   );

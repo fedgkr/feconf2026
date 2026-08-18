@@ -61,7 +61,7 @@ export default function SponsorsSection() {
   return (
     <section
       id="sponsors"
-      className="relative flex flex-col items-center bg-white py-[clamp(56px,7.3vw,100px)]"
+      className="flex flex-col items-center bg-white py-[clamp(56px,7.3vw,100px)]"
     >
       <div className="flex w-full flex-col items-center gap-[clamp(48px,5.86vw,80px)]">
         <Reveal direction="left" className="w-full">

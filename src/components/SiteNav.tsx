@@ -44,7 +44,9 @@ export default function SiteNav() {
       if (rect.top >= NAV_LINE || rect.bottom <= 0) return false;
       // A pinned pane keeps its box under the nav even after the next section
       // has covered it, so it only counts while nothing is drawn over there.
-      const next = el.nextElementSibling;
+      // The section sits inside its pane wrapper, so ask the wrapper.
+      const pane = el.closest(".cover-pane") ?? el;
+      const next = pane.nextElementSibling;
       return !next || next.getBoundingClientRect().top > NAV_LINE;
     });
     setOnLight(!overPink);
@@ -62,6 +64,10 @@ export default function SiteNav() {
   };
 
   return (
+    // TODO(디자이너 확인 필요): the bar has no background of its own, so on light
+    // sections the navy labels sit straight on whatever scrolls past underneath.
+    // Confirm that the transparent top is intended, or whether it needs a
+    // background or blur once the text turns navy.
     <div className="fixed inset-x-[clamp(16px,2.93vw,40px)] top-[clamp(14px,1.83vw,25px)] z-50 flex h-[48px] items-center justify-between">
       <nav className="font-gothic flex items-center gap-[clamp(10px,1.76vw,24px)] text-[clamp(13px,2.35vw,32px)] font-medium uppercase leading-[0.78em] tracking-[-0.04px]">
         {NAV_MENU.map(({ id, label }) => (

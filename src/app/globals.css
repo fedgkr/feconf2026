@@ -6,9 +6,11 @@
  * exist because of this block.
  */
 @theme {
-  /* Accents. Pink and blue are the session badge colours. Orange is derived
-   * from them (same saturation and lightness, hue at 25deg) because no value
-   * was handed over — TODO(디자이너 확인 필요): replace with the real one. */
+  /* Accents. Pink and blue are the session badge colours.
+   * TODO(디자이너 확인 필요): orange is nowhere in the original design, so this
+   * is derived from the other two (same saturation and lightness, hue at
+   * 25deg) and is not applied to anything yet. Replace with the real value
+   * and decide where it belongs. */
   --color-pink: #ff1762;
   --color-blue: #32cbf8;
   --color-orange: #fb7e25;
@@ -27,6 +29,12 @@
    * hero/footer artwork that has to match the image itself. */
   --color-toss: #0064ff;
   --color-hero: #fb4967;
+
+  /* Softer trio for the scroll progress bar and the rotating beam on the click
+   * button. Deliberately not the accent colours above. */
+  --color-spectrum-pink: #ff2966;
+  --color-spectrum-yellow: #ffd666;
+  --color-spectrum-blue: #96d2ff;
 }
 
 html {
@@ -34,17 +42,14 @@ html {
 }
 
 /* Cover transition: the pane stops and the next section rides up over it.
- * `min()` keeps a pane taller than the window scrolling until its own bottom,
- * so nothing is cut off on short screens.
- * TODO(디자이너 확인 필요): hero only — it is the one section with a known
- * height. The other boundaries need fixed pane heights or measurement. */
-:root {
-  --hero-h: clamp(480px, 57.1vw, 780px);
-}
-
+ * `min()` keeps a pane taller than the window scrolling until its own bottom is
+ * reached, so nothing is cut off on short screens. `--pane-h` is measured in
+ * CoverPane; the fallback is large enough that an unmeasured pane never pins.
+ * TODO(디자이너 확인 필요): every boundary uses this now, so the whole page
+ * reads as stacked panes. Confirm that is the intended feel. */
 .cover-pane {
   position: sticky;
-  top: min(0px, calc(100dvh - var(--hero-h)));
+  top: min(0px, calc(100dvh - var(--pane-h, 100000px)));
 }
 
 body {
@@ -78,10 +83,7 @@ body {
 /* Interactions & animations (patterned after the reference build)   */
 /* ---------------------------------------------------------------- */
 
-/* fixed 3px scroll progress bar
- * TODO(디자이너 확인 필요): was #ff2966 / #ffd666 / #96d2ff, a softer set with a
- * yellow middle. Swapped to the theme colours; revert both this and .bt-spin
- * if the softer set was deliberate for a 3px bar. */
+/* fixed 3px scroll progress bar */
 .scroll-progress {
   position: fixed;
   top: 0;
@@ -92,9 +94,9 @@ body {
   transform-origin: 0;
   background: linear-gradient(
     90deg,
-    var(--color-pink),
-    var(--color-orange),
-    var(--color-blue)
+    var(--color-spectrum-pink),
+    var(--color-spectrum-yellow),
+    var(--color-spectrum-blue)
   );
   transition: transform 0.1s linear;
 }
@@ -162,17 +164,16 @@ body {
   transform: scale(1.05);
 }
 
-/* click button: rainbow beam that orbits the box border on hover
- * TODO(디자이너 확인 필요): same colour swap as .scroll-progress. */
+/* click button: rainbow beam that orbits the box border on hover */
 .bt-spin {
   background: conic-gradient(
     transparent 0%,
     transparent 15%,
-    color-mix(in srgb, var(--color-pink) 5%, transparent) 25%,
-    var(--color-pink) 38%,
-    var(--color-orange) 50%,
-    var(--color-blue) 62%,
-    color-mix(in srgb, var(--color-blue) 5%, transparent) 75%,
+    color-mix(in srgb, var(--color-spectrum-pink) 5%, transparent) 25%,
+    var(--color-spectrum-pink) 38%,
+    var(--color-spectrum-yellow) 50%,
+    var(--color-spectrum-blue) 62%,
+    color-mix(in srgb, var(--color-spectrum-blue) 5%, transparent) 75%,
     transparent 85%,
     transparent 100%
   );
