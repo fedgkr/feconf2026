@@ -72,6 +72,11 @@ export default function QuoteSection() {
   const snailTransform = closing
     ? `translateX(0) translateY(-${snailRise}vh)`
     : `translateX(${(1 - snailIn) * 120}vw)`;
+  // TODO(디자이너 확인 필요): the quote is gone by closingT 0.25 and the message
+  // only starts at 0.35, so progress 0.85~0.87 shows neither — about 198px of
+  // scroll, a fifth of a second at a normal pace. Left as is because both ends
+  // are authored timings rather than a mistake; close the gap if the pause was
+  // not intended.
   const quoteOpacity = closing ? Math.max(0, 1 - 4 * closingT) : 1;
   const messageOpacity = closing
     ? Math.min(1, Math.max(0, (closingT - 0.35) / 0.35))
@@ -79,7 +84,10 @@ export default function QuoteSection() {
   const messageRise = closing
     ? 60 * Math.max(0, 1 - Math.min(1, (closingT - 0.35) / 0.4))
     : 60;
-  const lines = phase < QUOTES.length ? QUOTES[phase].split("\n") : [];
+  // The finale fades the quote out over half a second, so the last one has to
+  // stay mounted through phase 4 instead of being dropped the moment it starts.
+  const quoteIndex = Math.min(phase, QUOTES.length - 1);
+  const lines = QUOTES[quoteIndex].split("\n");
 
   return (
     <section ref={sectionRef} className="relative" style={{ height: "1200vh" }}>
@@ -128,8 +136,8 @@ export default function QuoteSection() {
             transition: closing ? "opacity 0.5s ease" : "none",
           }}
         >
-          {textReady && phase < QUOTES.length && (
-            <div key={phase} className="overflow-hidden">
+          {textReady && (
+            <div key={quoteIndex} className="overflow-hidden">
               <p className="fc-text-rollup font-asta min-h-[60px] text-center text-[clamp(20px,2.35vw,32px)] font-semibold leading-[1.4] tracking-[-1.2px] text-navy sm:min-h-[90px]">
                 {lines.map((line, i) => (
                   <span key={i}>
