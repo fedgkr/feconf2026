@@ -19,6 +19,7 @@ export default function QuoteSection() {
   const [phase, setPhase] = useState(0);
   const [damping, setDamping] = useState(false);
   const [textReady, setTextReady] = useState(false);
+  const introStarted = useRef(false);
 
   useScrollEffect(() => {
     const el = sectionRef.current;
@@ -52,10 +53,16 @@ export default function QuoteSection() {
   });
 
   useEffect(() => {
-    if (!inView) return;
-    const timer = setTimeout(() => setTextReady(true), 1250);
+    if (!inView || introStarted.current) return;
+    introStarted.current = true;
+    // The intro draws the frame before the first line fades in. Landing past
+    // the first quote means that intro was never seen, so waiting on it would
+    // only swallow the line being read. Decided once on entry: reading it live
+    // would reopen and close the gate around the phase boundary.
+    const wait = phase > 0 ? 0 : 1250;
+    const timer = setTimeout(() => setTextReady(true), wait);
     return () => clearTimeout(timer);
-  }, [inView]);
+  }, [inView, phase]);
 
   const closing = phase === 4;
   const closingT = closing ? Math.min(1, (progress - 0.8) / 0.2) : 0;
