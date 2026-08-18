@@ -182,6 +182,7 @@ export default function QuoteSection() {
           <div className="fc-car-loop absolute" style={{ bottom: "15%" }}>
             <img
               src={QUOTE_ASSETS.carSrc}
+              loading="lazy"
               alt=""
               className="h-auto w-[clamp(260px,32.9vw,450px)]"
               style={{ imageRendering: "pixelated" }}
@@ -208,6 +209,7 @@ export default function QuoteSection() {
           >
             <img
               src={QUOTE_ASSETS.snailSrc}
+              loading="lazy"
               alt=""
               className="h-auto w-[clamp(200px,22.5vw,308px)]"
               style={{ imageRendering: "pixelated" }}

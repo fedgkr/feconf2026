@@ -34,6 +34,7 @@ export default function ClickFrame({
         <img
           src="/assets/chevron-double.svg"
           alt=""
+          loading="lazy"
           className="h-[17px] w-[27px]"
         />
         <p className="font-gothic text-[clamp(24px,2.35vw,32px)] font-medium uppercase leading-[1.2] tracking-[-0.64px] text-muted">
@@ -42,6 +43,7 @@ export default function ClickFrame({
         <img
           src="/assets/chevron-double.svg"
           alt=""
+          loading="lazy"
           className="h-[17px] w-[27px]"
         />
       </div>
@@ -66,7 +68,7 @@ export default function ClickFrame({
           >
             {label}
           </span>
-          <img src={ICONS[icon]} alt="" className="size-[18px]" />
+          <img src={ICONS[icon]} alt="" loading="lazy" className="size-[18px]" />
         </a>
       </div>
     </div>

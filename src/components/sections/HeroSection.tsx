@@ -1,3 +1,4 @@
+import Image from "next/image";
 import { HERO } from "@/data/site";
 
 export default function HeroSection() {
@@ -6,10 +7,15 @@ export default function HeroSection() {
       id="home"
       className="relative h-[clamp(480px,57.1vw,780px)] overflow-hidden bg-hero"
     >
-      <img
+      {/* The LCP element, so it is preloaded from the head. fill needs the
+          positioned section above it. */}
+      <Image
         src={HERO.bgSrc}
         alt=""
-        className="absolute inset-0 size-full object-cover"
+        fill
+        preload
+        sizes="100vw"
+        className="object-cover"
       />
       <div className="animate-fade-in-up absolute left-1/2 top-[41%] flex w-full -translate-x-1/2 flex-col items-center gap-[4px]">
         <img

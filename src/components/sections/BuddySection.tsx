@@ -26,6 +26,8 @@ export default function BuddySection() {
         <div className="relative h-[clamp(190px,24.2vw,330px)] w-full overflow-hidden">
           <SnailMarquee
             sources={BUDDY.snails}
+            width={524}
+            height={330}
             imageClassName="mr-[10px] h-[clamp(190px,24.2vw,330px)] w-auto max-w-none"
           />
         </div>

@@ -12,11 +12,13 @@ function SponsorLogo({ sponsor }: { sponsor: Sponsor }) {
       <div className="relative h-[54px] w-[109.5px]">
         <img
           src={sponsor.iconSrc}
+          loading="lazy"
           alt=""
           className="absolute inset-y-0 left-0 h-full w-[28.8%]"
         />
         <img
           src={sponsor.textSrc}
+          loading="lazy"
           alt={sponsor.name}
           className="absolute bottom-[7.5%] left-[38.65%] right-0 top-1/4"
         />
@@ -31,6 +33,7 @@ function SponsorLogo({ sponsor }: { sponsor: Sponsor }) {
         </p>
         <img
           src={sponsor.src}
+          loading="lazy"
           alt={sponsor.name}
           style={{ width: sponsor.width, height: sponsor.height }}
           className="max-w-full object-cover"
@@ -41,6 +44,7 @@ function SponsorLogo({ sponsor }: { sponsor: Sponsor }) {
   return (
     <img
       src={sponsor.src}
+      loading="lazy"
       alt={sponsor.name}
       style={{ width: sponsor.width, height: sponsor.height }}
       className={`max-w-full object-contain ${sponsor.className ?? ""}`}

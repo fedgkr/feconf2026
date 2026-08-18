@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { useInView } from "@/hooks/useAnimation";
 import { FOOTER } from "@/data/site";
 
@@ -14,10 +15,13 @@ export default function FooterSection() {
       id="site-footer"
       className="relative h-[clamp(520px,57.1vw,780px)] overflow-hidden bg-hero"
     >
-      <img
+      {/* fill needs the positioned footer above it */}
+      <Image
         src={FOOTER.bgSrc}
         alt=""
-        className="absolute inset-0 size-full object-cover"
+        fill
+        sizes="100vw"
+        className="object-cover"
       />
       {/* date + ticket button */}
       <div
@@ -67,6 +71,7 @@ export default function FooterSection() {
       >
         <img
           src={FOOTER.logoSrc}
+          loading="lazy"
           alt="FECONF"
           className="h-auto w-full max-w-none"
         />
