@@ -2,6 +2,7 @@ import ClickFrame from "../ClickFrame";
 import MultiLine from "../MultiLine";
 import Reveal from "../Reveal";
 import SectionHeading from "../SectionHeading";
+import SnailMarquee from "../SnailMarquee";
 import { BUDDY } from "@/data/site";
 
 export default function BuddySection() {
@@ -23,16 +24,10 @@ export default function BuddySection() {
         </div>
         {/* infinite snail marquee */}
         <div className="relative h-[clamp(190px,24.2vw,330px)] w-full overflow-hidden">
-          <div className="marquee-track flex items-center">
-            {[...BUDDY.snails, ...BUDDY.snails].map((src, i) => (
-              <img
-                key={i}
-                src={src}
-                alt=""
-                className="mr-[10px] h-[clamp(190px,24.2vw,330px)] w-auto max-w-none"
-              />
-            ))}
-          </div>
+          <SnailMarquee
+            sources={BUDDY.snails}
+            imageClassName="mr-[10px] h-[clamp(190px,24.2vw,330px)] w-auto max-w-none"
+          />
         </div>
       </div>
     </section>
