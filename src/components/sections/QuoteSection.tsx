@@ -18,9 +18,13 @@ export default function QuoteSection() {
   const [progress, setProgress] = useState(0);
   const [phase, setPhase] = useState(0);
   const [damping, setDamping] = useState(false);
-  const [textReady, setTextReady] = useState(false);
+  const [introDone, setIntroDone] = useState(false);
 
   useScrollEffect(() => {
+    // This runs during menu jumps too. Holding the sequence still through one
+    // looks broken: the section is 1200vh, so it fills most of a trip to or
+    // from the top, and a frozen sequence turns that stretch into a still
+    // frame while everything around it slides.
     const el = sectionRef.current;
     if (!el) return;
     const scrollable = el.offsetHeight - window.innerHeight;
@@ -29,9 +33,9 @@ export default function QuoteSection() {
     const p = Math.max(0, Math.min(1, -rect.top / scrollable));
     setProgress(p);
     setPhase(Math.min(4, Math.floor(5 * p)));
-    // Damping runs from the second quote until the section leaves the
-    // viewport, the same stretch as before (p >= 0.2 is phase >= 1).
-    setDamping(p >= 0.2 && rect.bottom > 0);
+    // The handler is bound a screen early and decides from a fresh rect, so
+    // arriving at speed cannot slip past between two of these samples.
+    setDamping(rect.top <= window.innerHeight && rect.bottom > 0);
   });
 
   // Dampen the wheel while the quote sequence is playing so each line gets
@@ -41,17 +45,32 @@ export default function QuoteSection() {
   // sequence down without holding the reader in place.
   useEffect(() => {
     if (!damping) return;
+    const insideSequence = () => {
+      const rect = sectionRef.current?.getBoundingClientRect();
+      return !!rect && rect.top <= 0 && rect.bottom > 0;
+    };
     const onWheel = (e: WheelEvent) => {
+      if (!insideSequence()) return;
       e.preventDefault();
       // A menu jump animates the scroll and any scroll of our own cancels it.
       // A trackpad keeps sending ticks after the finger leaves, so one leftover
       // tick used to strand the reader partway down this section.
       if (document.documentElement.classList.contains("nav-jumping")) return;
+      // The grid is still drawing itself. The page holds still until it has
+      // finished, so the frame is never scrolled past mid-stroke.
+      if (!introDone) return;
       window.scrollBy({ top: 0.45 * e.deltaY, behavior: "instant" });
     };
+    const onTouchMove = (e: TouchEvent) => {
+      if (!introDone && insideSequence()) e.preventDefault();
+    };
     window.addEventListener("wheel", onWheel, { passive: false });
-    return () => window.removeEventListener("wheel", onWheel);
-  }, [damping]);
+    window.addEventListener("touchmove", onTouchMove, { passive: false });
+    return () => {
+      window.removeEventListener("wheel", onWheel);
+      window.removeEventListener("touchmove", onTouchMove);
+    };
+  }, [damping, introDone]);
 
   // The stage is exactly one screen tall and sticks to the top, so it only
   // fills the viewport once the section itself has reached the top. Anything
@@ -60,17 +79,32 @@ export default function QuoteSection() {
     threshold: 0.99,
   });
 
+  // The line waits for the grid to finish, then arrives with the scroll rather
+  // than on a clock of its own, so speed cannot outrun it.
+  const textReady = introDone && progress >= 0.005;
+
   useEffect(() => {
-    if (!inView || textReady) return;
-    // The intro draws the frame before the first line fades in. Being past the
-    // first quote means that intro was never seen, so waiting on it would only
-    // swallow the line being read. Crossing into the next quote mid-wait
-    // reschedules at zero rather than cancelling: the wait must never outlive
-    // the line it was protecting.
-    const wait = phase > 0 ? 0 : 1250;
-    const timer = setTimeout(() => setTextReady(true), wait);
-    return () => clearTimeout(timer);
-  }, [inView, phase, textReady]);
+    if (!inView || introDone) return;
+    const stage = stageRef.current;
+    // Being past the first quote means the grid was never watched being drawn,
+    // so there is nothing to wait for.
+    if (phase > 0 || !stage) {
+      const timer = setTimeout(() => setIntroDone(true), 0);
+      return () => clearTimeout(timer);
+    }
+    // The hold lasts exactly as long as the grid takes to draw itself. A timer
+    // guessing at the same length ran about a third of a second long, and that
+    // overhang is spent discarding the reader's scrolling.
+    const finish = () => setIntroDone(true);
+    stage.addEventListener("animationend", finish, { once: true });
+    // Nothing reports back if the frame never animates, and the hold must not
+    // outlive the thing it is waiting for.
+    const failsafe = setTimeout(finish, 1600);
+    return () => {
+      stage.removeEventListener("animationend", finish);
+      clearTimeout(failsafe);
+    };
+  }, [inView, phase, introDone, stageRef]);
 
   const closing = phase === 4;
   const closingT = closing ? Math.min(1, (progress - 0.8) / 0.2) : 0;
@@ -190,8 +224,11 @@ export default function QuoteSection() {
             ))}
           </p>
         </div>
-        {/* pixel car, driven across by scroll until it has left the screen */}
-        {carIn < 1 && (
+        {/* pixel car, driven across by scroll until it has left the screen.
+            It waits for the grid: entering at speed can carry the page a little
+            past the top before the hold takes effect, and the car would show
+            up at the left edge while the frame is still drawing. */}
+        {introDone && carIn < 1 && (
           <div
             className="fc-car-loop absolute"
             style={{ bottom: "15%", transform: carTransform }}
