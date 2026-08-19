@@ -7,6 +7,31 @@ import { BUY_TICKET, NAV_MENU, PINK_SECTION_IDS } from "@/data/site";
 /** Viewport-top band the fixed nav occupies (25px offset + 48px bar). */
 const NAV_LINE = 73;
 
+/** How long a menu jump takes to travel, whatever the distance. */
+const JUMP_MS = 700;
+
+/**
+ * The browser abandons its own smooth scroll the moment a wheel reports in,
+ * and a trackpad keeps reporting after the finger leaves, which left the jump
+ * stranded partway down. Driving each frame ourselves takes that decision away
+ * from the browser: the position is set outright every frame, so nothing can
+ * call the movement off halfway.
+ */
+function travelTo(top: number, onDone?: () => void) {
+  const from = window.scrollY;
+  const distance = top - from;
+  const started = performance.now();
+  const step = (now: number) => {
+    const t = Math.min(1, (now - started) / JUMP_MS);
+    // ease-in-out: leaves and arrives gently, covers the middle quickly
+    const eased = t < 0.5 ? 2 * t * t : 1 - (-2 * t + 2) ** 2 / 2;
+    window.scrollTo({ top: from + distance * eased, behavior: "instant" });
+    if (t < 1) requestAnimationFrame(step);
+    else onDone?.();
+  };
+  requestAnimationFrame(step);
+}
+
 /**
  * Panes pin as they are passed, so a section that is already behind reports
  * where it is pinned rather than where it sits in the page, and the browser
@@ -34,6 +59,7 @@ export default function SiteNav() {
   const [clicked, setClicked] = useState<string | null>(null);
   const settle = useRef<ReturnType<typeof setTimeout>>(undefined);
 
+
   // Each scroll frame pushes the release further out, so the hold lasts exactly
   // as long as the scroll does. Arming it on click too means a click that never
   // scrolls anywhere still lets go.
@@ -57,8 +83,9 @@ export default function SiteNav() {
   // handler there, which would otherwise turn one into a jump to nowhere.
   useEffect(() => {
     const root = document.documentElement;
-    root.classList.toggle("nav-jumping", clicked !== null);
-    if (clicked === null) return;
+    const jumping = clicked !== null;
+    root.classList.toggle("nav-jumping", jumping);
+    if (!jumping) return;
     const swallow = (e: WheelEvent) => e.preventDefault();
     window.addEventListener("wheel", swallow, {
       passive: false,
@@ -122,11 +149,16 @@ export default function SiteNav() {
               const top = paneTop(id);
               if (top === null) return;
               e.preventDefault();
+              // Home means back to the start, so it lands there outright:
+              // gliding up would replay every section in reverse on the way.
+              // Nothing sweeps past, so the parallax keeps following the page.
+              // Freezing it there would leave those sections showing the state
+              // they held on the way out.
               // Set before scrolling, not from the effect the state change
               // schedules: a wheel tick landing in that gap would cancel the
               // scroll on its very first frame.
               document.documentElement.classList.add("nav-jumping");
-              window.scrollTo({ top, behavior: "smooth" });
+              travelTo(top);
               // The anchor this replaces left an entry behind, so back still
               // walks through the sections visited.
               history.pushState(null, "", `#${id}`);
