@@ -7,13 +7,15 @@ export default function HeroSection() {
       id="home"
       className="relative h-[clamp(480px,57.1vw,780px)] overflow-hidden bg-hero"
     >
-      {/* The LCP element, so it is preloaded from the head. fill needs the
-          positioned section above it. */}
+      {/* The LCP element. `preload` only puts a link in the head; the fetch
+          itself still queues at default priority, so the hint goes on the tag
+          too. fill needs the positioned section above it. */}
       <Image
         src={HERO.bgSrc}
         alt=""
         fill
         preload
+        fetchPriority="high"
         sizes="100vw"
         className="object-cover"
       />
