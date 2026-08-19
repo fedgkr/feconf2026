@@ -74,6 +74,22 @@ html.nav-jumping .fc-run .fc-hline {
   top: min(0px, calc(100dvh - var(--pane-h, 100000px)));
 }
 
+/* How much of a full-height screen the browser is currently sitting on top of.
+ * `100vh` is the height with the toolbars out of the way, so a pane sized that
+ * way keeps its last stretch behind Safari's bottom bar, and anything anchored
+ * there is cut in half. In-app browsers have no such bar, which is why this
+ * only ever showed up in Safari. Anything positioned from the bottom adds this
+ * to stay above the bar, and gets 0 back on browsers that cannot report it. */
+:root {
+  --browser-chrome: 0px;
+}
+
+@supports (height: 100dvh) {
+  :root {
+    --browser-chrome: calc(100vh - 100dvh);
+  }
+}
+
 body {
   background: var(--color-white);
   color: var(--color-navy);
