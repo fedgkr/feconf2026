@@ -21,6 +21,40 @@ const reducedMotion = () =>
   window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
 /**
+ * How far past a boundary the scroll has to travel before the quote changes.
+ * A phase change remounts the line and replays its roll-up from the start, so
+ * without a margin here a thumb resting on a boundary replays it over and
+ * over: momentum and rubber-banding wobble the scroll by a few pixels, and
+ * every crossing was a fresh 1.6s animation. 0.01 of the section is about 96px
+ * of scroll, against the 1923px a whole quote lasts.
+ */
+const PHASE_MARGIN = 0.01;
+
+/**
+ * The finale holds the last quote on screen, so the closing phase shows the
+ * same line as the one before it.
+ */
+const lineFor = (phase: number) => Math.min(phase, QUOTES.length - 1);
+
+function nextPhase(p: number, prev: number) {
+  const raw = Math.min(4, Math.floor(5 * p));
+  if (raw === prev) return prev;
+  // Anything skipping a whole phase arrived by jump — a restored scroll
+  // position, a link with a hash — and was never near this boundary to wobble
+  // across it. Holding those back stranded the section on phase 0, which put
+  // the intro hold back in the reader's way and froze the page for over a
+  // second in the middle of the sequence.
+  if (Math.abs(raw - prev) > 1) return raw;
+  // The margin exists to stop the line remounting and replaying its roll-up,
+  // so it belongs only on boundaries that change the line. The last one does
+  // not, and holding it there merely started the finale at a progress its
+  // timings were not written for.
+  if (lineFor(raw) === lineFor(prev)) return raw;
+  const boundary = Math.max(raw, prev) / 5;
+  return Math.abs(p - boundary) >= PHASE_MARGIN ? raw : prev;
+}
+
+/**
  * Sticky scroll sequence (from the reference build): the section is 1200vh
  * tall and pins its viewport-height stage. Scrolling advances through the
  * four quotes, a pixel car loops during the first phase, a snail crawls in
@@ -47,13 +81,19 @@ export default function QuoteSection() {
     // from the top, and a frozen sequence turns that stretch into a still
     // frame while everything around it slides.
     const el = sectionRef.current;
-    if (!el) return;
-    const scrollable = el.offsetHeight - window.innerHeight;
+    const stage = stageRef.current;
+    if (!el || !stage) return;
+    // How far the stage is pinned for, measured off the layout rather than the
+    // window. On a phone the two disagree: the section is sized in `vh`, which
+    // ignores the address bar, while `innerHeight` shrinks when the bar slides
+    // back in. Dividing by the window made the whole sequence step sideways
+    // every time the bar appeared, with the reader's thumb perfectly still.
+    const scrollable = el.offsetHeight - stage.offsetHeight;
     if (scrollable <= 0) return;
     const rect = el.getBoundingClientRect();
     const p = Math.max(0, Math.min(1, -rect.top / scrollable));
     setProgress(p);
-    setPhase(Math.min(4, Math.floor(5 * p)));
+    setPhase((prev) => nextPhase(p, prev));
     // The handler is bound a screen early and decides from a fresh rect, so
     // arriving at speed cannot slip past between two of these samples.
     setDamping(rect.top <= window.innerHeight && rect.bottom > 0);
@@ -156,7 +196,7 @@ export default function QuoteSection() {
     : 60;
   // The finale fades the quote out over half a second, so the last one has to
   // stay mounted through phase 4 instead of being dropped the moment it starts.
-  const quoteIndex = Math.min(phase, QUOTES.length - 1);
+  const quoteIndex = lineFor(phase);
   const lines = QUOTES[quoteIndex].split("\n");
 
   return (
@@ -203,7 +243,14 @@ export default function QuoteSection() {
             maxWidth: "90vw",
             minWidth: "min(671px, 80vw)",
             opacity: quoteOpacity,
-            transition: closing ? "opacity 0.5s ease" : "none",
+            // The fade is authored to finish at progress 0.85 and the closing
+            // message to begin at 0.87, so the two are never on screen at once.
+            // Smoothing it over half a second held that handoff open: touch
+            // scrolling has no damping to slow it, and a flick left the quote
+            // still 94% opaque while the message had risen to 43% — nine frames
+            // of two texts stacked. Following the scroll exactly restores the
+            // gap the timings were written around.
+            transition: "none",
           }}
         >
           {textReady && (
@@ -248,10 +295,18 @@ export default function QuoteSection() {
           </p>
         </div>
         {/* pixel car, driven across by scroll until it has left the screen.
-            It waits for the grid: entering at speed can carry the page a little
-            past the top before the hold takes effect, and the car would show
-            up at the left edge while the frame is still drawing. */}
-        {introDone && carIn < 1 && (
+            It is mounted for that whole stretch rather than from the end of the
+            intro. Scroll can run on through the hold — a phone cannot call off
+            momentum that has already started — and a car that waits then finds
+            the scroll has carried it to the middle of the screen, where it
+            appears out of nowhere. Mounted throughout it simply sits off the
+            left edge until the scroll brings it in.
+            TODO(디자이너 확인 필요): the original gated this on the intro so the
+            car could not share the screen with the grid being drawn. That is
+            now possible, in exchange for never appearing mid-screen. Restoring
+            a scroll position inside the drive-in still places the car in one
+            frame rather than driving it there. */}
+        {carIn < 1 && (
           <div
             className="fc-car-loop absolute"
             style={{ bottom: "15%", transform: carTransform }}
@@ -277,6 +332,14 @@ export default function QuoteSection() {
           <div
             style={{
               transform: snailTransform,
+              // TODO(디자이너 확인 필요): the rise covers 55vh in 0.12 of the
+              // section against the crawl-in's 120vw in 0.6 — 0.42px of travel
+              // per pixel scrolled against 0.08, five times steeper, which is
+              // what reads as the snail lurching at the end. The long ease here
+              // is what softens that step, so shortening it to settle sooner
+              // made the lurch three times sharper instead (measured 0.156 vs
+              // 0.052 px/px over the first frames). Both numbers are authored,
+              // so widening the 0.12 window is a design call, not a fix.
               transition: closing
                 ? "transform 1s cubic-bezier(0.22, 1, 0.36, 1)"
                 : "none",
