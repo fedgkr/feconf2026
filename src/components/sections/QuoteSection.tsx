@@ -1,10 +1,24 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { useInView, useScrollEffect } from "@/hooks/useAnimation";
+import { useScrollEffect } from "@/hooks/useAnimation";
 import { QUOTES, QUOTE_ASSETS, QUOTE_FINALE } from "@/data/site";
 
 const HAIRLINE = "var(--color-hairline-soft)";
+
+/** Keys the browser scrolls the page with. */
+const SCROLL_KEYS = new Set([
+  " ",
+  "PageDown",
+  "PageUp",
+  "Home",
+  "End",
+  "ArrowDown",
+  "ArrowUp",
+]);
+
+const reducedMotion = () =>
+  window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
 /**
  * Sticky scroll sequence (from the reference build): the section is 1200vh
@@ -19,6 +33,13 @@ export default function QuoteSection() {
   const [phase, setPhase] = useState(0);
   const [damping, setDamping] = useState(false);
   const [introDone, setIntroDone] = useState(false);
+  // Latches when the section first reaches the top of the window, which is the
+  // moment the grid starts drawing. Asking the geometry beats watching for the
+  // stage to be 99% visible: a window shorter than it expects — a phone with
+  // the address bar out — never reports that, and the hold below would then
+  // wait on something that never arrives.
+  const [reached, setReached] = useState(false);
+  const stageRef = useRef<HTMLDivElement | null>(null);
 
   useScrollEffect(() => {
     // This runs during menu jumps too. Holding the sequence still through one
@@ -36,6 +57,7 @@ export default function QuoteSection() {
     // The handler is bound a screen early and decides from a fresh rect, so
     // arriving at speed cannot slip past between two of these samples.
     setDamping(rect.top <= window.innerHeight && rect.bottom > 0);
+    if (rect.top <= 0) setReached(true);
   });
 
   // Dampen the wheel while the quote sequence is playing so each line gets
@@ -61,34 +83,35 @@ export default function QuoteSection() {
       if (!introDone) return;
       window.scrollBy({ top: 0.45 * e.deltaY, behavior: "instant" });
     };
-    const onTouchMove = (e: TouchEvent) => {
+    const holding = (e: Event) => {
       if (!introDone && insideSequence()) e.preventDefault();
     };
+    const onKeyDown = (e: KeyboardEvent) => {
+      // A keyboard scrolls the page too, and only holding the wheel let those
+      // readers straight past the frame the hold exists to show.
+      if (SCROLL_KEYS.has(e.key)) holding(e);
+    };
     window.addEventListener("wheel", onWheel, { passive: false });
-    window.addEventListener("touchmove", onTouchMove, { passive: false });
+    window.addEventListener("touchmove", holding, { passive: false });
+    window.addEventListener("keydown", onKeyDown, { passive: false });
     return () => {
       window.removeEventListener("wheel", onWheel);
-      window.removeEventListener("touchmove", onTouchMove);
+      window.removeEventListener("touchmove", holding);
+      window.removeEventListener("keydown", onKeyDown);
     };
   }, [damping, introDone]);
 
   // The stage is exactly one screen tall and sticks to the top, so it only
-  // fills the viewport once the section itself has reached the top. Anything
-  // lower starts the intro while the hero is still on screen.
-  const { ref: stageRef, inView } = useInView<HTMLDivElement>({
-    threshold: 0.99,
-  });
-
   // The line waits for the grid to finish, then arrives with the scroll rather
   // than on a clock of its own, so speed cannot outrun it.
   const textReady = introDone && progress >= 0.005;
 
   useEffect(() => {
-    if (!inView || introDone) return;
+    if (!reached || introDone) return;
     const stage = stageRef.current;
-    // Being past the first quote means the grid was never watched being drawn,
-    // so there is nothing to wait for.
-    if (phase > 0 || !stage) {
+    // Nothing to wait for: the reader is already past the first quote, motion
+    // is turned down, or the frame never mounted.
+    if (phase > 0 || !stage || reducedMotion()) {
       const timer = setTimeout(() => setIntroDone(true), 0);
       return () => clearTimeout(timer);
     }
@@ -104,7 +127,7 @@ export default function QuoteSection() {
       stage.removeEventListener("animationend", finish);
       clearTimeout(failsafe);
     };
-  }, [inView, phase, introDone, stageRef]);
+  }, [reached, phase, introDone]);
 
   const closing = phase === 4;
   const closingT = closing ? Math.min(1, (progress - 0.8) / 0.2) : 0;
@@ -141,7 +164,7 @@ export default function QuoteSection() {
       <div
         ref={stageRef}
         className={`sticky top-0 flex h-screen w-full items-center justify-center overflow-hidden border-b border-navy/30 bg-surface ${
-          inView ? "fc-run" : ""
+          reached ? "fc-run" : ""
         } ${closing ? "fc-closing" : ""}`}
       >
         {/* crosshair frame */}

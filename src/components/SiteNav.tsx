@@ -10,26 +10,55 @@ const NAV_LINE = 73;
 /** How long a menu jump takes to travel, whatever the distance. */
 const JUMP_MS = 700;
 
+const reducedMotion = () =>
+  window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+/** Furthest the document can actually be scrolled right now. */
+const maxScroll = () =>
+  Math.max(0, document.documentElement.scrollHeight - window.innerHeight);
+
 /**
  * The browser abandons its own smooth scroll the moment a wheel reports in,
  * and a trackpad keeps reporting after the finger leaves, which left the jump
  * stranded partway down. Driving each frame ourselves takes that decision away
  * from the browser: the position is set outright every frame, so nothing can
  * call the movement off halfway.
+ *
+ * The destination is asked for again every frame. The quote section is 1200vh,
+ * so a window that changes height mid-flight — a phone address bar folding
+ * away, a rotation — moves the target by thousands of pixels, and a fixed
+ * number would land somewhere else entirely.
+ *
+ * The trip owns `nav-jumping` outright. Hanging it on "has scrolling gone
+ * quiet" instead made its life something else entirely: our own frames kept
+ * pushing the release out, a finger dragging afterwards kept pushing it out
+ * further, and a hidden tab let it expire while the trip was still pending.
+ *
+ * Returns a cancel: two of these running at once fight for the same scroll
+ * position, one frame each.
  */
-function travelTo(top: number, onDone?: () => void) {
+function travelTo(destination: () => number): () => void {
+  const root = document.documentElement;
+  root.classList.add("nav-jumping");
+  const release = () => root.classList.remove("nav-jumping");
   const from = window.scrollY;
-  const distance = top - from;
   const started = performance.now();
+  let frame = 0;
   const step = (now: number) => {
     const t = Math.min(1, (now - started) / JUMP_MS);
     // ease-in-out: leaves and arrives gently, covers the middle quickly
     const eased = t < 0.5 ? 2 * t * t : 1 - (-2 * t + 2) ** 2 / 2;
-    window.scrollTo({ top: from + distance * eased, behavior: "instant" });
-    if (t < 1) requestAnimationFrame(step);
-    else onDone?.();
+    const target = Math.min(destination(), maxScroll());
+    window.scrollTo({ top: from + (target - from) * eased, behavior: "instant" });
+    // Releasing on the same frame as the last position lets the transitions
+    // back before it is painted, and the sections passed over flicker.
+    frame = requestAnimationFrame(t < 1 ? step : release);
   };
-  requestAnimationFrame(step);
+  frame = requestAnimationFrame(step);
+  return () => {
+    cancelAnimationFrame(frame);
+    release();
+  };
 }
 
 /**
@@ -58,6 +87,7 @@ export default function SiteNav() {
   // through every section on the way down to the target.
   const [clicked, setClicked] = useState<string | null>(null);
   const settle = useRef<ReturnType<typeof setTimeout>>(undefined);
+  const cancelTravel = useRef<(() => void) | undefined>(undefined);
 
 
   // Each scroll frame pushes the release further out, so the hold lasts exactly
@@ -69,32 +99,27 @@ export default function SiteNav() {
     settle.current = setTimeout(() => setClicked(null), 150);
   };
 
-  useEffect(() => () => clearTimeout(settle.current), []);
+  useEffect(
+    () => () => {
+      clearTimeout(settle.current);
+      cancelTravel.current?.();
+    },
+    [],
+  );
 
-  // A menu jump flies past several sections at once and their reveals would
-  // fire one after another on the way down, which reads as a glitch. The hold
-  // above already lasts exactly as long as the jump, so it doubles as the
-  // window in which those transitions are switched off.
-  //
-  // Wheel input is swallowed for that same window. A smooth scroll is cancelled
-  // by any scroll input, and a trackpad keeps sending ticks after the finger
-  // leaves, so a single leftover tick used to strand the reader partway down
-  // the quote section. Capturing keeps those ticks away from the damping
-  // handler there, which would otherwise turn one into a jump to nowhere.
+  // Wheel is swallowed a little longer than the trip itself. A trackpad keeps
+  // sending ticks after the finger leaves, and one of those landing right after
+  // arrival reaches the damping handler in the quote section, which turns it
+  // into a jump to nowhere. Riding on the selection hold gives exactly that
+  // tail: a swallowed tick scrolls nothing, so nothing extends it further.
   useEffect(() => {
-    const root = document.documentElement;
-    const jumping = clicked !== null;
-    root.classList.toggle("nav-jumping", jumping);
-    if (!jumping) return;
+    if (clicked === null) return;
     const swallow = (e: WheelEvent) => e.preventDefault();
     window.addEventListener("wheel", swallow, {
       passive: false,
       capture: true,
     });
-    return () => {
-      root.classList.remove("nav-jumping");
-      window.removeEventListener("wheel", swallow, { capture: true });
-    };
+    return () => window.removeEventListener("wheel", swallow, { capture: true });
   }, [clicked]);
 
   useScrollEffect(() => {
@@ -145,20 +170,28 @@ export default function SiteNav() {
             key={id}
             href={`#${id}`}
             onClick={(e) => {
-              holdSelection(id);
+              // A modified click means open elsewhere, and that belongs to the
+              // browser. Taking it over loses the new tab or window.
+              if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
               const top = paneTop(id);
               if (top === null) return;
               e.preventDefault();
+              holdSelection(id);
+              cancelTravel.current?.();
+              if (reducedMotion()) {
+                window.scrollTo({
+                  top: Math.min(top, maxScroll()),
+                  behavior: "instant",
+                });
+                history.pushState(null, "", `#${id}`);
+                return;
+              }
               // Home means back to the start, so it lands there outright:
               // gliding up would replay every section in reverse on the way.
               // Nothing sweeps past, so the parallax keeps following the page.
               // Freezing it there would leave those sections showing the state
               // they held on the way out.
-              // Set before scrolling, not from the effect the state change
-              // schedules: a wheel tick landing in that gap would cancel the
-              // scroll on its very first frame.
-              document.documentElement.classList.add("nav-jumping");
-              travelTo(top);
+              cancelTravel.current = travelTo(() => paneTop(id) ?? top);
               // The anchor this replaces left an entry behind, so back still
               // walks through the sections visited.
               history.pushState(null, "", `#${id}`);
