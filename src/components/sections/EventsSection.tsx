@@ -158,7 +158,7 @@ export default function EventsSection() {
             ))}
           </div>
           {/* full schedule download */}
-          <Reveal delay={200} className="mt-[48px] flex justify-center">
+          <Reveal delay={200} className="mb-[150px] mt-[48px] flex justify-center">
             <ClickFrame
               label={EVENTS.download.label}
               href={EVENTS.download.href}
