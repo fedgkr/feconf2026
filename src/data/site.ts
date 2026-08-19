@@ -3,6 +3,8 @@
  * guidelines, and asset paths. Components stay purely presentational.
  */
 
+import { assetPath } from "@/lib/assetPath";
+
 /* ------------------------------- nav ---------------------------------- */
 
 export const NAV_MENU = [
@@ -19,8 +21,8 @@ export const PINK_SECTION_IDS = ["home", "site-footer"];
 /* ------------------------------- hero --------------------------------- */
 
 export const HERO = {
-  bgSrc: "/assets/hero-bg.png",
-  logoSrc: "/assets/feconf-logo.svg",
+  bgSrc: assetPath("/assets/hero-bg.png"),
+  logoSrc: assetPath("/assets/feconf-logo.svg"),
   tagline: "FORWARD EVER 10 YEARS",
   info: "FRONTEND CONFERENCE BY FEDG. 2026.10.24 THU. LOTTE TOWER 35F SEOUL, KOREA",
 };
@@ -45,8 +47,8 @@ export const QUOTE_FINALE: { text: string; highlight?: boolean }[][] = [
 ];
 
 export const QUOTE_ASSETS = {
-  carSrc: "/assets/pixel-sportscar-blue.svg",
-  snailSrc: "/assets/pixel-snail.svg",
+  carSrc: assetPath("/assets/pixel-sportscar-blue.svg"),
+  snailSrc: assetPath("/assets/pixel-snail.svg"),
 };
 
 /* ------------------------------ events -------------------------------- */
@@ -65,7 +67,7 @@ export const BADGE_STYLE: Record<SessionBadge, { badge: string; hover: string }>
   toss: { badge: "var(--color-toss)", hover: "var(--color-toss)" },
 };
 
-export const TOSS_BADGE_SRC = "/assets/toss-badge-square.png";
+export const TOSS_BADGE_SRC = assetPath("/assets/toss-badge-square.png");
 
 const DEFAULT_SESSION_TITLE =
   "Airbridge SDK팀이 순수한 Unit Testable한 코드를 작성하는 방법";
@@ -113,9 +115,9 @@ export const BUDDY = {
   },
   download: { label: "Forever Buddy.jpg", href: "#" },
   snails: [
-    "/assets/pixel-snail-blue.svg",
-    "/assets/pixel-snail-pink.svg",
-    "/assets/pixel-snail-blue.svg",
+    assetPath("/assets/pixel-snail-blue.svg"),
+    assetPath("/assets/pixel-snail-pink.svg"),
+    assetPath("/assets/pixel-snail-blue.svg"),
   ],
 };
 
@@ -149,7 +151,7 @@ export const SPONSORS_SECTION = {
     {
       variant: "logo",
       name: "WYYYES",
-      src: "/assets/sponsor-wyyyes.png",
+      src: assetPath("/assets/sponsor-wyyyes.png"),
       width: 153,
       height: 42,
       className: "rounded-[9px] object-cover",
@@ -157,14 +159,14 @@ export const SPONSORS_SECTION = {
     {
       variant: "logo",
       name: "imweb",
-      src: "/assets/sponsor-imweb.svg",
+      src: assetPath("/assets/sponsor-imweb.svg"),
       width: 162,
       height: 35.4,
     },
     {
       variant: "logo",
       name: "toss",
-      src: "/assets/sponsor-toss.png",
+      src: assetPath("/assets/sponsor-toss.png"),
       width: 144,
       height: 43.5,
       className: "mix-blend-multiply",
@@ -172,27 +174,27 @@ export const SPONSORS_SECTION = {
     {
       variant: "carrot",
       name: "당근",
-      iconSrc: "/assets/sponsor-carrot-icon.svg",
-      textSrc: "/assets/sponsor-carrot-text.svg",
+      iconSrc: assetPath("/assets/sponsor-carrot-icon.svg"),
+      textSrc: assetPath("/assets/sponsor-carrot-text.svg"),
     },
     {
       variant: "logo",
       name: "stibee",
-      src: "/assets/sponsor-stibee.svg",
+      src: assetPath("/assets/sponsor-stibee.svg"),
       width: 138.25,
       height: 31,
     },
     {
       variant: "logo",
       name: "F-Lab",
-      src: "/assets/sponsor-flab.svg",
+      src: assetPath("/assets/sponsor-flab.svg"),
       width: 121.4,
       height: 35.6,
     },
     {
       variant: "logo",
       name: "OLIVE YOUNG",
-      src: "/assets/sponsor-oliveyoung.png",
+      src: assetPath("/assets/sponsor-oliveyoung.png"),
       width: 189,
       height: 42,
     },
@@ -200,7 +202,7 @@ export const SPONSORS_SECTION = {
       variant: "media-partner",
       name: "요즘 IT",
       label: "Media Partner",
-      src: "/assets/sponsor-yozm-it.png",
+      src: assetPath("/assets/sponsor-yozm-it.png"),
       width: 102.5,
       height: 25.6,
     },
@@ -271,8 +273,8 @@ export const SHARE_CONTACT = {
 /* ------------------------------- footer ------------------------------- */
 
 export const FOOTER = {
-  bgSrc: "/assets/footer-bg.png",
-  logoSrc: "/assets/feconf-logo-footer.svg",
+  bgSrc: assetPath("/assets/footer-bg.png"),
+  logoSrc: assetPath("/assets/feconf-logo-footer.svg"),
   date: "2026.10.23",
   note: "// TODO : 티켓 예매하기",
   ticket: { label: "TICKET OPEN", dday: "D-31", href: "#" },

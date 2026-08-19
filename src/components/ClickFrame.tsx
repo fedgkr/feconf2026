@@ -1,7 +1,9 @@
+import { assetPath } from "@/lib/assetPath";
+
 const ICONS = {
-  download: "/assets/icon-download.svg",
-  link: "/assets/icon-link.svg",
-  arrow: "/assets/icon-arrow-up-right.svg",
+  download: assetPath("/assets/icon-download.svg"),
+  link: assetPath("/assets/icon-link.svg"),
+  arrow: assetPath("/assets/icon-arrow-up-right.svg"),
 } as const;
 
 interface ClickFrameProps {
@@ -32,7 +34,7 @@ export default function ClickFrame({
     <div className="flex w-full max-w-[433px] flex-col items-center">
       <div className="click-float flex items-center gap-[10px]">
         <img
-          src="/assets/chevron-double.svg"
+          src={assetPath("/assets/chevron-double.svg")}
           alt=""
           loading="lazy"
           className="h-[17px] w-[27px]"
@@ -41,7 +43,7 @@ export default function ClickFrame({
           click
         </p>
         <img
-          src="/assets/chevron-double.svg"
+          src={assetPath("/assets/chevron-double.svg")}
           alt=""
           loading="lazy"
           className="h-[17px] w-[27px]"
