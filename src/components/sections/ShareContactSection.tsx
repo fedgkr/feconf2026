@@ -6,7 +6,11 @@ import { SHARE_CONTACT } from "@/data/site";
 
 export default function ShareContactSection() {
   return (
-    <section className="flex flex-col items-center bg-white py-[clamp(56px,7.3vw,100px)]">
+    /* Extra room underneath for phones, for the same reason as the conduct
+       section: this one rests with its foot behind the browser's bottom bar,
+       and the gap has to be a fixed number so the section's height never moves
+       with the bar. */
+    <section className="flex flex-col items-center bg-white pt-[clamp(56px,7.3vw,100px)] pb-[calc(clamp(56px,7.3vw,100px)+100px)] sm:pb-[clamp(56px,7.3vw,100px)]">
       <div className="flex w-full flex-col items-center gap-[clamp(48px,5.86vw,80px)]">
         <Reveal direction="left" threshold={0.3} className="w-full">
           <SectionHeading
