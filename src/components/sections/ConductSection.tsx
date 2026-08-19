@@ -13,7 +13,13 @@ export default function ConductSection() {
   const stagger = useStaggerChildren(inView, CONDUCT.guidelines.length, 120);
 
   return (
-    <section className="flex flex-col items-center bg-surface py-[clamp(56px,7.3vw,100px)]">
+    /* The extra room underneath is for phones. A section taller than the screen
+       comes to rest with its foot behind the browser's bottom bar, which grows
+       to about 150px when the address bar slides back out. The gap has to be a
+       fixed number rather than the live bar height: the pane's resting place is
+       worked out from its own height, so a height that changed with the bar
+       would drag the whole section sideways mid-scroll. */
+    <section className="flex flex-col items-center bg-surface pt-[clamp(56px,7.3vw,100px)] pb-[calc(clamp(56px,7.3vw,100px)+90px)] sm:pb-[clamp(56px,7.3vw,100px)]">
       <div className="flex w-full flex-col items-center gap-[clamp(48px,5.86vw,80px)]">
         <Reveal direction="left" threshold={0.3} className="w-full">
           <SectionHeading

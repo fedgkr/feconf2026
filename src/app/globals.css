@@ -71,7 +71,14 @@ html.nav-jumping .fc-run .fc-hline {
  * reads as stacked panes. Confirm that is the intended feel. */
 .cover-pane {
   position: sticky;
-  top: min(0px, calc(100dvh - var(--pane-h, 100000px)));
+  /* Measured against the screen with the toolbars out of the way, not against
+   * what is visible right now. The visible height changes the moment a phone's
+   * address bar slides in or out, and this figure decides where a pane comes to
+   * rest — so following it moved the resting place by 92px mid-scroll, every
+   * time the reader changed direction. Anything that needs to clear the bar
+   * uses `--browser-chrome` instead, which is free to change because nothing
+   * anchors a scroll position to it. */
+  top: min(0px, calc(100vh - var(--pane-h, 100000px)));
 }
 
 /* How much of a full-height screen the browser is currently sitting on top of.
