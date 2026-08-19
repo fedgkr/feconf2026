@@ -203,7 +203,7 @@ export default function QuoteSection() {
     <section ref={sectionRef} className="relative" style={{ height: "1200vh" }}>
       <div
         ref={stageRef}
-        className={`sticky top-0 flex h-screen w-full items-center justify-center overflow-hidden border-b border-navy/30 bg-surface ${
+        className={`sticky top-0 flex h-screen w-full items-center justify-center overflow-hidden border-b border-navy/30 bg-surface pb-[var(--browser-chrome)] ${
           reached ? "fc-run" : ""
         } ${closing ? "fc-closing" : ""}`}
       >
@@ -309,7 +309,10 @@ export default function QuoteSection() {
         {carIn < 1 && (
           <div
             className="fc-car-loop absolute"
-            style={{ bottom: "15%", transform: carTransform }}
+            style={{
+              bottom: "calc(15% + var(--browser-chrome))",
+              transform: carTransform,
+            }}
           >
             <img
               src={QUOTE_ASSETS.carSrc}
@@ -324,7 +327,7 @@ export default function QuoteSection() {
         <div
           className="pointer-events-none absolute inset-x-0 flex justify-center"
           style={{
-            bottom: "12%",
+            bottom: "calc(12% + var(--browser-chrome))",
             opacity: snailVisible ? 1 : 0,
             transition: "opacity 0.8s ease",
           }}
