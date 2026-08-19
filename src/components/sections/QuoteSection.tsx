@@ -207,10 +207,18 @@ export default function QuoteSection() {
     <section ref={sectionRef} className="relative h-[1500vh] sm:h-[1200vh]">
       <div
         ref={stageRef}
-        className={`sticky top-0 flex h-screen w-full items-center justify-center overflow-hidden border-b border-navy/30 bg-surface pb-[var(--browser-chrome)] ${
+        className={`sticky top-0 h-screen w-full overflow-hidden border-b border-navy/30 bg-surface ${
           reached ? "fc-run" : ""
         } ${closing ? "fc-closing" : ""}`}
       >
+        {/* Everything sits inside the part of the stage the reader can actually
+            see. The stage itself has to stay a whole screen tall, because its
+            height is what the scroll progress is measured against, but a
+            phone's bottom bar covers its last stretch. Giving that visible part
+            its own box means every share of it below — the frame at half
+            height, the car and the snail near the foot — lands where it was
+            drawn, instead of each one having to subtract the bar itself. */}
+        <div className="absolute inset-x-0 top-0 flex h-[calc(100%-var(--browser-chrome))] items-center justify-center">
         {/* crosshair frame */}
         <div
           className="fc-vl absolute w-px opacity-0"
@@ -313,10 +321,7 @@ export default function QuoteSection() {
         {carIn < 1 && (
           <div
             className="fc-car-loop absolute"
-            style={{
-              bottom: "calc(15% + var(--browser-chrome))",
-              transform: carTransform,
-            }}
+            style={{ bottom: "15%", transform: carTransform }}
           >
             <img
               src={QUOTE_ASSETS.carSrc}
@@ -331,7 +336,7 @@ export default function QuoteSection() {
         <div
           className="pointer-events-none absolute inset-x-0 flex justify-center"
           style={{
-            bottom: "calc(12% + var(--browser-chrome))",
+            bottom: "12%",
             opacity: snailVisible ? 1 : 0,
             transition: "opacity 0.8s ease",
           }}
@@ -362,6 +367,7 @@ export default function QuoteSection() {
               style={{ imageRendering: "pixelated" }}
             />
           </div>
+        </div>
         </div>
       </div>
     </section>
