@@ -82,6 +82,16 @@ html.nav-jumping .fc-run .fc-hline {
  * to stay above the bar, and gets 0 back on browsers that cannot report it. */
 :root {
   --browser-chrome: 0px;
+  /* How far the snail lifts for the finale. A phone screen is tall and narrow,
+   * so the authored 55vh leaves it stranded near the top with a long empty
+   * stretch between it and the closing line. */
+  --snail-rise: 38vh;
+}
+
+@media (min-width: 640px) {
+  :root {
+    --snail-rise: 55vh;
+  }
 }
 
 @supports (height: 100dvh) {
