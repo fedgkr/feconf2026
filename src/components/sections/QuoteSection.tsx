@@ -19,7 +19,6 @@ export default function QuoteSection() {
   const [phase, setPhase] = useState(0);
   const [damping, setDamping] = useState(false);
   const [textReady, setTextReady] = useState(false);
-  const introStarted = useRef(false);
 
   useScrollEffect(() => {
     const el = sectionRef.current;
@@ -37,36 +36,50 @@ export default function QuoteSection() {
 
   // Dampen the wheel while the quote sequence is playing so each line gets
   // read. The listener is bound only for that stretch: left on the whole page
-  // it makes every wheel event elsewhere wait on this handler.
+  // it makes every wheel event elsewhere wait on this handler. At 0.45 a line
+  // takes a third less scrolling than it did at 0.3, which still slows the
+  // sequence down without holding the reader in place.
   useEffect(() => {
     if (!damping) return;
     const onWheel = (e: WheelEvent) => {
       e.preventDefault();
-      window.scrollBy({ top: 0.3 * e.deltaY, behavior: "instant" });
+      // A menu jump animates the scroll and any scroll of our own cancels it.
+      // A trackpad keeps sending ticks after the finger leaves, so one leftover
+      // tick used to strand the reader partway down this section.
+      if (document.documentElement.classList.contains("nav-jumping")) return;
+      window.scrollBy({ top: 0.45 * e.deltaY, behavior: "instant" });
     };
     window.addEventListener("wheel", onWheel, { passive: false });
     return () => window.removeEventListener("wheel", onWheel);
   }, [damping]);
 
+  // The stage is exactly one screen tall and sticks to the top, so it only
+  // fills the viewport once the section itself has reached the top. Anything
+  // lower starts the intro while the hero is still on screen.
   const { ref: stageRef, inView } = useInView<HTMLDivElement>({
-    threshold: 0.3,
+    threshold: 0.99,
   });
 
   useEffect(() => {
-    if (!inView || introStarted.current) return;
-    introStarted.current = true;
-    // The intro draws the frame before the first line fades in. Landing past
-    // the first quote means that intro was never seen, so waiting on it would
-    // only swallow the line being read. Decided once on entry: reading it live
-    // would reopen and close the gate around the phase boundary.
+    if (!inView || textReady) return;
+    // The intro draws the frame before the first line fades in. Being past the
+    // first quote means that intro was never seen, so waiting on it would only
+    // swallow the line being read. Crossing into the next quote mid-wait
+    // reschedules at zero rather than cancelling: the wait must never outlive
+    // the line it was protecting.
     const wait = phase > 0 ? 0 : 1250;
     const timer = setTimeout(() => setTextReady(true), wait);
     return () => clearTimeout(timer);
-  }, [inView, phase]);
+  }, [inView, phase, textReady]);
 
   const closing = phase === 4;
   const closingT = closing ? Math.min(1, (progress - 0.8) / 0.2) : 0;
   const snailIn = Math.max(0, Math.min(1, (progress - 0.2) / 0.6));
+  // Both the car and the snail are placed by scroll, not by a clock. The car
+  // covers 220vw in 0.3 of the section against the snail's 120vw in 0.6, so it
+  // pulls away at roughly four times the snail's rate.
+  const carIn = Math.min(1, progress / 0.3);
+  const carTransform = `translateX(${-120 + 220 * carIn}vw)`;
   const snailVisible = phase >= 1;
   const snailRise = closing ? 55 * Math.min(1, closingT / 0.6) : 0;
   const snailTransform = closing
@@ -177,9 +190,12 @@ export default function QuoteSection() {
             ))}
           </p>
         </div>
-        {/* pixel car pass (first phase only) */}
-        {phase === 0 && (
-          <div className="fc-car-loop absolute" style={{ bottom: "15%" }}>
+        {/* pixel car, driven across by scroll until it has left the screen */}
+        {carIn < 1 && (
+          <div
+            className="fc-car-loop absolute"
+            style={{ bottom: "15%", transform: carTransform }}
+          >
             <img
               src={QUOTE_ASSETS.carSrc}
               loading="lazy"
