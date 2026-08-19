@@ -178,9 +178,9 @@ export default function QuoteSection() {
   const carIn = Math.min(1, progress / 0.3);
   const carTransform = `translateX(${-120 + 220 * carIn}vw)`;
   const snailVisible = phase >= 1;
-  const snailRise = closing ? 55 * Math.min(1, closingT / 0.6) : 0;
+  const snailRise = closing ? Math.min(1, closingT / 0.6) : 0;
   const snailTransform = closing
-    ? `translateX(0) translateY(-${snailRise}vh)`
+    ? `translateX(0) translateY(calc(var(--snail-rise) * ${-snailRise}))`
     : `translateX(${(1 - snailIn) * 120}vw)`;
   // TODO(디자이너 확인 필요): the quote is gone by closingT 0.25 and the message
   // only starts at 0.35, so progress 0.85~0.87 shows neither — about 198px of
@@ -200,7 +200,11 @@ export default function QuoteSection() {
   const lines = QUOTES[quoteIndex].split("\n");
 
   return (
-    <section ref={sectionRef} className="relative" style={{ height: "1200vh" }}>
+    // A phone screen is narrow, so the same scroll carries the sequence much
+    // faster than it reads on a desktop: touch has no damping of its own and a
+    // flick covers a lot of it at once. The section is given more room there so
+    // each line still gets its stretch of scrolling.
+    <section ref={sectionRef} className="relative h-[1500vh] sm:h-[1200vh]">
       <div
         ref={stageRef}
         className={`sticky top-0 flex h-screen w-full items-center justify-center overflow-hidden border-b border-navy/30 bg-surface pb-[var(--browser-chrome)] ${
@@ -268,11 +272,11 @@ export default function QuoteSection() {
         </div>
         {/* closing message */}
         <div
-          className="pointer-events-none absolute inset-0 z-20 flex flex-col items-center justify-end pb-[18vh]"
+          className="pointer-events-none absolute inset-0 z-20 flex flex-col items-center justify-end px-[20px] pb-[26vh] sm:px-0 sm:pb-[18vh]"
           style={{ opacity: messageOpacity }}
         >
           <p
-            className="font-asta text-center text-[clamp(28px,4vw,60px)] font-semibold leading-[1.4] tracking-[-0.02em] text-navy"
+            className="font-asta break-keep text-center text-[clamp(28px,4vw,60px)] font-semibold leading-[1.4] tracking-[-0.02em] text-navy sm:break-normal"
             style={{
               transform: `translateY(${messageRise}px)`,
               transition: "transform 0.4s ease-out",
@@ -335,9 +339,10 @@ export default function QuoteSection() {
           <div
             style={{
               transform: snailTransform,
-              // TODO(디자이너 확인 필요): the rise covers 55vh in 0.12 of the
-              // section against the crawl-in's 120vw in 0.6 — 0.42px of travel
-              // per pixel scrolled against 0.08, five times steeper, which is
+              // TODO(디자이너 확인 필요): the rise covers its whole distance in
+              // 0.12 of the section against the crawl-in's 120vw in 0.6 — 0.42px
+              // of travel per pixel scrolled against 0.08, five times steeper,
+              // which is
               // what reads as the snail lurching at the end. The long ease here
               // is what softens that step, so shortening it to settle sooner
               // made the lurch three times sharper instead (measured 0.156 vs
@@ -353,7 +358,7 @@ export default function QuoteSection() {
               src={QUOTE_ASSETS.snailSrc}
               loading="lazy"
               alt=""
-              className="h-auto w-[clamp(200px,22.5vw,308px)]"
+              className="h-auto w-[160px] sm:w-[clamp(200px,22.5vw,308px)]"
               style={{ imageRendering: "pixelated" }}
             />
           </div>
