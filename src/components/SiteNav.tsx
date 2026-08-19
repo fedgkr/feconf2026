@@ -7,6 +7,24 @@ import { BUY_TICKET, NAV_MENU, PINK_SECTION_IDS } from "@/data/site";
 /** Viewport-top band the fixed nav occupies (25px offset + 48px bar). */
 const NAV_LINE = 73;
 
+/**
+ * Panes pin as they are passed, so a section that is already behind reports
+ * where it is pinned rather than where it sits in the page, and the browser
+ * sends the anchor there. Adding up the panes ahead of it gives the position
+ * the menu actually means, from anywhere on the page.
+ */
+function paneTop(id: string): number | null {
+  const pane = document.getElementById(id)?.closest(".cover-pane");
+  const parent = pane?.parentElement;
+  if (!pane || !parent) return null;
+  let top = parent.getBoundingClientRect().top + window.scrollY;
+  for (const sibling of parent.querySelectorAll(":scope > .cover-pane")) {
+    if (sibling === pane) break;
+    top += sibling.getBoundingClientRect().height;
+  }
+  return top;
+}
+
 export default function SiteNav() {
   const [active, setActive] = useState<string>(NAV_MENU[0].id);
   const [onLight, setOnLight] = useState(false);
@@ -26,6 +44,31 @@ export default function SiteNav() {
   };
 
   useEffect(() => () => clearTimeout(settle.current), []);
+
+  // A menu jump flies past several sections at once and their reveals would
+  // fire one after another on the way down, which reads as a glitch. The hold
+  // above already lasts exactly as long as the jump, so it doubles as the
+  // window in which those transitions are switched off.
+  //
+  // Wheel input is swallowed for that same window. A smooth scroll is cancelled
+  // by any scroll input, and a trackpad keeps sending ticks after the finger
+  // leaves, so a single leftover tick used to strand the reader partway down
+  // the quote section. Capturing keeps those ticks away from the damping
+  // handler there, which would otherwise turn one into a jump to nowhere.
+  useEffect(() => {
+    const root = document.documentElement;
+    root.classList.toggle("nav-jumping", clicked !== null);
+    if (clicked === null) return;
+    const swallow = (e: WheelEvent) => e.preventDefault();
+    window.addEventListener("wheel", swallow, {
+      passive: false,
+      capture: true,
+    });
+    return () => {
+      root.classList.remove("nav-jumping");
+      window.removeEventListener("wheel", swallow, { capture: true });
+    };
+  }, [clicked]);
 
   useScrollEffect(() => {
     // Selected menu: the last panel whose top has passed the nav band.
@@ -74,11 +117,19 @@ export default function SiteNav() {
           <a
             key={id}
             href={`#${id}`}
-            onClick={() => {
+            onClick={(e) => {
               holdSelection(id);
-              // The first pane is pinned, so its own anchor is always in view
-              // and the browser has nowhere to scroll it to.
-              if (id === NAV_MENU[0].id) window.scrollTo({ top: 0 });
+              const top = paneTop(id);
+              if (top === null) return;
+              e.preventDefault();
+              // Set before scrolling, not from the effect the state change
+              // schedules: a wheel tick landing in that gap would cancel the
+              // scroll on its very first frame.
+              document.documentElement.classList.add("nav-jumping");
+              window.scrollTo({ top, behavior: "smooth" });
+              // The anchor this replaces left an entry behind, so back still
+              // walks through the sections visited.
+              history.pushState(null, "", `#${id}`);
             }}
             className={`transition-colors duration-200 ${itemClass(id)}`}
           >
