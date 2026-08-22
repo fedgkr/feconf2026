@@ -1,0 +1,1302 @@
+@import "tailwindcss";
+
+/*
+ * Every colour in the site is declared here. `@theme` (not `:root`) is what
+ * makes Tailwind emit the matching utilities, so `text-navy` and `bg-pink`
+ * exist because of this block.
+ */
+@theme {
+  /* Accents: A-hall pink, B-hall blue, and the Toss partner brand. */
+  --color-pink: #ff1762;
+  --color-blue: #32cbf8;
+  --color-toss: #0064ff;
+
+  /* Text and surfaces */
+  --color-navy: #10183d;
+  --color-ink: #151515;
+  --color-hairline: #d4daed;
+  /* story/hero frame lines only, 6 steps off --color-hairline */
+  --color-hairline-soft: #dee2ec;
+  --color-surface: #fafafd;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  background: var(--color-white);
+  color: var(--color-ink);
+  font-family:
+    "Pretendard Variable", Pretendard, -apple-system, BlinkMacSystemFont,
+    system-ui, Roboto, "Apple SD Gothic Neo", "Noto Sans KR", sans-serif;
+  overflow-x: hidden;
+}
+
+/* Typography helpers mapped to the fonts used in the handoff.
+ * The handoff names "Special Gothic Expanded"; the variable "Special Gothic"
+ * family with its width axis stretched is the same design and is what the
+ * Google stylesheet in layout.tsx actually serves. */
+.font-display {
+  font-family: "Special Gothic", sans-serif;
+  font-stretch: 112.5%;
+}
+
+.font-archivo {
+  font-family: var(--font-archivo), Arial, sans-serif;
+}
+
+.font-jbmono {
+  font-family: var(--font-jbmono), monospace;
+}
+
+/* ---------------------------------------------------------------- */
+/* Typography motion (GSAP SplitText)                                 */
+/* ---------------------------------------------------------------- */
+
+/* Korean wraps by word once split. */
+.fe-split {
+  word-break: keep-all;
+}
+
+/* blocks the flash between mount and the split landing */
+.fe-hide {
+  visibility: hidden !important;
+}
+
+/* The clip box mask:"lines" creates. Vertical only: clipping horizontally
+ * cuts the last glyph of display words wider than their container on narrow
+ * screens. The bottom allowance keeps g/y descenders whole. */
+.fe-line-mask {
+  overflow-x: visible !important;
+  overflow-y: clip !important;
+  padding-bottom: 0.16em;
+  margin-bottom: -0.16em;
+}
+
+.fe-line {
+  will-change: transform, opacity;
+}
+
+/* ---------------------------------------------------------------- */
+/* Hairline system: lines fade out where they leave their crossing    */
+/* ---------------------------------------------------------------- */
+
+.fe-line-v,
+.fe-line-h {
+  background-color: transparent;
+}
+
+/* a line that never crosses out of the frame stays solid */
+.fe-line-v.fe-fade-0,
+.fe-line-h.fe-fade-0 {
+  background-image: none;
+  background-color: var(--color-hairline);
+}
+
+/* vertical: schedule header 16px / click box 39px / CoC 30px overhang */
+.fe-line-v.fe-fade-16 {
+  background-image: linear-gradient(
+    180deg,
+    rgb(212 218 237 / 0) 0,
+    var(--color-hairline) 16px,
+    var(--color-hairline) calc(100% - 16px),
+    rgb(212 218 237 / 0) 100%
+  );
+}
+
+.fe-line-v.fe-fade-30 {
+  background-image: linear-gradient(
+    180deg,
+    rgb(212 218 237 / 0) 0,
+    var(--color-hairline) 30px,
+    var(--color-hairline) calc(100% - 30px),
+    rgb(212 218 237 / 0) 100%
+  );
+}
+
+.fe-line-v.fe-fade-39 {
+  background-image: linear-gradient(
+    180deg,
+    rgb(212 218 237 / 0) 0,
+    var(--color-hairline) 39px,
+    var(--color-hairline) calc(100% - 39px),
+    rgb(212 218 237 / 0) 100%
+  );
+}
+
+/* horizontal: click box 38px / CoC 30px overhang */
+.fe-line-h.fe-fade-30 {
+  background-image: linear-gradient(
+    90deg,
+    rgb(212 218 237 / 0) 0,
+    var(--color-hairline) 30px,
+    var(--color-hairline) calc(100% - 30px),
+    rgb(212 218 237 / 0) 100%
+  );
+}
+
+.fe-line-h.fe-fade-38 {
+  background-image: linear-gradient(
+    90deg,
+    rgb(212 218 237 / 0) 0,
+    var(--color-hairline) 38px,
+    var(--color-hairline) calc(100% - 38px),
+    rgb(212 218 237 / 0) 100%
+  );
+}
+
+/* ---------------------------------------------------------------- */
+/* Action button: crosshair frame with an orbiting beam on hover      */
+/* ---------------------------------------------------------------- */
+
+.click-btn-wrap .bt-ring {
+  position: absolute;
+  left: 38px;
+  right: 38px;
+  top: 39px;
+  height: 51px;
+  overflow: hidden;
+  pointer-events: none;
+  z-index: 30;
+}
+
+.click-btn-wrap .bt-spin {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: max(1071px, 300%);
+  aspect-ratio: 1;
+  opacity: 0;
+  background: conic-gradient(
+    transparent 0%,
+    transparent 20%,
+    rgb(255 23 98 / 0.02) 28%,
+    rgb(255 23 98 / 0.12) 35%,
+    rgb(255 23 98 / 0.4) 43%,
+    var(--color-pink) 50%,
+    rgb(255 23 98 / 0.4) 57%,
+    rgb(255 23 98 / 0.12) 65%,
+    rgb(255 23 98 / 0.02) 72%,
+    transparent 80%,
+    transparent 100%
+  );
+  transform: translate(-50%, -50%) rotate(0deg);
+  transition: opacity 0.35s ease;
+  will-change: transform, opacity;
+}
+
+.click-btn-wrap .bt-cover {
+  position: absolute;
+  inset: 1px;
+  background: var(--color-surface);
+  z-index: 1;
+  transition: background 0.4s;
+}
+
+.click-btn-wrap:is(:hover, :focus-within) .bt-spin {
+  opacity: 1;
+  animation: bt-ring-spin 2.222s linear infinite;
+}
+
+.click-btn-wrap:is(:hover, :focus-within) .bt-cover {
+  background: #fff;
+}
+
+@keyframes bt-ring-spin {
+  to {
+    transform: translate(-50%, -50%) rotate(360deg);
+  }
+}
+
+/* ---------------------------------------------------------------- */
+/* Hero intro logo                                                    */
+/* ---------------------------------------------------------------- */
+
+/* the flat backdrop the letter intro plays on, fading out to the stripes */
+
+.hero-intro-canvas canvas {
+  transform: scale(calc(1vw / 6vw), calc(1vw / 5vw));
+  animation: fcLogoScaleOut 3.1s 0.65s cubic-bezier(0.65, 0, 0.35, 1) both;
+}
+.hero-intro-backdrop {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  background: #f1f1f4;
+  pointer-events: none;
+  animation: fcLogoSurfaceInvert 3.1s 0.65s cubic-bezier(0.65, 0, 0.35, 1) both;
+
+
+  --clip-width: 6vw;
+  --clip-height: 5vw;
+  --clip-skew: 2vw;
+
+  clip-path: polygon(
+    0% 0%,
+    0% 100%,
+    calc(50% - var(--clip-width) - var(--clip-skew)) 100%,
+    calc(50% - var(--clip-width) - var(--clip-skew)) calc(50% + var(--clip-height)),
+    calc(50% - var(--clip-width) + var(--clip-skew)) calc(50% - var(--clip-height)),
+    calc(50% + var(--clip-width) + var(--clip-skew)) calc(50% - var(--clip-height)),
+    calc(50% + var(--clip-width) - var(--clip-skew)) calc(50% + var(--clip-height)),
+    calc(50% - var(--clip-width) - var(--clip-skew)) calc(50% + var(--clip-height)),
+    calc(50% - var(--clip-width) - var(--clip-skew)) 100%,
+    100% 100%,
+    100% 0%
+  );
+}
+
+
+/* the compressed-mark frame shown while the clusters are gathered;
+ * background-image comes from the component (assetPath) */
+.hero-letter-frame {
+  position: absolute;
+  z-index: 2;
+  left: 50%;
+  top: 50%;
+  width: 8%;
+  transform: translate(-50%, -50%);
+  animation: fcClusterSeal 2s 0.65s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+/* FECONF wordmark: six letter clusters gather, then scatter into place */
+.hero-mark-anchor {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  z-index: 5;
+  width: min(calc(100vw - 64px), 1400px);
+  aspect-ratio: 973.369 / 87.0588;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+}
+
+.hero-letter-stack {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  color: var(--hero-logo-color, #f85578);
+  animation: fcLogoFillInvert 3.1s 0.65s cubic-bezier(0.65, 0, 0.35, 1) both;
+}
+
+
+.hero-letter {
+  position: absolute;
+  z-index: 1;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  transform: scaleX(0.76) translate(var(--cluster-x), var(--cluster-y));
+  transform-origin: 50% 50%;
+  animation:
+    fcLogoScatter 2s 0.65s cubic-bezier(0.16, 1, 0.3, 1) both,
+    fcLogoFrameMask 2s 0.65s cubic-bezier(0.16, 1, 0.3, 1) both,
+    fcLogoPiecesReveal 2s 0.65s linear both;
+}
+
+.hero-letter path {
+  fill: currentColor;
+}
+
+@keyframes fcLogoScatter {
+  0%,
+  28% {
+    transform: scaleX(0.76) translate(var(--cluster-x), var(--cluster-y));
+  }
+  40% {
+    transform: scaleX(0.71) translate(var(--cluster-x), var(--cluster-y));
+  }
+  100% {
+    transform: scaleX(1) translate(0, 0);
+  }
+}
+
+@keyframes fcClusterSeal {
+  0%,
+  36% {
+    opacity: 1;
+    transform: translate(-50%, -50%) scaleX(1);
+  }
+  54%,
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scaleX(1.14);
+  }
+}
+
+@keyframes fcLogoFrameMask {
+  0%,
+  36% {
+    clip-path: polygon(46.32% 0, 56.92% 0, 53.68% 100%, 43.08% 100%);
+  }
+  54%,
+  100% {
+    clip-path: polygon(0 0, 100% 0, 100% 100%, 0 100%);
+  }
+}
+
+@keyframes fcLogoPiecesReveal {
+  0%,
+  36% {
+    opacity: 0;
+  }
+  54%,
+  100% {
+    opacity: 1;
+  }
+}
+
+@keyframes fcLogoFillInvert {
+  0%,
+  68% {
+    color: var(--hero-logo-color, #f85578);
+  }
+  100% {
+    color: #fff;
+  }
+}
+
+
+@keyframes fcLogoScaleOut {
+  0%,
+  24% {
+    transform: scale(calc(1vw / 6vw), calc(1vw / 5vw));
+  }
+  25%, 100% {
+    transform: scale(1);
+  }
+  
+}
+
+@keyframes fcLogoSurfaceInvert {
+  0% {
+    opacity: 1;
+  }
+  24% {
+      clip-path: polygon(
+    0% 0%,
+    0% 100%,
+    calc(50% - var(--clip-width) - var(--clip-skew)) 100%,
+    calc(50% - var(--clip-width) - var(--clip-skew)) calc(50% + var(--clip-height)),
+    calc(50% - var(--clip-width) + var(--clip-skew)) calc(50% - var(--clip-height)),
+    calc(50% + var(--clip-width) + var(--clip-skew)) calc(50% - var(--clip-height)),
+    calc(50% + var(--clip-width) - var(--clip-skew)) calc(50% + var(--clip-height)),
+    calc(50% - var(--clip-width) - var(--clip-skew)) calc(50% + var(--clip-height)),
+    calc(50% - var(--clip-width) - var(--clip-skew)) 100%,
+    100% 100%,
+    100% 0%
+  );
+  }
+  25% {
+    clip-path: none;
+  }
+  68% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    clip-path: none;
+  }
+}
+
+@media (max-width: 600px) {
+  .hero-mark-anchor {
+    width: calc(100vw - 32px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hero-intro-backdrop {
+    animation: none;
+    opacity: 0;
+  }
+  .hero-letter-stack {
+    animation: none;
+    color: #fff;
+  }
+  .hero-letter-frame {
+    display: none;
+  }
+  .hero-letter {
+    animation: none;
+    transform: none;
+  }
+}
+
+/* ---------------------------------------------------------------- */
+/* Story sequence                                                     */
+/* ---------------------------------------------------------------- */
+
+.fc-vL,
+.fc-vR,
+.fc-hLine {
+  position: absolute;
+  width: 1px;
+  opacity: 0;
+}
+
+.fc-vL,
+.fc-vR {
+  top: 10%;
+  bottom: 10%;
+  background-image: linear-gradient(
+    180deg,
+    rgb(222 226 236 / 0) 0,
+    var(--color-hairline-soft) calc(50% - 72px),
+    var(--color-hairline-soft) calc(50% + 72px),
+    rgb(222 226 236 / 0) 100%
+  );
+}
+
+.fc-vL {
+  left: 50%;
+}
+
+.fc-vR {
+  right: 50%;
+}
+
+.fc-hLine {
+  width: auto;
+  height: 1px;
+  left: 5%;
+  right: 5%;
+  transform-origin: center;
+  transform: scaleX(0.05);
+  background-image: linear-gradient(
+    90deg,
+    rgb(222 226 236 / 0) 0,
+    var(--color-hairline-soft) 22.222%,
+    var(--color-hairline-soft) 77.778%,
+    rgb(222 226 236 / 0) 100%
+  );
+}
+
+.fc-run .fc-vL {
+  animation: fcSlideL 1.15s forwards;
+}
+
+.fc-run .fc-vR {
+  animation: fcSlideR 1.15s forwards;
+}
+
+.fc-run .fc-hLine {
+  animation: fcGrowH 1.15s forwards;
+}
+
+@keyframes fcSlideL {
+  0% {
+    opacity: 0;
+    left: 50%;
+  }
+  18% {
+    opacity: 1;
+    left: 50%;
+    animation-timing-function: cubic-bezier(0.72, 0, 0.16, 1);
+  }
+  100% {
+    opacity: 1;
+    left: var(--fc-story-line-x, 25%);
+  }
+}
+
+@keyframes fcSlideR {
+  0% {
+    opacity: 0;
+    right: 50%;
+  }
+  18% {
+    opacity: 1;
+    right: 50%;
+    animation-timing-function: cubic-bezier(0.72, 0, 0.16, 1);
+  }
+  100% {
+    opacity: 1;
+    right: var(--fc-story-line-x, 25%);
+  }
+}
+
+@keyframes fcGrowH {
+  0% {
+    opacity: 0;
+    transform: scaleX(0.05);
+  }
+  18% {
+    opacity: 1;
+    transform: scaleX(0.05);
+    animation-timing-function: cubic-bezier(0.72, 0, 0.16, 1);
+  }
+  100% {
+    opacity: 1;
+    transform: scaleX(1);
+  }
+}
+
+/* Copy locked to the centre grid rectangle the lines draw. */
+.fc-run {
+  --fc-story-grid-margin: clamp(20px, calc((100vw - 550px) / 2), 25%);
+  --fc-story-box-h: 144px;
+  --fc-story-line-gap: clamp(12px, 2.4vw, 30px);
+  --fc-story-line-x: calc(var(--fc-story-grid-margin) - var(--fc-story-line-gap));
+}
+
+.fc-run .fc-vL,
+.fc-run .fc-vR {
+  top: calc(50% - var(--fc-story-box-h) / 2 - var(--fc-story-line-gap));
+  bottom: calc(50% - var(--fc-story-box-h) / 2 - var(--fc-story-line-gap));
+  background-image: linear-gradient(
+    180deg,
+    rgb(222 226 236 / 0) 0,
+    var(--color-hairline-soft) var(--fc-story-line-gap),
+    var(--color-hairline-soft) calc(100% - var(--fc-story-line-gap)),
+    rgb(222 226 236 / 0) 100%
+  );
+}
+
+.fc-run .fc-hLine {
+  left: calc(var(--fc-story-grid-margin) - var(--fc-story-line-gap) * 2);
+  right: calc(var(--fc-story-grid-margin) - var(--fc-story-line-gap) * 2);
+  background-image: linear-gradient(
+    90deg,
+    rgb(222 226 236 / 0) 0,
+    var(--color-hairline-soft) var(--fc-story-line-gap),
+    var(--color-hairline-soft) calc(100% - var(--fc-story-line-gap)),
+    rgb(222 226 236 / 0) 100%
+  );
+}
+
+.fc-story-copy-grid {
+  position: absolute;
+  z-index: 10;
+  left: var(--fc-story-grid-margin, 25%);
+  right: var(--fc-story-grid-margin, 25%);
+  top: calc(50% - var(--fc-story-box-h, 144px) / 2);
+  height: var(--fc-story-box-h, 144px);
+  container-type: inline-size;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  isolation: isolate;
+}
+
+.fc-story-copy-grid p {
+  width: 100%;
+  font-size: clamp(15px, 4.6cqw, 32px);
+  white-space: normal;
+  word-break: keep-all;
+  overflow-wrap: anywhere;
+  text-wrap: balance;
+  text-align: center;
+  margin: 0;
+}
+
+@media (max-width: 639px) {
+  .fc-run .fc-vL,
+  .fc-run .fc-vR {
+    display: none;
+  }
+  .fc-run .fc-hLine {
+    left: 20px !important;
+    right: 20px !important;
+  }
+}
+
+/* car sweeps by repeatedly during the first phrase, mirrored to face left */
+.fc-car-loop {
+  width: clamp(180px, 41vw, 450px);
+  aspect-ratio: 450 / 116;
+  animation:
+    fcCarPassReverse 2s cubic-bezier(0.22, 1.2, 0.64, 1) infinite,
+    fcCarBounce 0.35s ease-in-out infinite;
+}
+
+.fc-car-loop > img {
+  width: 100%;
+  height: auto;
+  transform: scaleX(-1);
+}
+
+@keyframes fcCarPassReverse {
+  0% {
+    transform: translateX(120vw);
+  }
+  100% {
+    transform: translateX(-100vw);
+  }
+}
+
+@keyframes fcCarBounce {
+  0%,
+  100% {
+    margin-top: 0;
+  }
+  50% {
+    margin-top: -4px;
+  }
+}
+
+/* two snails hand the crawl over to each other for a seamless relay */
+.fc-snail-autoplay {
+  --fc-snail-size: clamp(150px, 29vw, 320px);
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  margin-left: calc(var(--fc-snail-size) * -0.5);
+  width: var(--fc-snail-size);
+  animation: fcSnailRelay 40s linear infinite;
+  will-change: transform;
+}
+
+.fc-snail-autoplay > img {
+  width: 100%;
+  height: auto;
+}
+
+.fc-snail-b {
+  animation-delay: -20s;
+}
+
+@keyframes fcSnailRelay {
+  0% {
+    transform: translate3d(48vw, 0, 0);
+    visibility: visible;
+  }
+  49.9% {
+    transform: translate3d(-88vw, 0, 0);
+    visibility: visible;
+  }
+  50% {
+    transform: translate3d(-88vw, 0, 0);
+    visibility: hidden;
+  }
+  50.01%,
+  99.99% {
+    transform: translate3d(48vw, 0, 0);
+    visibility: hidden;
+  }
+  100% {
+    transform: translate3d(48vw, 0, 0);
+    visibility: visible;
+  }
+}
+
+.fc-car-loop,
+.fc-snail-autoplay {
+  scale: 0.9;
+  translate: 0 20%;
+  transform-origin: 50% 100%;
+  /* offscreen sections keep their infinite loops parked */
+  animation-play-state: paused;
+}
+
+.fc-motion-active .fc-car-loop,
+.fc-motion-active .fc-snail-autoplay {
+  animation-play-state: running;
+}
+
+/* the hero-picked WEBM shows through the car/snail silhouettes;
+ * mask-image is set inline by the component */
+.fc-story-media-mask {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+  mask-position: center;
+  mask-size: 100% 100%;
+  mask-repeat: no-repeat;
+}
+
+.fc-story-media-mask > video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.fc-car-media-mask {
+  transform: scaleX(-1);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .fc-snail-autoplay,
+  .fc-car-loop {
+    animation: none !important;
+  }
+}
+
+/* ---------------------------------------------------------------- */
+/* Downstream sections rise into place as they enter                  */
+/* ---------------------------------------------------------------- */
+
+/* the hook adds the class after mount, so a no-JS render stays in flow */
+.fc-cover {
+  position: relative;
+  isolation: isolate;
+  min-height: 100vh;
+  background-clip: padding-box;
+  transform: translate3d(0, var(--fc-cover-y, 0), 0);
+  transition: transform 0.18s cubic-bezier(0.22, 1, 0.36, 1);
+  will-change: transform;
+}
+
+/* ---------------------------------------------------------------- */
+/* Schedule grid                                                      */
+/* ---------------------------------------------------------------- */
+
+.sched-wrap {
+  --sched-oh: 30px;
+  position: relative;
+  padding: var(--sched-oh);
+}
+
+.sched-grid {
+  position: relative;
+  display: grid;
+  grid-template-columns: 132px repeat(3, minmax(0, 1fr));
+}
+
+.sched-hline {
+  grid-column: 1 / -1;
+  height: 1px;
+  background: var(--color-hairline);
+  margin-left: calc(-1 * var(--sched-oh));
+  margin-right: calc(-1 * var(--sched-oh));
+}
+
+.sched-hline-m {
+  display: none;
+}
+
+.sched-vline {
+  position: absolute;
+  z-index: 2;
+  top: 0;
+  bottom: 0;
+  width: 1px;
+  background: var(--color-hairline);
+}
+
+.sched-vline-out {
+  top: calc(-1 * var(--sched-oh));
+  bottom: calc(-1 * var(--sched-oh));
+}
+
+.sched-cell {
+  min-width: 0;
+}
+
+.sched-hall {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 26px 12px;
+}
+
+.sched-time {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px 12px;
+}
+
+.sched-time-inner {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+
+.sched-time-start {
+  font-size: 18px;
+  line-height: 1.4;
+  font-weight: 600;
+  color: var(--color-navy);
+}
+
+.sched-time-end {
+  font-size: 18px;
+  line-height: 1.4;
+  font-weight: 500;
+  color: rgb(16 24 61 / 0.4);
+}
+
+.sched-card-cell {
+  display: flex;
+}
+
+.session-card {
+  isolation: isolate;
+  transition:
+    opacity 700ms cubic-bezier(0.16, 1, 0.3, 1),
+    transform 220ms ease,
+    box-shadow 220ms ease;
+}
+
+.sched-speaker {
+  position: relative;
+  z-index: 10;
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 4px;
+  padding-right: 16px;
+}
+
+.sched-affiliation {
+  display: block;
+  font-size: 14px;
+  line-height: 1.35;
+  font-weight: 600;
+  color: rgb(16 24 61 / 0.48);
+  transition: color 260ms ease;
+  word-break: keep-all;
+}
+
+.sched-title {
+  word-break: keep-all;
+  transition: color 260ms ease;
+}
+
+.session-card:hover,
+.session-card:focus-visible,
+.session-card.is-active {
+  box-shadow: 0 18px 42px rgb(16 24 61 / 0.12);
+}
+
+.session-card:hover > .sched-flood,
+.session-card:focus-visible > .sched-flood,
+.session-card.is-active > .sched-flood {
+  opacity: 1;
+}
+
+.session-card:hover p,
+.session-card:focus-visible p,
+.session-card.is-active p,
+.session-card:hover .sched-affiliation,
+.session-card:focus-visible .sched-affiliation,
+.session-card.is-active .sched-affiliation,
+.session-card:hover .session-badge,
+.session-card:focus-visible .session-badge,
+.session-card.is-active .session-badge {
+  color: #fff !important;
+}
+
+.session-card:hover .sched-mark,
+.session-card:focus-visible .sched-mark,
+.session-card.is-active .sched-mark {
+  opacity: 1;
+}
+
+.session-card:hover .sched-mark img,
+.session-card:focus-visible .sched-mark img,
+.session-card.is-active .sched-mark img {
+  filter: brightness(0) invert(1);
+}
+
+.session-card:focus-visible {
+  outline: 2px solid var(--color-navy);
+  outline-offset: 4px;
+}
+
+.session-card.is-active {
+  justify-content: flex-start !important;
+}
+
+@media (hover: none) {
+  .sched-mark {
+    opacity: 1 !important;
+  }
+  .sched-mark img {
+    filter: none !important;
+  }
+  .session-badge {
+    color: var(--badge-color) !important;
+  }
+}
+
+.sched-detail {
+  position: relative;
+  z-index: 10;
+  display: flex;
+  max-height: 0;
+  flex: 0 0 auto;
+  flex-direction: column;
+  justify-content: flex-end;
+  gap: 18px;
+  margin-top: 0;
+  overflow: hidden;
+  opacity: 0;
+  transition:
+    max-height 340ms cubic-bezier(0.16, 1, 0.3, 1),
+    margin-top 340ms cubic-bezier(0.16, 1, 0.3, 1),
+    opacity 220ms ease;
+}
+
+.session-card.is-active .sched-detail {
+  max-height: 420px;
+  margin-top: 28px;
+  opacity: 1;
+}
+
+.sched-detail-desc {
+  margin: 0;
+  color: rgb(255 255 255 / 0.86) !important;
+  font-size: 16px;
+  line-height: 1.62;
+  font-weight: 600;
+  word-break: keep-all;
+}
+
+.sched-detail-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 12px;
+  color: rgb(255 255 255 / 0.58);
+  font-size: 14px;
+  line-height: 1.35;
+  font-weight: 700;
+  word-break: keep-all;
+}
+
+/* the hero-picked WEBM over the card's still gradient while it is lit */
+.sched-hover-media {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.sched-hover-media video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.sched-hover-media::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image: linear-gradient(
+    118deg,
+    rgb(255 255 255 / 0.14) 0 10%,
+    rgb(255 255 255 / 0) 11% 30%,
+    rgb(255 255 255 / 0.12) 31% 43%,
+    rgb(255 255 255 / 0) 44% 100%
+  );
+  mix-blend-mode: screen;
+}
+
+@media (max-width: 1023px) {
+  #sessions {
+    overflow: hidden;
+  }
+  .sched-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .sched-vline {
+    display: none;
+  }
+  .sched-hall {
+    display: none;
+  }
+  .sched-hline-head {
+    display: none;
+  }
+  .sched-hline-m {
+    display: block;
+  }
+  .sched-wrap {
+    padding-left: 0;
+    padding-right: 0;
+  }
+  .sched-hline {
+    background: linear-gradient(
+      90deg,
+      rgb(212 218 237 / 0) 0,
+      var(--color-hairline) var(--sched-oh),
+      var(--color-hairline) calc(100% - var(--sched-oh)),
+      rgb(212 218 237 / 0) 100%
+    );
+  }
+  /* the time row's colour band widens to the line width and lets its ends
+   * dissolve into the background at the same stops the lines fade */
+  .sched-time {
+    justify-content: flex-start;
+    margin-left: calc(-1 * var(--sched-oh));
+    margin-right: calc(-1 * var(--sched-oh));
+    padding: 14px var(--sched-oh);
+    background: linear-gradient(
+      90deg,
+      rgb(250 250 253 / 0) 0,
+      var(--color-surface) var(--sched-oh),
+      var(--color-surface) calc(100% - var(--sched-oh)),
+      rgb(250 250 253 / 0) 100%
+    );
+  }
+  .sched-time-inner {
+    flex-direction: row;
+    align-items: baseline;
+    gap: 8px;
+  }
+  /* the card leaves the frame so its hover flood runs edge to edge */
+  .sched-card-cell {
+    margin-left: calc(-1 * var(--sched-oh));
+    margin-right: calc(-1 * var(--sched-oh));
+  }
+  .sched-card-cell .session-card {
+    width: calc(100% + (var(--sched-oh) * 2));
+    min-height: 176px !important;
+    padding: 22px var(--sched-oh) !important;
+  }
+  .sched-title {
+    font-size: 20px !important;
+    line-height: 1.42 !important;
+  }
+  .sched-speaker-name {
+    font-size: 16px !important;
+  }
+  .session-card.is-active .sched-detail {
+    max-height: 380px;
+  }
+}
+
+@media (max-width: 639px) {
+  .sched-wrap {
+    --sched-oh: 20px;
+  }
+  .sched-hline {
+    margin-left: 0;
+    margin-right: 0;
+    background: var(--color-hairline);
+  }
+  .sched-time {
+    margin-left: 0;
+    margin-right: 0;
+    padding-left: 0;
+    padding-right: 0;
+    background: var(--color-surface);
+  }
+  .sched-card-cell .session-card {
+    min-height: 154px !important;
+    padding: 18px var(--sched-oh) !important;
+  }
+  .sched-title {
+    font-size: 18px !important;
+  }
+  .sched-speaker-name {
+    font-size: 15px !important;
+  }
+  .sched-affiliation {
+    font-size: 13px;
+  }
+  .sched-mark {
+    transform: scale(0.84);
+    transform-origin: top right;
+  }
+  .session-card.is-active .sched-detail {
+    max-height: 380px;
+    margin-top: 22px;
+  }
+  .sched-detail-desc {
+    font-size: 14px;
+    line-height: 1.58;
+  }
+  .sched-detail-tags {
+    gap: 6px 10px;
+    font-size: 12px;
+  }
+}
+
+/* ---------------------------------------------------------------- */
+/* Experience carousel                                                */
+/* ---------------------------------------------------------------- */
+
+.fe-exp-arrow {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--color-navy);
+  font-family: "Special Gothic", sans-serif;
+  font-stretch: 112.5%;
+  font-size: 30px;
+  font-weight: 600;
+  line-height: 1;
+  cursor: pointer;
+  transition:
+    opacity 0.2s ease,
+    transform 0.25s ease;
+}
+
+.fe-exp-arrow:hover {
+  opacity: 0.72;
+  transform: translateY(-1px);
+}
+
+.fe-exp-grid {
+  display: flex;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  scroll-behavior: smooth;
+  scrollbar-width: none;
+}
+
+.fe-exp-grid::-webkit-scrollbar {
+  display: none;
+}
+
+.fe-exp-card {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  flex: 0 0 clamp(300px, 28vw, 420px);
+  height: clamp(330px, 30vw, 440px);
+  scroll-snap-align: start;
+  background: #0b0e1e;
+  color: #fff;
+  cursor: pointer;
+}
+
+.fe-exp-card img {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transform: scale(1.02);
+  transition:
+    transform 0.65s cubic-bezier(0.16, 1, 0.3, 1),
+    filter 0.35s ease;
+  filter: saturate(0.98) contrast(1.02);
+}
+
+.fe-exp-card::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  background: linear-gradient(
+    180deg,
+    rgb(6 8 22 / 0.66) 0%,
+    rgb(6 8 22 / 0.2) 46%,
+    rgb(6 8 22 / 0.74) 100%
+  );
+  transition: opacity 0.38s ease;
+}
+
+.fe-exp-card:hover img,
+.fe-exp-card.is-active img {
+  transform: scale(1.07);
+  filter: saturate(1.05) contrast(1.04);
+}
+
+.fe-exp-card.is-active::after {
+  background: linear-gradient(
+    180deg,
+    rgb(6 8 22 / 0.6) 0%,
+    rgb(6 8 22 / 0.14) 46%,
+    rgb(6 8 22 / 0.7) 100%
+  );
+}
+
+@media (max-width: 639px) {
+  .fe-exp-card {
+    flex-basis: 82vw;
+    height: clamp(300px, 86vw, 380px);
+  }
+  .fe-exp-arrow {
+    width: 32px;
+    height: 32px;
+    font-size: 28px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .fe-exp-card,
+  .fe-exp-card img {
+    transition: none !important;
+    transform: none !important;
+  }
+}
+
+/* ---------------------------------------------------------------- */
+/* Sponsors / Code of Conducts frames                                 */
+/* ---------------------------------------------------------------- */
+
+.sponsor-cell {
+  min-width: 0;
+}
+
+@media (max-width: 639px) {
+  .sponsor-cell + .sponsor-cell {
+    border-top: 1px solid var(--color-hairline);
+  }
+}
+
+.coc-row {
+  padding: 50px 0;
+}
+
+@media (min-width: 640px) {
+  /* Two columns: the first ends at the 27.6083% divider (±30px row padding
+   * correction), the title hugs and centres inside it, the body takes the
+   * rest. Matches the 792px body width of the source layout. */
+  .coc-row {
+    display: grid;
+    grid-template-columns: calc(27.6083% - 13.44px) 1fr;
+    align-items: center;
+  }
+  .coc-title {
+    width: max-content;
+    max-width: 100%;
+    justify-self: center;
+    padding-left: 40px;
+    padding-right: 40px;
+    text-align: center;
+  }
+  .coc-body {
+    padding-left: 40px;
+    padding-right: 40px;
+  }
+}
+
+/* ---------------------------------------------------------------- */
+/* Buddy: roaming draggable snails                                    */
+/* ---------------------------------------------------------------- */
+
+.fc-snail {
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 1;
+  pointer-events: auto;
+  cursor: grab;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+  will-change: transform;
+}
+
+.fc-snail img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  object-position: center bottom;
+  pointer-events: none;
+  -webkit-user-drag: none;
+}
+
+.fc-snail.is-dragging {
+  cursor: grabbing;
+  z-index: 5;
+  filter: drop-shadow(0 14px 18px rgb(16 24 61 / 0.18));
+}

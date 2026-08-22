@@ -1,0 +1,55 @@
+"use client";
+
+import Image from "next/image";
+import { useHeroMedia, useManagedVideo } from "@/hooks/useMedia";
+import { useTicketDday } from "@/hooks/useTicketDday";
+import { FOOTER, TICKET_LINK } from "@/data/site";
+
+/**
+ * Compact closing banner: venue line left, ticket link right, the hero-picked
+ * WEBM breathing over the gradient behind both.
+ */
+export default function FooterSection() {
+  const media = useHeroMedia();
+  const dday = useTicketDday();
+  const videoRef = useManagedVideo(true);
+
+  return (
+    <footer
+      id="site-footer"
+      data-nav-bg="#10183d"
+      className="relative isolate h-[377px] overflow-hidden bg-navy max-[900px]:h-[300px]"
+    >
+      <Image src={FOOTER.bgSrc} alt="" fill sizes="100vw" className="z-0 object-cover" />
+      {media && (
+        <div className="pointer-events-none absolute inset-0 z-[1] overflow-hidden">
+          <video
+            ref={videoRef}
+            src={media.src}
+            loop
+            muted
+            playsInline
+            preload="auto"
+            aria-hidden="true"
+            className="size-full object-cover"
+          />
+          <div className="absolute inset-0 bg-navy/15" />
+        </div>
+      )}
+      <div className="relative z-[2] mx-auto h-full w-full max-w-[1366px] px-16 max-[900px]:px-7">
+        <p className="font-jbmono absolute left-16 right-[424px] top-1/2 -translate-y-1/2 text-[18px] font-bold leading-[1.25] text-white max-[900px]:inset-x-7 max-[900px]:top-[42%] max-[900px]:text-center max-[900px]:text-[13px] max-[900px]:leading-[1.35]">
+        {FOOTER.note}
+        </p>
+        <a
+          href={TICKET_LINK.href}
+          className="absolute right-16 top-1/2 -translate-y-1/2 whitespace-nowrap text-[24px] font-semibold uppercase leading-[1.1] text-white transition-opacity duration-200 hover:opacity-70 max-[900px]:inset-x-7 max-[900px]:top-[62%] max-[900px]:text-center max-[900px]:text-[20px]"
+        >
+          {TICKET_LINK.label}{" "}
+          <span className="font-extrabold" suppressHydrationWarning>
+            {dday}
+          </span>
+        </a>
+      </div>
+    </footer>
+  );
+}
