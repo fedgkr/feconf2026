@@ -402,6 +402,23 @@ body {
   }
 }
 
+/* The bar joins the page on the hero's own intro clock: hidden while the logo
+ * clusters gather, in by the time the flat backdrop has faded off the stripes. */
+.site-nav {
+  will-change: transform, opacity;
+  animation: fcIntroChromeReveal 3.1s 0.65s cubic-bezier(0.65, 0, 0.35, 1) both;
+}
+
+@keyframes fcIntroChromeReveal {
+  0%,
+  72% {
+    opacity: 0;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+
 @media (max-width: 600px) {
   .hero-mark-anchor {
     width: calc(100vw - 32px);
@@ -409,6 +426,13 @@ body {
 }
 
 @media (prefers-reduced-motion: reduce) {
+  /* no reveal and no dock: the bar is simply at the top from the first frame */
+  .site-nav {
+    will-change: auto;
+    animation: none;
+    opacity: 1;
+    transform: none !important;
+  }
   .hero-intro-backdrop {
     animation: none;
     opacity: 0;

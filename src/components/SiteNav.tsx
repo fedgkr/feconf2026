@@ -1,16 +1,50 @@
 "use client";
 
-import { useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useScrollEffect } from "@/hooks/useAnimation";
 import { useTicketDday } from "@/hooks/useTicketDday";
 import { NAV_MENU, TICKET_LINK } from "@/data/site";
 
 /**
- * Fixed top navigation.
- *
- * The bar's background follows the section under it via `--fe-nav-bg`,
- * measured here from each section's `data-nav-bg`.
+ * The hero's intro clock (`3.1s` after a `0.65s` delay, shared with the logo
+ * animations) lands at 3.75s. The bar stays docked until just past it.
  */
+const INTRO_MS = 3950;
+
+/**
+ * How far into the page the bar finishes climbing, as a share of the viewport.
+ * The reference reaches the top about 5vh into its 220vh hero sequence; this
+ * hero is one screen tall, so the distance comes off the scroll position.
+ */
+const RISE_VH = 0.05;
+
+const smoothstep = (x: number) => {
+  const t = Math.min(1, Math.max(0, x));
+  return t * t * (3 - 2 * t);
+};
+
+/** The sections the menu highlights, in document order. */
+const TRACKED = NAV_MENU.filter(({ href }) => href !== "#");
+
+/** How far down the viewport a section has to reach to take the highlight. */
+const ACTIVE_LINE = 200;
+
+/** Whether a `data-nav-bg` colour is dark enough to need white text over it. */
+function isDarkSurface(bg: string) {
+  const hex = /^#([0-9a-f]{6})$/i.exec(bg);
+  if (!hex) return false;
+  const n = parseInt(hex[1], 16);
+  const luma = (0.299 * ((n >> 16) & 255) + 0.587 * ((n >> 8) & 255) + 0.114 * (n & 255)) / 255;
+  return luma < 0.5;
+}
+
+/** Whether the box at `y` down the viewport belongs to this element. */
+function spans(el: Element | null, y: number) {
+  if (!el) return false;
+  const rect = el.getBoundingClientRect();
+  return rect.top <= y && rect.bottom > y;
+}
+
 /**
  * Anchor jumps aim at where the box is drawn, and a covered section is drawn
  * up to 80vh below its slot until its rise finishes — the browser would land
@@ -28,39 +62,117 @@ function jumpTo(e: React.MouseEvent, href: string) {
   history.pushState(null, "", href);
 }
 
+/**
+ * Fixed top navigation.
+ *
+ * Over the hero the bar sits at the bottom of the viewport through the logo
+ * intro, then climbs to the top over the first 5vh of scroll — desktop only.
+ * Its background follows the section under it via `--fe-nav-bg`, measured
+ * here from each section's `data-nav-bg`, and its text is drawn white over the
+ * hero and over any dark surface, ink over the light ones. The menu item for
+ * the section being read is the one at full strength.
+ */
 export default function SiteNav() {
+  const header = useRef<HTMLElement>(null);
+  const introDone = useRef(false);
   const [open, setOpen] = useState(false);
+  // the bar starts over the hero, where the reference holds it white
+  const [whiteInk, setWhiteInk] = useState(true);
+  const [active, setActive] = useState<string>(NAV_MENU[0].id);
   const dday = useTicketDday();
 
+  /**
+   * Written straight to the element rather than through state: this runs on
+   * every frame of the climb, and the bar's own transform is all it changes.
+   */
+  const applyDock = useCallback(() => {
+    const el = header.current;
+    if (!el) return;
+    // below md, and with reduced motion, the bar never leaves the top
+    const docks =
+      window.matchMedia("(min-width: 768px)").matches &&
+      !window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    if (!docks) {
+      el.style.transform = "translate3d(0, 0, 0)";
+      return;
+    }
+    const nav = el.querySelector("nav");
+    const navHeight = nav?.offsetHeight || el.offsetHeight;
+    // the intro holds the bar down even if the page is already being scrolled
+    const rise = introDone.current
+      ? smoothstep(window.scrollY / (window.innerHeight * RISE_VH))
+      : 0;
+    const drop = (1 - rise) * Math.max(0, window.innerHeight - navHeight);
+    el.style.transform = `translate3d(0, ${drop}px, 0)`;
+  }, []);
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => {
+      introDone.current = true;
+      applyDock();
+    }, INTRO_MS);
+    return () => window.clearTimeout(timer);
+  }, [applyDock]);
+
   useScrollEffect(() => {
-    const probe = Math.min(89, Math.max(0, window.innerHeight - 1));
+    applyDock();
+
+    // one pixel under the bar's own bottom edge, so the surface it reports is
+    // the one it actually sits on at any header height
+    const probe = Math.min(
+      (header.current?.offsetHeight ?? 80) + 1,
+      Math.max(0, window.innerHeight - 1),
+    );
     let bg = "transparent";
     for (const el of document.querySelectorAll<HTMLElement>("[data-nav-bg]")) {
-      const rect = el.getBoundingClientRect();
-      if (rect.top <= probe && rect.bottom > probe) bg = el.dataset.navBg!;
+      if (spans(el, probe)) bg = el.dataset.navBg!;
     }
     document.documentElement.style.setProperty("--fe-nav-bg", bg);
+
+    // No annotated section under the bar means nothing has been drawn over the
+    // hero yet, and the hero is the one surface the reference keeps white.
+    setWhiteInk(
+      bg === "transparent"
+        ? spans(document.getElementById("home"), probe)
+        : isDarkSurface(bg),
+    );
+
+    // `offsetTop`, not the drawn rect: a covered section is drawn up to 80vh
+    // below its slot until its rise finishes, and the highlight follows the
+    // layout order regardless. The last section past the line wins.
+    const line = window.scrollY + ACTIVE_LINE;
+    let next: string = NAV_MENU[0].id;
+    for (const { id, href } of TRACKED) {
+      const el = document.getElementById(href.slice(1));
+      if (el && el.offsetTop <= line) next = id;
+    }
+    setActive(next);
   });
+
+  const fg = whiteInk ? "rgb(255, 255, 255)" : "rgb(21, 21, 21)";
+  const dim = whiteInk ? "rgba(255, 255, 255, 0.35)" : "rgba(21, 21, 21, 0.35)";
 
   return (
     <header
-      className="fixed inset-x-0 top-0 z-50"
+      ref={header}
+      className="site-nav fixed inset-x-0 top-0 z-50"
       style={{
         backgroundColor: "var(--fe-nav-bg, transparent)",
         transition: "background-color 0.4s ease",
       }}
     >
-      <nav className="mx-auto flex max-w-[1366px] items-center justify-between px-10 py-6">
+      <nav
+        className="mx-auto flex max-w-[1366px] items-center justify-between px-10 py-6"
+        style={{ transition: "color 0.4s ease" }}
+      >
         <div className="hidden items-center gap-6 md:flex">
-          {NAV_MENU.map(({ id, label, href }, i) => (
+          {NAV_MENU.map(({ id, label, href }) => (
             <a
               key={id}
               href={href}
               onClick={(e) => jumpTo(e, href)}
               className="font-display text-[24px] font-medium uppercase leading-[1.03] tracking-tight transition-colors duration-300"
-              style={{
-                color: i === 0 ? "rgb(21, 21, 21)" : "rgba(21, 21, 21, 0.35)",
-              }}
+              style={{ color: id === active ? fg : dim }}
             >
               {label}
             </a>
@@ -68,8 +180,8 @@ export default function SiteNav() {
         </div>
         <a
           href={TICKET_LINK.href}
-          className="font-display hidden text-[24px] font-semibold uppercase leading-[1.5] tracking-tight transition-colors duration-300 md:block"
-          style={{ color: "rgb(21, 21, 21)" }}
+          className="font-display hidden text-[24px] font-semibold uppercase leading-[1.5] tracking-tight md:block"
+          style={{ color: fg, transition: "color 0.4s ease" }}
         >
           {TICKET_LINK.label}&nbsp;&nbsp;
           <span suppressHydrationWarning>{dday}</span>
@@ -78,7 +190,7 @@ export default function SiteNav() {
           className="ml-auto md:hidden"
           onClick={() => setOpen(!open)}
           aria-label={open ? "메뉴 닫기" : "메뉴 열기"}
-          style={{ color: "rgba(21, 21, 21, 0.65)" }}
+          style={{ color: dim, transition: "color 0.4s ease" }}
         >
           <svg width="28" height="28" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
             {open ? <path d="M6 6l12 12M6 18L18 6" /> : <path d="M4 6h16M4 12h16M4 18h16" />}
