@@ -119,218 +119,413 @@ export const STORY_ASSETS = {
 
 /* ------------------------------ schedule ------------------------------ */
 
-export type Hall = "A hall" | "B hall" | "TOSS";
+export type Hall = "A Auditorium" | "B Hall" | "Talk 1" | "Talk 2";
 
 export interface Session {
   time: string;
   hall: Hall;
   title: string;
   speaker: string;
-  affiliation: string;
-  description: string;
-  tags: string[];
+  affiliation?: string;
+  audience?: string;
+  topics?: string[];
+  description?: string;
+  tags?: string[];
+}
+
+export interface ScheduleRow {
+  time: string;
+  sessions: Array<Session | null>;
+  kind?: "break";
+}
+
+export interface ScheduleGroup {
+  id: string;
+  title: string;
+  subtitle: string;
+  halls: Hall[];
+  rows: ScheduleRow[];
 }
 
 /** hall accent: badge letter, card hover flood, detail surface */
 export const HALL_COLOR: Record<Hall, string> = {
-  "A hall": "var(--color-pink)",
-  "B hall": "var(--color-blue)",
-  TOSS: "var(--color-toss)",
+  "A Auditorium": "var(--color-pink)",
+  "B Hall": "var(--color-blue)",
+  "Talk 1": "var(--color-pink)",
+  "Talk 2": "var(--color-blue)",
 };
 
-export const TOSS_BADGE_SRC = assetPath("/images/toss-badge-21d583.png");
-
-/** row-major: every three entries share a time slot across A / B / TOSS */
-export const SESSIONS: Session[] = [
+export const SCHEDULE_GROUPS: ScheduleGroup[] = [
   {
-    time: "13:00~13:40",
-    hall: "A hall",
-    title: "후원사 세션",
-    speaker: "FEConf Team",
-    affiliation: "FEConf",
-    description:
-      "FEConf 2026을 함께 만드는 파트너를 소개하고, 올해 행사에서 만날 수 있는 주요 프로그램과 현장 경험을 짧고 밀도 있게 안내합니다.",
-    tags: ["#FEConf", "#Sponsor", "#Opening"],
+    id: "main",
+    title: "Sessions",
+    subtitle: "A Auditorium과 B Hall에서 교차로 진행되는 메인 세션입니다.",
+    halls: ["A Auditorium", "B Hall"],
+    rows: [
+      {
+        time: "11:00~11:30",
+        sessions: [
+          null,
+          {
+            time: "11:00~11:30",
+            hall: "B Hall",
+            title: "웹처럼 배포하고, 앱처럼 그리기: 당근 앱에 Lynx 도입하기",
+            speaker: "원지혁",
+            affiliation: "당근",
+            audience: "Lynx가 궁금한 분",
+            description:
+              "당근 앱에서 WebView의 유연함은 유지하면서 더 빠른 화면 경험을 만들기 위해 Lynx를 도입한 과정을 공유합니다. URL 기반 화면 제공, 네이티브 인증 체계와의 연결, Instant First-Frame Rendering을 실제 서비스에 적용하며 얻은 고민을 다룹니다.",
+            topics: ["웹 플랫폼", "개발자 경험"],
+          },
+        ],
+      },
+      {
+        time: "11:30~12:00",
+        sessions: [
+          {
+            time: "11:30~12:00",
+            hall: "A Auditorium",
+            title: "절대 지워지지 않는 E2E 테스트 만들기",
+            speaker: "김지원, 박서진",
+            affiliation: "토스",
+            audience: "E2E 테스트 안정화",
+            description:
+              "지워지거나 깨지지 않는 E2E 테스트를 만들기 위해 필요한 워크플로우와 안정화 경험을 소개합니다. 디바이스 팜 구축, Node.js 최신 API, 새로운 JavaScript 문법을 활용해 테스트 유지보수 문제를 풀어간 과정을 공유합니다.",
+            topics: ["테스트", "개발자 경험"],
+          },
+          null,
+        ],
+      },
+      {
+        time: "12:00~12:30",
+        sessions: [
+          null,
+          {
+            time: "12:00~12:30",
+            hall: "B Hall",
+            title: "디자인 시스템으로 어디까지 할 수 있을까?",
+            speaker: "정현수",
+            affiliation: "당근",
+            audience: "디자인 시스템 확장",
+            description:
+              "컴포넌트와 패턴을 넘어 디자인 시스템이 제품 개발 워크플로우로 확장되는 과정을 이야기합니다. 문서를 기준으로 코드 사용을 살피고, 여러 저장소의 업데이트를 돕고, AI와 함께 프로토타입을 만드는 시도를 소개합니다.",
+            topics: ["디자인 시스템", "AI 제품"],
+          },
+        ],
+      },
+      {
+        time: "12:30~13:00",
+        sessions: [
+          {
+            time: "12:30~13:00",
+            hall: "A Auditorium",
+            title: "AI가 만든 리포 1,000개를 모노리포처럼 관리하기",
+            speaker: "이호연, 우창완",
+            affiliation: "토스 · 비바리퍼블리카",
+            audience: "AI 코드 품질",
+            description:
+              "AI가 만든 코드 저장소가 빠르게 늘어나는 환경에서 제품의 품질 하한선을 어떻게 지킬지 다룹니다. 1,000개의 폴리리포를 모노리포처럼 다루기 위해 만든 도구 Canopy와 플랫폼 엔지니어링 관점의 고민을 공유합니다.",
+            topics: ["AI 제품", "아키텍처", "개발자 경험"],
+          },
+          null,
+        ],
+      },
+      {
+        time: "13:00~13:30",
+        sessions: [
+          null,
+          {
+            time: "13:00~13:30",
+            hall: "B Hall",
+            title: "수백개 패키지의 모노레포와 함께 micro frontends로 전환하기",
+            speaker: "김종현",
+            affiliation: "미리디",
+            audience: "아키텍처 전환",
+            description:
+              "미리캔버스 프론트엔드팀이 모놀리스 환경에서 모노레포 플랫폼을 구축하고, 그 위에서 마이크로서비스와 micro frontends 구조로 전환해 간 과정을 소개합니다.",
+            topics: ["아키텍처", "개발자 경험"],
+          },
+        ],
+      },
+      {
+        time: "13:30~14:00",
+        sessions: [
+          {
+            time: "13:30~14:00",
+            hall: "A Auditorium",
+            title: "React Native에 현대적인 빌드 도구 더하기: Rollipop 구현기",
+            speaker: "이근혁",
+            affiliation: "비바리퍼블리카",
+            audience: "RN 빌드 도구",
+            description:
+              "React Native에 현대적인 프론트엔드 빌드 도구를 적용하기 위해 Rolldown 기반 번들러 Rollipop을 구현한 과정을 소개합니다. Metro의 개발 경험을 유지하면서 성능과 확장성을 개선하기 위한 설계와 최적화 경험을 공유합니다.",
+            topics: ["React Native", "개발자 경험"],
+          },
+          null,
+        ],
+      },
+      {
+        time: "14:00~14:30",
+        sessions: [
+          null,
+          {
+            time: "14:00~14:30",
+            hall: "B Hall",
+            title: "Lighthouse는 100점인데 왜 느릴까? - 미리캔버스로 짚어본 성능 개선 포인트",
+            speaker: "김해동",
+            affiliation: "미리캔버스 엔진팀 요소E파트 리드",
+            audience: "로딩 이후 성능",
+            description:
+              "Lighthouse 점수만으로 설명되지 않는 실제 사용자 체감 성능을 미리캔버스 사례로 짚어봅니다. 에디터처럼 사용자가 오래 머물며 계속 조작하는 서비스에서 로딩 이후의 느림을 어떻게 측정하고 개선했는지 공유합니다.",
+            topics: ["성능", "개발자 경험"],
+          },
+        ],
+      },
+      {
+        time: "14:30~15:00",
+        sessions: [
+          {
+            time: "14:30~15:00",
+            hall: "A Auditorium",
+            title: "오프라인 우선 Micro Frontend 구축기",
+            speaker: "나석주",
+            affiliation: "토스플레이스",
+            audience: "오프라인 웹앱",
+            description:
+              "오프라인 우선 웹 앱을 위해 아키텍처를 구성한 경험을 소개합니다. 멀티플랫폼에서 같은 프론트엔드 코드를 동작하게 만드는 웹뷰 번들 개념과 Micro Frontend를 안전하게 운영하기 위한 전략을 다룹니다.",
+            topics: ["아키텍처", "웹 플랫폼"],
+          },
+          null,
+        ],
+      },
+      {
+        time: "15:00~15:30",
+        sessions: [
+          null,
+          {
+            time: "15:00~15:30",
+            hall: "B Hall",
+            title: "Agent First CMS",
+            speaker: "이재승",
+            affiliation: "LG유플러스",
+            audience: "AI CMS 구축",
+            description:
+              "AI 에이전트를 활용해 HTML 기반 콘텐츠를 제작하는 CMS를 소개합니다. 사내 적용 경험을 바탕으로 에이전트 기반 백오피스를 만들 때 도움이 될 설계와 운영 포인트를 공유합니다.",
+            topics: ["AI 제품", "개발자 경험"],
+          },
+        ],
+      },
+      {
+        time: "15:30~16:00",
+        sessions: [
+          {
+            time: "15:30~16:00",
+            hall: "A Auditorium",
+            title: "조합이 폭발하는 디자인 시스템, 이걸 눈으로도 테스트하라고요?",
+            speaker: "유길종",
+            affiliation: "비바리퍼블리카",
+            audience: "시각 회귀 테스트",
+            description:
+              "props, 서브컴포넌트, 다크모드, pseudo state가 만드는 수많은 UI 상태를 어떻게 검증할지 이야기합니다. 토스 디자인 시스템 TDS에서 조합적 폭발이 발생하는 컴포넌트의 시각 회귀 테스트를 운영하며 얻은 고민을 공유합니다.",
+            topics: ["디자인 시스템", "테스트"],
+          },
+          null,
+        ],
+      },
+      {
+        time: "16:00~16:30",
+        sessions: [
+          null,
+          {
+            time: "16:00~16:30",
+            hall: "B Hall",
+            title:
+              "AI 제품의 품질과 비용을 프론트엔드에서 설계하기: 이미지 한 장을 편집 가능한 레이어로 되돌리기",
+            speaker: "김민성",
+            affiliation: "미리디",
+            audience: "AI 기능 설계",
+            description:
+              "이미지 한 장을 편집 가능한 레이어로 되돌릴 때 생성형 AI와 결정적 코드의 역할을 어떻게 나눌지 다룹니다. 스키마 계약, WASM, WebGL, WebGPU를 활용해 프론트엔드 설계가 품질과 지연, 비용에 미치는 영향을 소개합니다.",
+            topics: ["AI 제품", "성능", "제품 판단"],
+          },
+        ],
+      },
+      {
+        time: "16:30~17:00",
+        sessions: [
+          {
+            time: "16:30~17:00",
+            hall: "A Auditorium",
+            title:
+              "붙어야 할 때와 떨어져야 할 때: Module Federation과 Web Component로 보는 결합의 트레이드오프",
+            speaker: "진유림",
+            affiliation: "토스",
+            audience: "결합도 설계",
+            description:
+              "여러 제품에 배포되는 크로스앱 UI를 운영하며 Module Federation과 Web Component 사이에서 마주한 트레이드오프를 다룹니다. 의존성 충돌, 배포 통제, 공유 경계를 다시 설계하게 된 실제 경험을 공유합니다.",
+            topics: ["아키텍처", "웹 플랫폼", "제품 판단"],
+          },
+          null,
+        ],
+      },
+    ],
   },
   {
-    time: "13:00~13:40",
-    hall: "B hall",
-    title: "Airbridge SDK팀이 순수한 Unit Testable한 코드를 작성하는 방법",
-    speaker: "최수범",
-    affiliation: "Airbridge",
-    description:
-      "복잡한 SDK 코드에서 외부 의존성을 분리하고, 테스트 가능한 구조를 팀의 기본값으로 만드는 과정을 공유합니다. 실제 코드베이스에서 순수 함수와 경계 설계를 적용하며 얻은 시행착오를 통해 프론트엔드 테스트 전략을 다시 점검합니다.",
-    tags: ["#Airbridge", "#UnitTest", "#SDK"],
-  },
-  {
-    time: "13:00~13:40",
-    hall: "TOSS",
-    title: "대규모 금융 서비스에서 프론트엔드 안정성 지키기",
-    speaker: "김도현",
-    affiliation: "토스",
-    description:
-      "매일 수많은 사용자가 거치는 금융 화면에서 배포 안정성을 높이기 위해 어떤 기준과 자동화가 필요한지 살펴봅니다. 장애를 줄이는 관찰 지표, 릴리즈 흐름, 회귀 테스트 운영 방식을 실무 사례 중심으로 소개합니다.",
-    tags: ["#Toss", "#Reliability", "#Frontend"],
-  },
-  {
-    time: "13:50~14:30",
-    hall: "A hall",
-    title: "AI 시대의 프론트엔드 아키텍처",
-    speaker: "김민준",
-    affiliation: "뤼튼테크놀로지스",
-    description:
-      "생성형 AI 기능이 제품 안으로 들어올 때 프론트엔드 구조는 어떻게 달라져야 할까요? 스트리밍 응답, 실패 복구, 사용자 피드백 루프를 UI 아키텍처 관점에서 정리합니다.",
-    tags: ["#AI", "#Architecture", "#Product"],
-  },
-  {
-    time: "13:50~14:30",
-    hall: "B hall",
-    title: "상태 관리를 줄이는 서버 컴포넌트 설계",
-    speaker: "이지원",
-    affiliation: "당근",
-    description:
-      "서버와 클라이언트의 책임을 다시 나누면 상태 관리 코드가 얼마나 줄어드는지 실제 서비스 화면을 기준으로 설명합니다. 데이터 소유권, 캐싱, 인터랙션 경계를 결정하는 기준을 공유합니다.",
-    tags: ["#React", "#ServerComponents", "#State"],
-  },
-  {
-    time: "13:50~14:30",
-    hall: "TOSS",
-    title: "디자인 토큰으로 제품 속도를 높이는 법",
-    speaker: "박서연",
-    affiliation: "토스",
-    description:
-      "브랜드와 접근성 기준을 잃지 않으면서 여러 제품이 같은 속도로 움직이게 만드는 토큰 운영 방식을 다룹니다. 디자이너와 개발자가 함께 쓰는 언어를 만드는 과정을 소개합니다.",
-    tags: ["#DesignSystem", "#Token", "#Toss"],
-  },
-  {
-    time: "14:40~15:20",
-    hall: "A hall",
-    title: "웹 성능 예산을 팀 문화로 만드는 법",
-    speaker: "정다은",
-    affiliation: "무신사",
-    description:
-      "성능 개선이 일회성 프로젝트로 끝나지 않도록 예산, 측정, 리뷰 문화를 어떻게 운영했는지 공유합니다. Lighthouse 점수 너머의 실제 사용자 경험 지표를 중심으로 이야기합니다.",
-    tags: ["#Performance", "#Culture", "#WebVitals"],
-  },
-  {
-    time: "14:40~15:20",
-    hall: "B hall",
-    title: "접근성을 QA 체크리스트 밖으로 꺼내기",
-    speaker: "한유진",
-    affiliation: "네이버",
-    description:
-      "접근성을 마지막 점검 항목이 아니라 제품 설계의 기본값으로 만들기 위한 프론트엔드 팀의 실천 방법을 소개합니다. 컴포넌트, 문서, 테스트가 함께 움직이는 구조를 다룹니다.",
-    tags: ["#Accessibility", "#QA", "#Component"],
-  },
-  {
-    time: "14:40~15:20",
-    hall: "TOSS",
-    title: "결제 화면을 빠르게 실험하는 프론트엔드 플랫폼",
-    speaker: "오세훈",
-    affiliation: "토스페이먼츠",
-    description:
-      "결제 전환율을 높이기 위해 화면 실험을 안전하게 열고 닫는 플랫폼 구조를 설명합니다. 실험 단위, 지표 수집, 장애 차단 장치를 함께 살펴봅니다.",
-    tags: ["#Experiment", "#Payment", "#Platform"],
-  },
-  {
-    time: "15:40~16:20",
-    hall: "A hall",
-    title: "마이크로 인터랙션으로 제품의 감각 만들기",
-    speaker: "윤하늘",
-    affiliation: "라인플러스",
-    description:
-      "작은 움직임이 제품의 사용감을 어떻게 바꾸는지, 성능과 접근성을 해치지 않는 선에서 인터랙션을 설계하는 방법을 소개합니다. 디자인 의도를 코드로 옮기는 협업 과정도 함께 다룹니다.",
-    tags: ["#Interaction", "#Motion", "#UX"],
-  },
-  {
-    time: "15:40~16:20",
-    hall: "B hall",
-    title: "프론트엔드 관측 가능성 제대로 시작하기",
-    speaker: "문태호",
-    affiliation: "컬리",
-    description:
-      "사용자 브라우저에서 일어나는 오류와 느린 경험을 팀이 빠르게 이해하려면 어떤 이벤트와 지표가 필요할까요? 로깅, 세션 리플레이, 알림 기준을 현실적으로 구성하는 법을 공유합니다.",
-    tags: ["#Observability", "#Monitoring", "#UX"],
-  },
-  {
-    time: "15:40~16:20",
-    hall: "TOSS",
-    title: "모노레포에서 배포 자신감 회복하기",
-    speaker: "서지훈",
-    affiliation: "토스",
-    description:
-      "서비스가 늘어날수록 느려지는 빌드와 불안한 배포를 어떻게 다뤘는지 이야기합니다. 영향 범위 계산, 캐시 전략, 자동 검증 흐름으로 팀의 배포 리듬을 되찾은 경험을 공유합니다.",
-    tags: ["#Monorepo", "#Deploy", "#CI"],
-  },
-  {
-    time: "16:20~17:10",
-    hall: "A hall",
-    title: "개발자 채용을 어떻게 하면 잘 할 수 있을까요?",
-    speaker: "개발자 출신 HR 연사",
-    affiliation: "현대오토에버",
-    description:
-      "연간 수십만 건의 지원서를 처리하는 현대오토에버는 어떻게 최적의 개발자를 찾아낼까요? 개발자 출신 HR 연사가 AI와 데이터 분석으로 채용의 병목 현상을 해결한 실전 노하우를 공유합니다. 채용 브랜딩부터 기술 검증까지, 실력 있는 개발자가 먼저 찾아오게 만드는 고도화된 채용 시스템의 비밀을 통해 현실적인 해법을 얻어 가세요.",
-    tags: ["#현대오토에버", "#개발자채용", "#AI"],
-  },
-  {
-    time: "16:20~17:10",
-    hall: "B hall",
-    title: "브라우저 렌더링 병목을 찾는 디버깅 루틴",
-    speaker: "최수범",
-    affiliation: "Airbridge",
-    description:
-      "느린 화면을 감으로 고치지 않기 위해 렌더링 파이프라인을 어떻게 읽고 병목을 좁혀 가는지 소개합니다. 실제 트레이스 분석을 바탕으로 레이아웃, 페인트, 스크립트 비용을 분리해 봅니다.",
-    tags: ["#Airbridge", "#Rendering", "#Debugging"],
-  },
-  {
-    time: "16:20~17:10",
-    hall: "TOSS",
-    title: "타입 안정성으로 제품 변경을 더 빠르게",
-    speaker: "장혜린",
-    affiliation: "토스",
-    description:
-      "도메인이 빠르게 바뀌는 제품에서 타입 시스템을 방어막이 아니라 가속 장치로 쓰는 방법을 다룹니다. API 계약, 폼 모델, 런타임 검증을 연결해 변경 비용을 줄인 사례를 공유합니다.",
-    tags: ["#TypeScript", "#Product", "#Toss"],
-  },
-  {
-    time: "17:20~18:00",
-    hall: "A hall",
-    title: "10년 뒤에도 읽히는 프론트엔드 코드",
-    speaker: "정윤호",
-    affiliation: "카카오",
-    description:
-      "기술 선택보다 오래 남는 것은 팀이 코드를 이해하고 바꾸는 방식입니다. 컴포넌트 책임, 문서화, 리뷰 기준을 통해 시간이 지나도 고치기 쉬운 코드를 만드는 원칙을 정리합니다.",
-    tags: ["#CodeQuality", "#Team", "#Frontend"],
-  },
-  {
-    time: "17:20~18:00",
-    hall: "B hall",
-    title: "프론트엔드 리더가 기술 부채를 말하는 방식",
-    speaker: "신예린",
-    affiliation: "우아한형제들",
-    description:
-      "기술 부채를 단순히 낡은 코드의 문제가 아니라 제품 리스크와 팀 속도의 언어로 설명하는 방법을 다룹니다. 우선순위, 설득 자료, 점진적 개선 계획을 현실적으로 세우는 과정을 공유합니다.",
-    tags: ["#Leadership", "#TechDebt", "#Team"],
-  },
-  {
-    time: "17:20~18:00",
-    hall: "TOSS",
-    title: "프론트엔드 개발자가 제품 지표를 읽는 법",
-    speaker: "이도윤",
-    affiliation: "토스",
-    description:
-      "화면을 만드는 일을 넘어 제품 지표를 읽고 실험을 제안하는 프론트엔드 개발자의 역할을 이야기합니다. 로그 설계, 퍼널 해석, 사용자 행동을 코드 의사결정과 연결하는 방법을 다룹니다.",
-    tags: ["#Metrics", "#Product", "#Toss"],
+    id: "lightning",
+    title: "Lightning Talk",
+    subtitle: "두 발표가 동시에 진행되는 짧고 밀도 높은 라이트닝 토크입니다.",
+    halls: ["Talk 1", "Talk 2"],
+    rows: [
+      {
+        time: "12:00~12:15",
+        sessions: [
+          {
+            time: "12:00~12:15",
+            hall: "Talk 1",
+            title: "Web Component 그리고 Shadow DOM",
+            speaker: "정도영",
+            affiliation: "Lightning Talk",
+            audience: "웹 표준 입문",
+            description:
+              "Web Component와 Shadow DOM의 핵심 개념을 짧게 짚고, 컴포넌트 캡슐화와 웹 표준 기반 UI 설계의 가능성을 소개합니다.",
+            topics: ["웹 플랫폼", "아키텍처"],
+          },
+          {
+            time: "12:00~12:15",
+            hall: "Talk 2",
+            title: "당근마켓 3탭 동네지도 개발",
+            speaker: "최하영",
+            affiliation: "Lightning Talk",
+            audience: "서비스 UI 구현",
+            description:
+              "당근마켓 동네지도 화면을 개발하며 마주한 UI 구성과 제품 구현 경험을 짧고 밀도 있게 공유합니다.",
+            topics: ["웹 플랫폼", "개발자 경험"],
+          },
+        ],
+      },
+      { time: "12:15~12:25", kind: "break", sessions: [] },
+      {
+        time: "12:25~12:40",
+        sessions: [
+          {
+            time: "12:25~12:40",
+            hall: "Talk 1",
+            title: "우리의 Nitro Module은 당신의 Native Module보다 아름답다",
+            speaker: "이현우",
+            affiliation: "Lightning Talk",
+            audience: "RN 네이티브 연동",
+            description:
+              "React Native에서 Nitro Module을 활용해 네이티브 기능을 연결하는 방식과 개발 경험을 소개합니다.",
+            topics: ["React Native", "개발자 경험"],
+          },
+          {
+            time: "12:25~12:40",
+            hall: "Talk 2",
+            title: "노래 가사가 쏟아지고, 부딪히고, 쌓입니다",
+            speaker: "임민주",
+            affiliation: "Lightning Talk",
+            audience: "인터랙션 구현",
+            description:
+              "가사가 움직이고 충돌하며 쌓이는 인터랙티브한 화면을 구현한 경험을 통해 UI 표현과 브라우저 렌더링의 재미를 나눕니다.",
+            topics: ["웹 플랫폼", "개발자 경험"],
+          },
+        ],
+      },
+      { time: "12:40~12:50", kind: "break", sessions: [] },
+      {
+        time: "12:50~13:05",
+        sessions: [
+          {
+            time: "12:50~13:05",
+            hall: "Talk 1",
+            title: "React Native 프로젝트를 Expo 로 마이그레이션 한 썰 풉니다",
+            speaker: "박소미",
+            affiliation: "Lightning Talk",
+            audience: "Expo 마이그레이션",
+            description:
+              "React Native 프로젝트를 Expo로 옮기며 겪은 의사결정과 시행착오, 마이그레이션 과정의 실무 팁을 공유합니다.",
+            topics: ["React Native", "개발자 경험"],
+          },
+          {
+            time: "12:50~13:05",
+            hall: "Talk 2",
+            title: "Chrome OS, 궁극의 개발 운영체제",
+            speaker: "김기범",
+            affiliation: "Lightning Talk",
+            audience: "개발 환경 탐색",
+            description:
+              "Chrome OS를 개발 환경으로 활용하는 관점과 생산성, 운영체제 선택에 대한 경험을 소개합니다.",
+            topics: ["개발자 경험", "웹 플랫폼"],
+          },
+        ],
+      },
+      { time: "13:05~13:15", kind: "break", sessions: [] },
+      {
+        time: "13:15~13:30",
+        sessions: [
+          {
+            time: "13:15~13:30",
+            hall: "Talk 1",
+            title: "AI와 똥손 개발자를 위한 디자인 가이드",
+            speaker: "김해준",
+            affiliation: "Lightning Talk",
+            audience: "AI 디자인 활용",
+            description:
+              "디자인에 자신 없는 개발자가 AI와 함께 더 나은 화면을 만들기 위해 참고할 수 있는 실용적인 디자인 기준을 공유합니다.",
+            topics: ["AI 제품", "디자인 시스템"],
+          },
+          {
+            time: "13:15~13:30",
+            hall: "Talk 2",
+            title: "따라잡기보다 버리기, 프론트엔드 개발자에게 남는 판단력",
+            speaker: "심윤섭",
+            affiliation: "Lightning Talk",
+            audience: "기술 선택 고민",
+            description:
+              "빠르게 변하는 프론트엔드 환경에서 모든 것을 따라잡기보다 무엇을 버리고 판단할지에 대한 관점을 나눕니다.",
+            topics: ["제품 판단", "개발자 경험"],
+          },
+        ],
+      },
+      { time: "13:30~13:40", kind: "break", sessions: [] },
+      {
+        time: "13:40~13:55",
+        sessions: [
+          {
+            time: "13:40~13:55",
+            hall: "Talk 1",
+            title:
+              "AI는 디자인보다 데이터를 해석한다 - 정확한 코드 생성을 위한 데이터 품질 개선과 도구 제작 경험",
+            speaker: "김인숙",
+            affiliation: "Lightning Talk",
+            audience: "AI 코드 생성",
+            description:
+              "AI가 더 정확한 코드를 생성하도록 데이터 품질을 개선하고 도구를 만든 경험을 공유합니다.",
+            topics: ["AI 제품", "개발자 경험"],
+          },
+          {
+            time: "13:40~13:55",
+            hall: "Talk 2",
+            title: "밤티같은 AI 프론트엔드 제대로 만들기",
+            speaker: "김승모",
+            affiliation: "Lightning Talk",
+            audience: "AI 프론트엔드",
+            description:
+              "AI 기반 프론트엔드 제품을 제대로 만들기 위해 고려해야 할 구조와 구현 관점을 짧게 소개합니다.",
+            topics: ["AI 제품", "웹 플랫폼"],
+          },
+        ],
+      },
+    ],
   },
 ];
 
 export const SCHEDULE = {
   heading: {
     title: ["Schedule"],
-    subtitle: ["10주년을 맞아 풍부해진", "다양한 이벤트들을 소개합니다"],
+    subtitle: ["최종 세션 시간표와", "라이트닝 토크를 소개합니다"],
   },
   download: { label: "FullSchedule.jpg", href: "#" },
-  halls: ["A hall", "B hall", "TOSS"] as Hall[],
 };
 
 /* ----------------------------- experience ----------------------------- */
