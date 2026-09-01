@@ -20,6 +20,11 @@ const INPUT_GRACE_MS = 2000;
 /** keys that scroll the page downward */
 const DOWN_KEYS = new Set(["ArrowDown", "PageDown", "End", " "]);
 
+function getScrollMetrics(sectionHeight: number, viewportHeight: number) {
+  const travel = Math.max(sectionHeight - viewportHeight, 1);
+  return { travel, segment: travel / STORY_PHRASES.length };
+}
+
 function StoryCopy({
   lines,
   leaving,
@@ -135,7 +140,6 @@ export default function StorySection() {
   const [run, setRun] = useState(false);
   // the copy on screen trails `phase` by a beat so each line gets its exit
   const [shownPhase, setShownPhase] = useState(-1);
-  const shownOnce = useRef(false);
   // snails restart their relay when the car phrase hands over to them — but
   // only after they had fully cleared, so boundary jitter can't teleport them
   const [snailEpoch, setSnailEpoch] = useState(0);
@@ -144,12 +148,10 @@ export default function StorySection() {
   const [carOn, setCarOn] = useState(false);
   // when the centre frame started drawing; the first phrase waits it out
   const runAt = useRef(0);
-  // how many phrases have been fully seen, in order — grows the lock's reach
-  const seenCount = useRef(0);
-  // true once every phrase was seen, or the page got past by other means
-  const lockOff = useRef(false);
+  // fully unlocked segments; the full length also represents lock stand-down
+  const unlockedSegmentCount = useRef(0);
   const lockInit = useRef(false);
-  const lastInputAt = useRef(0);
+  const lastInputAt = useRef(-Infinity);
   const lastTouchY = useRef(0);
 
   useScrollEffect(() => {
@@ -157,22 +159,23 @@ export default function StorySection() {
     if (!el) return;
     const rect = el.getBoundingClientRect();
     const vh = window.innerHeight;
-    const travel = Math.max(el.offsetHeight - vh, 1);
-    const segment = travel / STORY_PHRASES.length;
+    const { travel, segment } = getScrollMetrics(el.offsetHeight, vh);
     let along = -rect.top;
 
-    if (!lockOff.current) {
-      // a load restored mid-story credits the phrases already scrolled past
-      if (!lockInit.current) {
-        lockInit.current = true;
-        if (along >= travel) lockOff.current = true;
-        else if (along > 0)
-          seenCount.current = Math.min(
-            STORY_PHRASES.length - 1,
-            Math.floor(along / segment),
-          );
-      }
-      const limit = segment * (seenCount.current + 1) - 1;
+    // a load restored mid-story credits the phrases already scrolled past
+    if (!lockInit.current) {
+      lockInit.current = true;
+      if (along >= travel)
+        unlockedSegmentCount.current = STORY_PHRASES.length;
+      else if (along > 0)
+        unlockedSegmentCount.current = Math.min(
+          STORY_PHRASES.length - 1,
+          Math.floor(along / segment),
+        );
+    }
+
+    if (unlockedSegmentCount.current < STORY_PHRASES.length) {
+      const limit = segment * (unlockedSegmentCount.current + 1) - 1;
       if (
         along > limit &&
         performance.now() - lastInputAt.current < INPUT_GRACE_MS
@@ -186,7 +189,7 @@ export default function StorySection() {
         along = limit;
       } else if (along >= travel) {
         // got past without user input (menu jump, scrollbar drag): stand down
-        lockOff.current = true;
+        unlockedSegmentCount.current = STORY_PHRASES.length;
       }
     }
 
@@ -207,10 +210,10 @@ export default function StorySection() {
   // slide-in), measured from when the drawing began; later swaps are quick.
   useEffect(() => {
     if (!active || shownPhase === phase) return;
-    const delay = shownOnce.current
-      ? 120
-      : Math.max(120, 1180 - (performance.now() - runAt.current));
-    shownOnce.current = true;
+    const delay =
+      shownPhase < 0
+        ? Math.max(120, 1180 - (performance.now() - runAt.current))
+        : 120;
     const timer = setTimeout(() => {
       // the actors swap with the copy, not with the raw scroll boundary:
       // note when the snails leave, and restart their relay only when they
@@ -246,8 +249,7 @@ export default function StorySection() {
   useEffect(() => {
     if (shownPhase < 0) return;
     const timer = setTimeout(() => {
-      seenCount.current = Math.max(seenCount.current, shownPhase + 1);
-      if (seenCount.current >= STORY_PHRASES.length) lockOff.current = true;
+      unlockedSegmentCount.current = Math.max(unlockedSegmentCount.current, shownPhase + 1);
     }, PHRASE_SEEN_MS);
     return () => clearTimeout(timer);
   }, [shownPhase]);
@@ -270,13 +272,20 @@ export default function StorySection() {
       const el = sectionRef.current;
       if (!el) return Infinity;
       const rect = el.getBoundingClientRect();
-      const travel = Math.max(el.offsetHeight - window.innerHeight, 1);
-      const segment = travel / STORY_PHRASES.length;
-      return window.scrollY + rect.top + segment * (seenCount.current + 1) - 1;
+      const { segment } = getScrollMetrics(el.offsetHeight, window.innerHeight);
+      return window.scrollY + rect.top + segment * (unlockedSegmentCount.current + 1) - 1;
+    };
+
+    // A menu click starts a programmatic scroll. Clear any prior input grace
+    // before it can be mistaken for touch momentum or keyboard scrolling.
+    const onNavClick = (e: MouseEvent) => {
+      if (e.target instanceof Element && e.target.closest(".site-nav a[href^='#']"))
+        lastInputAt.current = -Infinity;
     };
 
     const onWheel = (e: WheelEvent) => {
-      if (lockOff.current || e.ctrlKey || e.deltaY <= 0) return;
+      if (unlockedSegmentCount.current >= STORY_PHRASES.length || e.ctrlKey || e.deltaY <= 0)
+        return;
       lastInputAt.current = performance.now();
       const unit =
         e.deltaMode === 1 ? 16 : e.deltaMode === 2 ? window.innerHeight : 1;
@@ -293,7 +302,7 @@ export default function StorySection() {
 
     const onTouchMove = (e: TouchEvent) => {
       const touch = e.touches[0];
-      if (lockOff.current || !touch) return;
+      if (unlockedSegmentCount.current >= STORY_PHRASES.length || !touch) return;
       const pullingDown = lastTouchY.current > touch.clientY;
       lastTouchY.current = touch.clientY;
       lastInputAt.current = performance.now();
@@ -302,15 +311,17 @@ export default function StorySection() {
     };
 
     const onKeyDown = (e: KeyboardEvent) => {
-      if (!lockOff.current && DOWN_KEYS.has(e.key))
+      if (unlockedSegmentCount.current < STORY_PHRASES.length && DOWN_KEYS.has(e.key))
         lastInputAt.current = performance.now();
     };
 
+    window.addEventListener("click", onNavClick, { capture: true });
     window.addEventListener("wheel", onWheel, { passive: false });
     window.addEventListener("touchstart", onTouchStart, { passive: true });
     window.addEventListener("touchmove", onTouchMove, { passive: false });
     window.addEventListener("keydown", onKeyDown);
     return () => {
+      window.removeEventListener("click", onNavClick, { capture: true });
       window.removeEventListener("wheel", onWheel);
       window.removeEventListener("touchstart", onTouchStart);
       window.removeEventListener("touchmove", onTouchMove);
