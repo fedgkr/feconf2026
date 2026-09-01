@@ -107,12 +107,15 @@ const clamp01 = (v: number) => Math.min(1, Math.max(0, v));
 const smoothstep = (t: number) => t * t * (3 - 2 * t);
 
 /**
- * The section rises from 80vh below into its place while it approaches, about
- * 5.5x scroll speed, and settles by the time its top reaches 18% of the
- * window. The class carrying the transform is added here rather than in the
- * markup so a render without JavaScript stays in plain flow.
+ * The section rises from `distanceVh` below (default 80vh) into its place
+ * while it approaches, about 5.5x scroll speed, and settles by the time its
+ * top reaches 18% of the window. The class carrying the transform is added
+ * here rather than in the markup so a render without JavaScript stays in
+ * plain flow.
  */
-export function useCoverRise<T extends HTMLElement = HTMLElement>() {
+export function useCoverRise<T extends HTMLElement = HTMLElement>(
+  distanceVh = 80,
+) {
   const ref = useRef<T | null>(null);
 
   useEffect(() => {
@@ -129,7 +132,7 @@ export function useCoverRise<T extends HTMLElement = HTMLElement>() {
     const progress = smoothstep(
       clamp01((window.innerHeight - layoutTop) / (window.innerHeight * 0.82)),
     );
-    el.style.setProperty("--fc-cover-y", `${(1 - progress) * 80}vh`);
+    el.style.setProperty("--fc-cover-y", `${(1 - progress) * distanceVh}vh`);
   });
 
   return ref;

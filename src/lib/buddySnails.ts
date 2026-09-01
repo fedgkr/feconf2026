@@ -1,7 +1,7 @@
 import { BUDDY_SNAILS } from "@/data/site";
 
 /**
- * Five snails roam the Forever Buddy section: they crawl left along free
+ * `COUNT` snails roam the Forever Buddy section: they crawl left along free
  * horizontal lanes (never through the copy or the button), can be dragged
  * anywhere, and react to a tap with one of four little moves. Their pink
  * bodies are re-dyed to the hero pick's accent.
@@ -13,7 +13,7 @@ import { BUDDY_SNAILS } from "@/data/site";
 
 const SNAIL_W = 165;
 const SNAIL_H = 87;
-const COUNT = 5;
+const COUNT = 7;
 const SPEED: [number, number] = [22, 36]; // px/s
 const BODY_HEX = /#FF5080/gi; // body colour in the source SVGs
 

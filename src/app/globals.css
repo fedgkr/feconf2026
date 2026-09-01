@@ -759,7 +759,7 @@ body {
 .fc-cover {
   position: relative;
   isolation: isolate;
-  min-height: 100vh;
+  min-height: var(--fc-cover-min-h, 100vh);
   background-clip: padding-box;
   transform: translate3d(0, var(--fc-cover-y, 0), 0);
   transition: transform 0.18s cubic-bezier(0.22, 1, 0.36, 1);
