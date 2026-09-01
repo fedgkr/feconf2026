@@ -28,6 +28,8 @@ const PRESET = {
   line: { type: "lines", unit: "lines", stagger: 0.075, duration: 1.05 },
   sub: { type: "lines,words", unit: "words", stagger: 0.035, duration: 0.9 },
 } as const;
+const HEADING_REVEAL_PERCENT = 86;
+const HEADING_REVEAL_OFFSET_PROPERTY = "--heading-reveal-offset";
 
 const reducedMotion = () =>
   window.matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -58,6 +60,8 @@ function whenReady(run: () => () => void) {
 export function useSplitReveal<T extends HTMLElement = HTMLHeadingElement>(
   kind: keyof typeof PRESET = "line",
   delay = 0,
+  observeEntry = false,
+  onComplete?: () => void,
 ) {
   const ref = useRef<T | null>(null);
 
@@ -68,6 +72,8 @@ export function useSplitReveal<T extends HTMLElement = HTMLHeadingElement>(
 
     return whenReady(() => {
       const p = PRESET[kind];
+      let observer: IntersectionObserver | undefined;
+      let removeResizeListener: (() => void) | undefined;
       el.classList.add("fe-split", "fe-hide");
       const split = SplitText.create(el, {
         type: p.type,
@@ -76,28 +82,75 @@ export function useSplitReveal<T extends HTMLElement = HTMLHeadingElement>(
         linesClass: "fe-line",
         wordsClass: "fe-word",
         onSplit(self) {
+          observer?.disconnect();
+          removeResizeListener?.();
           el.classList.remove("fe-hide");
           // Replays on every entry: `once` dies after the first pass and
           // `reverse` stalls offscreen, so leave resets the state outright
           // and enter restarts from the top.
-          return gsap.from(self[p.unit], {
+          const tween = gsap.from(self[p.unit], {
             yPercent: 120,
             opacity: 0,
             duration: p.duration,
             ease,
             stagger: p.stagger,
             delay,
-            scrollTrigger: {
-              trigger: el,
-              start: "clamp(top 86%)",
-              toggleActions: "restart none none reset",
-            },
+            onComplete,
+            ...(observeEntry
+              ? { paused: true }
+              : {
+                  scrollTrigger: {
+                    trigger: el,
+                    start: `clamp(top ${HEADING_REVEAL_PERCENT}%)`,
+                    toggleActions: "restart none none reset",
+                  },
+                }),
           });
+
+          if (!observeEntry) return tween;
+
+          // A section-specific lead-in observes painted bounds so its CSS
+          // offset changes only the trigger without moving the content.
+          let inView = false;
+          const observeAtSharedLine = () => {
+            observer?.disconnect();
+            const revealOffset =
+              Number.parseFloat(
+                getComputedStyle(el).getPropertyValue(
+                  HEADING_REVEAL_OFFSET_PROPERTY,
+                ),
+              ) || 0;
+            const bottomRootMargin =
+              revealOffset -
+              window.innerHeight * (1 - HEADING_REVEAL_PERCENT / 100);
+            observer = new IntersectionObserver(
+              ([entry]) => {
+                if (entry.isIntersecting) {
+                  if (!inView) tween.restart(true);
+                } else {
+                  tween.pause(0);
+                }
+                inView = entry.isIntersecting;
+              },
+              { rootMargin: `0px 0px ${bottomRootMargin}px 0px` },
+            );
+            observer.observe(el);
+          };
+          const onResize = () => observeAtSharedLine();
+          window.addEventListener("resize", onResize);
+          removeResizeListener = () =>
+            window.removeEventListener("resize", onResize);
+          observeAtSharedLine();
+          return tween;
         },
       });
-      return () => split.revert();
+      return () => {
+        observer?.disconnect();
+        removeResizeListener?.();
+        split.revert();
+      };
     });
-  }, [kind, delay]);
+  }, [kind, delay, observeEntry, onComplete]);
 
   return ref;
 }

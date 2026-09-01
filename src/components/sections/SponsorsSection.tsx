@@ -1,8 +1,16 @@
 "use client";
 
+import { useCallback, useRef } from "react";
 import SectionHeading from "../SectionHeading";
-import { useCoverRise, useInView, useStaggerChildren } from "@/hooks/useAnimation";
+import {
+  useInView,
+  useScrollEffect,
+  useStaggerChildren,
+} from "@/hooks/useAnimation";
 import { SPONSORS_SECTION, type Sponsor } from "@/data/site";
+
+const SPONSOR_LIFT_DISTANCE_VH = 4;
+const SPONSOR_LIFT_SCROLL_DISTANCE_VH = 32;
 
 function SponsorCell({ sponsor, style }: { sponsor: Sponsor; style: React.CSSProperties }) {
   const logo = (
@@ -38,7 +46,8 @@ function SponsorCell({ sponsor, style }: { sponsor: Sponsor; style: React.CSSPro
 }
 
 export default function SponsorsSection() {
-  const coverRef = useCoverRise<HTMLElement>();
+  const sectionRef = useRef<HTMLElement | null>(null);
+  const liftStartScrollYRef = useRef<number | null>(null);
   const { ref: gridRef, inView } = useInView<HTMLDivElement>({ threshold: 0.1 });
   const stagger = useStaggerChildren(inView, SPONSORS_SECTION.sponsors.length, 70);
   const rows = [
@@ -46,18 +55,54 @@ export default function SponsorsSection() {
     SPONSORS_SECTION.sponsors.slice(4),
   ];
 
+  const startLift = useCallback(() => {
+    sectionRef.current?.style.removeProperty("transform");
+    liftStartScrollYRef.current = window.scrollY;
+  }, []);
+
+  useScrollEffect(() => {
+    const section = sectionRef.current;
+    const startScrollY = liftStartScrollYRef.current;
+    if (!section || startScrollY === null) return;
+
+    const distance = Math.max(
+      window.innerHeight * (SPONSOR_LIFT_SCROLL_DISTANCE_VH / 100),
+      1,
+    );
+    const progress = (window.scrollY - startScrollY) / distance;
+
+    if (progress <= 0) {
+      section.style.removeProperty("transform");
+      return;
+    }
+    if (progress >= 1) {
+      section.style.removeProperty("transform");
+      liftStartScrollYRef.current = null;
+      return;
+    }
+
+    // A single sine bump starts and ends at zero, preserving both boundaries.
+    const liftY =
+      -Math.sin(Math.PI * progress) *
+      window.innerHeight *
+      (SPONSOR_LIFT_DISTANCE_VH / 100);
+    section.style.transform = `translate3d(0, ${liftY}px, 0)`;
+  });
+
   return (
     <section
-      ref={coverRef}
+      ref={sectionRef}
       id="sponsors"
       data-nav-bg="#ffffff"
-      className="z-30 bg-white px-6 py-24 max-sm:px-5 sm:py-36"
+      className="relative isolate z-30 bg-white px-6 py-24 [--heading-reveal-offset:48px] max-sm:px-5 sm:py-36 sm:[--heading-reveal-offset:80px]"
     >
       <div className="mx-auto max-w-[1366px]">
         <SectionHeading
           title={SPONSORS_SECTION.heading.title}
           subtitle={SPONSORS_SECTION.heading.subtitle}
           className="mb-12"
+          revealOnEntry
+          onRevealComplete={startLift}
         />
         <div className="mx-auto max-w-[1246px]">
           <div className="relative py-[30px]">

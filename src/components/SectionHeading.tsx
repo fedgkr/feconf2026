@@ -7,6 +7,8 @@ interface SectionHeadingProps {
   title: readonly string[];
   subtitle?: readonly string[];
   className?: string;
+  revealOnEntry?: boolean;
+  onRevealComplete?: () => void;
 }
 
 /**
@@ -17,9 +19,21 @@ export default function SectionHeading({
   title,
   subtitle,
   className = "",
+  revealOnEntry = false,
+  onRevealComplete,
 }: SectionHeadingProps) {
-  const titleRef = useSplitReveal<HTMLHeadingElement>("line");
-  const subRef = useSplitReveal<HTMLParagraphElement>("sub", 0.18);
+  const titleRef = useSplitReveal<HTMLHeadingElement>(
+    "line",
+    0,
+    revealOnEntry,
+    subtitle ? undefined : onRevealComplete,
+  );
+  const subRef = useSplitReveal<HTMLParagraphElement>(
+    "sub",
+    0.18,
+    revealOnEntry,
+    onRevealComplete,
+  );
 
   return (
     <div className={`px-[60px] max-sm:px-0 ${className}`}>
