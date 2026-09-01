@@ -7,6 +7,19 @@ import { STORY_ASSETS, STORY_PHRASES } from "@/data/site";
 
 const EASE = "cubic-bezier(.16,1,.3,1)";
 
+/** a displayed phrase counts as seen once it has risen and been readable —
+ * this is the whole dwell a parked scroller gets, so it carries the reading */
+const PHRASE_SEEN_MS = 1200;
+/** the car returns this long after phase 0 does, so the snails clear first */
+const CAR_RETURN_MS = 300;
+/** snails gone at least this long count as cleared; only then does a return
+ * to the snail phases restart their relay from the top */
+const SNAIL_CLEARED_MS = 400;
+/** how long wheel/touch/key input keeps counting as "the user is scrolling" */
+const INPUT_GRACE_MS = 2000;
+/** keys that scroll the page downward */
+const DOWN_KEYS = new Set(["ArrowDown", "PageDown", "End", " "]);
+
 function StoryCopy({
   lines,
   leaving,
@@ -44,6 +57,40 @@ function StoryCopy({
   );
 }
 
+/**
+ * The snails' stage. Mounts hidden and reveals a frame later (the StoryCopy
+ * pattern), so a relay restart actually plays its fade-in instead of
+ * remounting straight at full opacity.
+ */
+function SnailStage({
+  shown,
+  children,
+}: {
+  shown: boolean;
+  children: React.ReactNode;
+}) {
+  const [on, setOn] = useState(false);
+  useEffect(() => {
+    const frame = requestAnimationFrame(() => setOn(true));
+    return () => cancelAnimationFrame(frame);
+  }, []);
+
+  const visible = on && shown;
+  return (
+    <div
+      className="pointer-events-none absolute inset-x-0 flex justify-center"
+      style={{
+        bottom: "15%",
+        opacity: visible ? 1 : 0,
+        // slow entrance over an empty stage, quick exit ahead of the car
+        transition: `opacity ${visible ? 0.8 : 0.25}s ease`,
+      }}
+    >
+      {children}
+    </div>
+  );
+}
+
 /** The car/snail silhouette filled with the hero-picked WEBM. */
 function MediaMask({
   layerClass,
@@ -72,6 +119,12 @@ function MediaMask({
  * the hero's tail (`.hero-sequence + section`), draws its centre frame once
  * on arrival, and walks three phrases through the frame — a pixel car races
  * past under the first, two snails relay under the rest.
+ *
+ * Every phrase owns an equal third of the pinned travel: the copy starts
+ * counting from the pin, not from the slide-in. And until each phrase has
+ * actually been seen, user scrolling (wheel, touch, keys) cannot leave that
+ * phrase's segment — programmatic scrolling like the menu's smooth jump
+ * carries no input events and passes through untouched.
  */
 export default function StorySection() {
   const sectionRef = useRef<HTMLElement | null>(null);
@@ -82,35 +135,122 @@ export default function StorySection() {
   const [run, setRun] = useState(false);
   // the copy on screen trails `phase` by a beat so each line gets its exit
   const [shownPhase, setShownPhase] = useState(-1);
-  const seen = useRef(false);
-  const lastPhase = useRef(0);
-  // snails restart their relay each time the car phase hands over to them
+  const shownOnce = useRef(false);
+  // snails restart their relay when the car phrase hands over to them — but
+  // only after they had fully cleared, so boundary jitter can't teleport them
   const [snailEpoch, setSnailEpoch] = useState(0);
+  const snailsHiddenAt = useRef(0);
+  // the car enters with the first phrase and waits out the snails' exit
+  const [carOn, setCarOn] = useState(false);
+  // when the centre frame started drawing; the first phrase waits it out
+  const runAt = useRef(0);
+  // how many phrases have been fully seen, in order — grows the lock's reach
+  const seenCount = useRef(0);
+  // true once every phrase was seen, or the page got past by other means
+  const lockOff = useRef(false);
+  const lockInit = useRef(false);
+  const lastInputAt = useRef(0);
+  const lastTouchY = useRef(0);
 
   useScrollEffect(() => {
     const el = sectionRef.current;
     if (!el) return;
     const rect = el.getBoundingClientRect();
-    const travel = Math.max(el.offsetHeight - window.innerHeight, 1);
-    const progress = Math.min(1, Math.max(0, -rect.top / travel));
-    const next = Math.min(STORY_PHRASES.length - 1, Math.floor(progress * 3));
-    if (lastPhase.current === 0 && next >= 1) setSnailEpoch((e) => e + 1);
-    lastPhase.current = next;
+    const vh = window.innerHeight;
+    const travel = Math.max(el.offsetHeight - vh, 1);
+    const segment = travel / STORY_PHRASES.length;
+    let along = -rect.top;
+
+    if (!lockOff.current) {
+      // a load restored mid-story credits the phrases already scrolled past
+      if (!lockInit.current) {
+        lockInit.current = true;
+        if (along >= travel) lockOff.current = true;
+        else if (along > 0)
+          seenCount.current = Math.min(
+            STORY_PHRASES.length - 1,
+            Math.floor(along / segment),
+          );
+      }
+      const limit = segment * (seenCount.current + 1) - 1;
+      if (
+        along > limit &&
+        performance.now() - lastInputAt.current < INPUT_GRACE_MS
+      ) {
+        // user scrolling past the first unseen phrase: hold the line. This
+        // also catches touch momentum, which outlives its touchmove events.
+        window.scrollTo({
+          top: window.scrollY + rect.top + limit,
+          behavior: "instant",
+        });
+        along = limit;
+      } else if (along >= travel) {
+        // got past without user input (menu jump, scrollbar drag): stand down
+        lockOff.current = true;
+      }
+    }
+
+    const progress = Math.min(1, Math.max(0, along / travel));
+    const next = Math.min(
+      STORY_PHRASES.length - 1,
+      Math.floor(progress * STORY_PHRASES.length),
+    );
     setPhase(next);
-    const onStage =
-      rect.top < window.innerHeight * 0.72 && rect.bottom > window.innerHeight * 0.2;
-    setActive(onStage);
+    const onStage = rect.top < vh * 0.72 && rect.bottom > vh * 0.2;
+    if (onStage && !runAt.current) runAt.current = performance.now();
     if (onStage) setRun(true);
+    // the copy only counts from the pin, so every phrase gets an equal third
+    setActive(rect.top <= 0 && rect.bottom > vh * 0.2);
   });
 
-  // The first line waits out the frame drawing; later swaps are quick.
+  // The first line still waits out the frame drawing (which starts on the
+  // slide-in), measured from when the drawing began; later swaps are quick.
   useEffect(() => {
     if (!active || shownPhase === phase) return;
-    const delay = seen.current ? 120 : 1180;
-    seen.current = true;
-    const timer = setTimeout(() => setShownPhase(phase), delay);
+    const delay = shownOnce.current
+      ? 120
+      : Math.max(120, 1180 - (performance.now() - runAt.current));
+    shownOnce.current = true;
+    const timer = setTimeout(() => {
+      // the actors swap with the copy, not with the raw scroll boundary:
+      // note when the snails leave, and restart their relay only when they
+      // come back after having fully cleared
+      if (shownPhase >= 1 && phase === 0)
+        snailsHiddenAt.current = performance.now();
+      if (shownPhase <= 0 && phase >= 1) {
+        const hiddenFor =
+          snailsHiddenAt.current === 0
+            ? Infinity
+            : performance.now() - snailsHiddenAt.current;
+        if (hiddenFor > SNAIL_CLEARED_MS) setSnailEpoch((e) => e + 1);
+      }
+      setShownPhase(phase);
+    }, delay);
     return () => clearTimeout(timer);
   }, [active, phase, shownPhase]);
+
+  // the car runs while the first phrase is the copy on screen: it enters
+  // with the text, leaves the moment the copy hands over to the snail
+  // phrases, and on a return waits out the snails' exit before re-entering
+  useEffect(() => {
+    const timer = setTimeout(
+      () => setCarOn(shownPhase === 0),
+      // the wait applies only to returns; the first entrance is with the text
+      shownPhase === 0 && snailsHiddenAt.current !== 0 ? CAR_RETURN_MS : 0,
+    );
+    return () => clearTimeout(timer);
+  }, [shownPhase]);
+
+  // a phrase counts as seen once its rise-in has settled; each seen phrase
+  // opens the lock one more segment
+  useEffect(() => {
+    if (shownPhase < 0) return;
+    const timer = setTimeout(() => {
+      seenCount.current = Math.max(seenCount.current, shownPhase + 1);
+      if (seenCount.current >= STORY_PHRASES.length) lockOff.current = true;
+    }, PHRASE_SEEN_MS);
+    return () => clearTimeout(timer);
+  }, [shownPhase]);
 
   // infinite loops park while the section is far offscreen
   const { ref: motionRef, inView: motionActive } = useInView<HTMLDivElement>({
@@ -118,6 +258,65 @@ export default function StorySection() {
     rootMargin: "180px 0px",
     once: false,
   });
+
+  // the lock's input side: wheel is blocked at the source, touch drags are
+  // blocked at the limit, and touch/key input is timestamped so the scroll
+  // pass above can hold the line against momentum and keyboard scrolling
+  useEffect(() => {
+    if (!motionActive) return;
+
+    /** the last document Y user scrolling may reach right now */
+    const lockLimit = () => {
+      const el = sectionRef.current;
+      if (!el) return Infinity;
+      const rect = el.getBoundingClientRect();
+      const travel = Math.max(el.offsetHeight - window.innerHeight, 1);
+      const segment = travel / STORY_PHRASES.length;
+      return window.scrollY + rect.top + segment * (seenCount.current + 1) - 1;
+    };
+
+    const onWheel = (e: WheelEvent) => {
+      if (lockOff.current || e.ctrlKey || e.deltaY <= 0) return;
+      lastInputAt.current = performance.now();
+      const unit =
+        e.deltaMode === 1 ? 16 : e.deltaMode === 2 ? window.innerHeight : 1;
+      const limit = lockLimit();
+      if (window.scrollY <= limit && window.scrollY + e.deltaY * unit > limit) {
+        e.preventDefault();
+        window.scrollTo({ top: limit, behavior: "instant" });
+      }
+    };
+
+    const onTouchStart = (e: TouchEvent) => {
+      lastTouchY.current = e.touches[0]?.clientY ?? 0;
+    };
+
+    const onTouchMove = (e: TouchEvent) => {
+      const touch = e.touches[0];
+      if (lockOff.current || !touch) return;
+      const pullingDown = lastTouchY.current > touch.clientY;
+      lastTouchY.current = touch.clientY;
+      lastInputAt.current = performance.now();
+      if (pullingDown && e.cancelable && window.scrollY >= lockLimit() - 1)
+        e.preventDefault();
+    };
+
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (!lockOff.current && DOWN_KEYS.has(e.key))
+        lastInputAt.current = performance.now();
+    };
+
+    window.addEventListener("wheel", onWheel, { passive: false });
+    window.addEventListener("touchstart", onTouchStart, { passive: true });
+    window.addEventListener("touchmove", onTouchMove, { passive: false });
+    window.addEventListener("keydown", onKeyDown);
+    return () => {
+      window.removeEventListener("wheel", onWheel);
+      window.removeEventListener("touchstart", onTouchStart);
+      window.removeEventListener("touchmove", onTouchMove);
+      window.removeEventListener("keydown", onKeyDown);
+    };
+  }, [motionActive]);
 
   return (
     <section
@@ -147,7 +346,7 @@ export default function StorySection() {
         </div>
         <div
           className="fc-car-loop absolute"
-          style={{ bottom: "15%", display: phase === 0 ? "block" : "none" }}
+          style={{ bottom: "15%", display: carOn ? "block" : "none" }}
         >
           {/* the still is only a fallback until the WEBM fill mounts */}
           <img
@@ -159,18 +358,10 @@ export default function StorySection() {
             layerClass="fc-car-media-mask"
             maskSrc={STORY_ASSETS.carSrc}
             src={media?.src}
-            wanted={phase === 0 && motionActive}
+            wanted={carOn && motionActive}
           />
         </div>
-        <div
-          key={snailEpoch}
-          className="pointer-events-none absolute inset-x-0 flex justify-center"
-          style={{
-            bottom: "15%",
-            opacity: phase >= 1 ? 1 : 0,
-            transition: "opacity 0.8s ease",
-          }}
-        >
+        <SnailStage key={snailEpoch} shown={shownPhase >= 1}>
           {(["fc-snail-a", "fc-snail-b"] as const).map((variant) => (
             <div key={variant} className={`fc-snail-autoplay ${variant}`} aria-hidden="true">
               <img
@@ -182,11 +373,11 @@ export default function StorySection() {
                 layerClass="fc-snail-media-mask"
                 maskSrc={STORY_ASSETS.snailSrc}
                 src={media?.src}
-                wanted={phase >= 1 && motionActive}
+                wanted={shownPhase >= 1 && motionActive}
               />
             </div>
           ))}
-        </div>
+        </SnailStage>
       </div>
     </section>
   );
