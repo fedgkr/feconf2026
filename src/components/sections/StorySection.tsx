@@ -153,6 +153,8 @@ export default function StorySection() {
   const lockInit = useRef(false);
   const lastInputAt = useRef(-Infinity);
   const lastTouchY = useRef(0);
+  // last scrollY the scroll pass saw: the hold only fights downward movement
+  const lastScrollY = useRef(Infinity);
 
   useScrollEffect(() => {
     const el = sectionRef.current;
@@ -161,6 +163,8 @@ export default function StorySection() {
     const vh = window.innerHeight;
     const { travel, segment } = getScrollMetrics(el.offsetHeight, vh);
     let along = -rect.top;
+    const scrollingDown = window.scrollY > lastScrollY.current;
+    lastScrollY.current = window.scrollY;
 
     // a load restored mid-story credits the phrases already scrolled past
     if (!lockInit.current) {
@@ -178,14 +182,17 @@ export default function StorySection() {
       const limit = segment * (unlockedSegmentCount.current + 1) - 1;
       if (
         along > limit &&
+        scrollingDown &&
         performance.now() - lastInputAt.current < INPUT_GRACE_MS
       ) {
-        // user scrolling past the first unseen phrase: hold the line. This
-        // also catches touch momentum, which outlives its touchmove events.
-        window.scrollTo({
-          top: window.scrollY + rect.top + limit,
-          behavior: "instant",
-        });
+        // user scrolling down past the first unseen phrase: hold the line.
+        // This also catches touch momentum, which outlives its touchmove
+        // events. Only downward movement is fought — snapping while the user
+        // scrolls up (or while a mobile URL-bar resize shifts the metrics)
+        // would yank the page against them.
+        const held = window.scrollY + rect.top + limit;
+        window.scrollTo({ top: held, behavior: "instant" });
+        lastScrollY.current = held;
         along = limit;
       } else if (along >= travel) {
         // got past without user input (menu jump, scrollbar drag): stand down
@@ -305,8 +312,11 @@ export default function StorySection() {
       if (unlockedSegmentCount.current >= STORY_PHRASES.length || !touch) return;
       const pullingDown = lastTouchY.current > touch.clientY;
       lastTouchY.current = touch.clientY;
+      // only downward drags arm the hold: an upward drag must never let the
+      // scroll pass snap the page against the user's direction
+      if (!pullingDown) return;
       lastInputAt.current = performance.now();
-      if (pullingDown && e.cancelable && window.scrollY >= lockLimit() - 1)
+      if (e.cancelable && window.scrollY >= lockLimit() - 1)
         e.preventDefault();
     };
 

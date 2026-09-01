@@ -73,6 +73,7 @@ export function useSplitReveal<T extends HTMLElement = HTMLHeadingElement>(
     return whenReady(() => {
       const p = PRESET[kind];
       let observer: IntersectionObserver | undefined;
+      let exitObserver: IntersectionObserver | undefined;
       let removeResizeListener: (() => void) | undefined;
       el.classList.add("fe-split", "fe-hide");
       const split = SplitText.create(el, {
@@ -83,11 +84,14 @@ export function useSplitReveal<T extends HTMLElement = HTMLHeadingElement>(
         wordsClass: "fe-word",
         onSplit(self) {
           observer?.disconnect();
+          exitObserver?.disconnect();
           removeResizeListener?.();
           el.classList.remove("fe-hide");
-          // Replays on every entry: `once` dies after the first pass and
-          // `reverse` stalls offscreen, so leave resets the state outright
-          // and enter restarts from the top.
+          // Replays on re-entry from below, but only after a full exit under
+          // the viewport: resetting or replaying right at the reveal line
+          // would blink visible copy on every direction change near it, so
+          // `armed` gates the replay on both trigger paths.
+          let armed = true;
           const tween = gsap.from(self[p.unit], {
             yPercent: 120,
             opacity: 0,
@@ -101,17 +105,38 @@ export function useSplitReveal<T extends HTMLElement = HTMLHeadingElement>(
               : {
                   scrollTrigger: {
                     trigger: el,
-                    start: `clamp(top ${HEADING_REVEAL_PERCENT}%)`,
-                    toggleActions: "restart none none reset",
+                    // the trigger spans from "top at viewport bottom" to the
+                    // reveal line: crossing the line down plays an armed
+                    // reveal, and only a full exit below (crossing the start
+                    // back up) rewinds it and arms the next entrance
+                    start: "clamp(top bottom)",
+                    end: `clamp(top ${HEADING_REVEAL_PERCENT}%)`,
+                    toggleActions: "none none none none",
+                    onLeave: (st) => {
+                      if (!armed) return;
+                      armed = false;
+                      st.animation?.restart(true);
+                    },
+                    onLeaveBack: (st) => {
+                      armed = true;
+                      st.animation?.pause(0);
+                    },
                   },
                 }),
           });
 
-          if (!observeEntry) return tween;
+          if (!observeEntry) {
+            // a load restored past the reveal line still plays the entrance
+            const st = tween.scrollTrigger;
+            if (st && st.progress >= 1 && armed) {
+              armed = false;
+              tween.restart(true);
+            }
+            return tween;
+          }
 
           // A section-specific lead-in observes painted bounds so its CSS
           // offset changes only the trigger without moving the content.
-          let inView = false;
           const observeAtSharedLine = () => {
             observer?.disconnect();
             const revealOffset =
@@ -125,17 +150,24 @@ export function useSplitReveal<T extends HTMLElement = HTMLHeadingElement>(
               window.innerHeight * (1 - HEADING_REVEAL_PERCENT / 100);
             observer = new IntersectionObserver(
               ([entry]) => {
-                if (entry.isIntersecting) {
-                  if (!inView) tween.restart(true);
-                } else {
-                  tween.pause(0);
+                if (entry.isIntersecting && armed) {
+                  armed = false;
+                  tween.restart(true);
                 }
-                inView = entry.isIntersecting;
               },
               { rootMargin: `0px 0px ${bottomRootMargin}px 0px` },
             );
             observer.observe(el);
           };
+          // the reset side watches the raw viewport: only a full exit below
+          // rewinds the reveal and arms the next entrance
+          exitObserver = new IntersectionObserver(([entry]) => {
+            if (!entry.isIntersecting && entry.boundingClientRect.top > 0) {
+              armed = true;
+              tween.pause(0);
+            }
+          });
+          exitObserver.observe(el);
           const onResize = () => observeAtSharedLine();
           window.addEventListener("resize", onResize);
           removeResizeListener = () =>
@@ -146,6 +178,7 @@ export function useSplitReveal<T extends HTMLElement = HTMLHeadingElement>(
       });
       return () => {
         observer?.disconnect();
+        exitObserver?.disconnect();
         removeResizeListener?.();
         split.revert();
       };
