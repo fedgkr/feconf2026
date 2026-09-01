@@ -8,6 +8,9 @@ import { useCoverRise } from "@/hooks/useAnimation";
 import { useScrubHighlight } from "@/hooks/useTypeMotion";
 import { SHARE_CONTACT } from "@/data/site";
 
+/** Halves the default 80vh so the gap after buddy reads shorter. */
+const SHARE_CONTACT_COVER_RISE_DISTANCE_VH = 40;
+
 function RowBody({ lines }: { lines: readonly string[] }) {
   const ref = useScrubHighlight();
   return (
@@ -18,16 +21,20 @@ function RowBody({ lines }: { lines: readonly string[] }) {
 }
 
 export default function ShareContactSection() {
-  const coverRef = useCoverRise<HTMLElement>();
+  const coverRef = useCoverRise<HTMLElement>(SHARE_CONTACT_COVER_RISE_DISTANCE_VH);
 
   return (
     <section
       ref={coverRef}
       data-nav-bg="#fafafd"
-      className="z-33 bg-surface px-6 py-24 max-sm:px-5 sm:py-36"
+      className="z-33 bg-surface px-6 py-24 [--heading-reveal-offset:48px] max-sm:px-5 sm:py-36 sm:[--heading-reveal-offset:80px]"
     >
       <div className="mx-auto max-w-[1366px]">
-        <SectionHeading title={SHARE_CONTACT.heading.title} className="mb-12" />
+        <SectionHeading
+          title={SHARE_CONTACT.heading.title}
+          className="mb-12"
+          revealOnEntry
+        />
         {SHARE_CONTACT.rows.map(({ title, lines, mail, button }, i) => (
           <Reveal
             key={title}
