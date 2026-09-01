@@ -6,6 +6,7 @@ import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import { useHeroMedia } from "@/hooks/useMedia";
 import { useInView } from "@/hooks/useAnimation";
 import { HERO, HERO_LETTERS } from "@/data/site";
+import { assetPath } from "@/lib/assetPath";
 
 /**
  * Hero background, reproduced from Figma (Frame 68, node 0:4): 27 slanted
@@ -287,7 +288,7 @@ export default function HeroSection() {
       <div className="hero-intro-backdrop" aria-hidden="true" />
 
       <span className="hero-letter-frame">
-        <img src="/images/fe-white.svg" />
+        <img src={assetPath("/images/fe-white.svg")} />
       </span>
       <div className="hero-mark-anchor" aria-hidden="true">
         <div
