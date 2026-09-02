@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useInView, useScrollEffect } from "@/hooks/useAnimation";
 import { useHeroMedia, useManagedVideo } from "@/hooks/useMedia";
 import { STORY_ASSETS, STORY_PHRASES } from "@/data/site";
@@ -182,8 +182,15 @@ export default function StorySection() {
   // clamping, which twitched the phrase timings. Pin the metrics to the
   // largest height seen at the current width (the useCoverRise pattern) —
   // it also matches the CSS vh the section's 340vh height is written in.
+  // Compositor-enforced bound: every main-thread defence (ownership, rAF
+  // hold, per-event clamps) can stall on a busy main thread while Android's
+  // compositor keeps flinging — on long 120Hz screens one such stall let a
+  // fling sail from the story to the footer. Capping the document's height
+  // at the active limit makes overscrolling physically impossible: the
+  // compositor clamps at its own scroll bounds. -1 means "no cap applied".
+  const appliedCap = useRef(-1);
   const stableViewport = useRef({ width: 0, height: 0 });
-  const stableVh = () => {
+  const stableVh = useCallback(() => {
     const sv = stableViewport.current;
     if (window.innerWidth !== sv.width) {
       sv.width = window.innerWidth;
@@ -192,7 +199,42 @@ export default function StorySection() {
       sv.height = window.innerHeight;
     }
     return sv.height;
-  };
+  }, []);
+  const applyCap = useCallback(() => {
+    const el = sectionRef.current;
+    if (!el) return;
+    if (unlockedSegmentCount.current >= STORY_PHRASES.length) {
+      if (appliedCap.current !== -1) {
+        appliedCap.current = -1;
+        document.body.style.maxHeight = "";
+        document.body.style.overflow = "";
+      }
+      return;
+    }
+    const { segment } = getScrollMetrics(el.offsetHeight, stableVh());
+    const rect = el.getBoundingClientRect();
+    const cap = Math.round(
+      window.scrollY +
+        rect.top +
+        segment * (unlockedSegmentCount.current + 1) -
+        1 +
+        stableVh(),
+    );
+    if (cap === appliedCap.current) return;
+    appliedCap.current = cap;
+    document.body.style.maxHeight = `${cap}px`;
+    document.body.style.overflow = "hidden";
+  }, [stableVh]);
+
+  // the cap must never outlive the section
+  useEffect(
+    () => () => {
+      if (appliedCap.current === -1) return;
+      document.body.style.maxHeight = "";
+      document.body.style.overflow = "";
+    },
+    [],
+  );
 
   useScrollEffect(() => {
     const el = sectionRef.current;
@@ -241,6 +283,8 @@ export default function StorySection() {
         unlockedSegmentCount.current = STORY_PHRASES.length;
       }
     }
+
+    applyCap();
 
     const progress = Math.min(1, Math.max(0, along / travel));
     const next = Math.min(
@@ -294,14 +338,17 @@ export default function StorySection() {
   }, [shownPhase]);
 
   // a phrase counts as seen once its rise-in has settled; each seen phrase
-  // opens the lock one more segment
+  // opens the lock one more segment — and moves the physical scroll bound,
+  // which must happen here too: at the bound no scroll events fire, so the
+  // scroll pass alone would never extend a cap the user is resting against
   useEffect(() => {
     if (shownPhase < 0) return;
     const timer = setTimeout(() => {
       unlockedSegmentCount.current = Math.max(unlockedSegmentCount.current, shownPhase + 1);
+      applyCap();
     }, PHRASE_SEEN_MS);
     return () => clearTimeout(timer);
-  }, [shownPhase]);
+  }, [shownPhase, applyCap]);
 
   // infinite loops park while the section is far offscreen
   const { ref: motionRef, inView: motionActive } = useInView<HTMLDivElement>({
@@ -328,8 +375,14 @@ export default function StorySection() {
     // A menu click starts a programmatic scroll. Clear any prior input grace
     // before it can be mistaken for touch momentum or keyboard scrolling.
     const onNavClick = (e: MouseEvent) => {
-      if (e.target instanceof Element && e.target.closest(".site-nav a[href^='#']"))
+      if (e.target instanceof Element && e.target.closest(".site-nav a[href^='#']")) {
         lastInputAt.current = -Infinity;
+        // menu jumps must never be blocked by any scroll intervention: the
+        // physical cap would stop them cold, so the lock stands down now
+        // (it used to stand down anyway once the jump sailed past the pin)
+        unlockedSegmentCount.current = STORY_PHRASES.length;
+        applyCap();
+      }
     };
 
     const onWheel = (e: WheelEvent) => {
@@ -507,7 +560,7 @@ export default function StorySection() {
       window.removeEventListener("touchcancel", onTouchCancel);
       window.removeEventListener("keydown", onKeyDown);
     };
-  }, [motionActive]);
+  }, [motionActive, applyCap, stableVh]);
 
   return (
     <section
