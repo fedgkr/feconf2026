@@ -445,14 +445,25 @@ export default function StorySection() {
         // clamps any incoming momentum invisibly inside the pin. (iOS kills
         // a gesture's native scroll for good once one touchmove is canceled,
         // which is also why an owned gesture is then driven manually.)
+        // upward drags stay native: the lock never fights the user's way up
+        if (dy <= 0) return;
+        if (!e.cancelable) {
+          // A gesture that latched native before we could own it — typically
+          // a flick landing mid-fling on Android — delivers uncancelable
+          // moves. Clamp per move, one event ahead of the per-frame rAF
+          // hold (the wheel path's uncancelable branch does the same):
+          // a single overshot frame past the unpin point paints the stage
+          // at a second position — the doubled-phrase artifact.
+          const limit = lockLimit();
+          if (window.scrollY > limit)
+            window.scrollTo({ top: limit, behavior: "instant" });
+          return;
+        }
         const el = sectionRef.current;
         if (!el) return;
         const rect = el.getBoundingClientRect();
         const pinned = rect.top <= 0 && rect.bottom >= window.innerHeight;
         if (!pinned) return;
-        // upward drags stay native: the lock never fights the user's way up
-        if (dy <= 0) return;
-        if (!e.cancelable) return; // already scrolling natively: hold covers
         touchOwned.current = true;
       }
       if (e.cancelable) e.preventDefault();
