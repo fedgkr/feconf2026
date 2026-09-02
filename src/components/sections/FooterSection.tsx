@@ -5,7 +5,7 @@ import { useHeroMedia } from "@/hooks/useMedia";
 import { useInView } from "@/hooks/useAnimation";
 import { useTicketDday } from "@/hooks/useTicketDday";
 import { FOOTER, TICKET_LINK } from "@/data/site";
-import { StripeField } from "./HeroSection";
+import { StripeField, useStripeDpr } from "./HeroSection";
 
 /**
  * Compact closing banner: venue line left, ticket link right, over the same
@@ -14,6 +14,7 @@ import { StripeField } from "./HeroSection";
 export default function FooterSection() {
   const media = useHeroMedia();
   const dday = useTicketDday();
+  const dpr = useStripeDpr();
   const { ref: footerRef, inView } = useInView<HTMLElement>({
     threshold: 0.01,
     rootMargin: "240px 0px",
@@ -28,7 +29,7 @@ export default function FooterSection() {
     >
       {inView && (
         <div className="pointer-events-none absolute inset-0 z-0">
-          <Canvas orthographic aria-hidden="true">
+          <Canvas orthographic dpr={dpr} aria-hidden="true">
             <color attach="background" args={["#ffffff"]} />
             {media && <StripeField ramp={media.ramp} />}
           </Canvas>

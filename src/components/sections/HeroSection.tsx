@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import * as THREE from "three";
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import { useHeroMedia } from "@/hooks/useMedia";
@@ -163,6 +163,26 @@ const fragmentShader = /* glsl */ `
   }
 `;
 
+/**
+ * Render-buffer cap for the stripe canvases. The stripes are soft gradient
+ * art, so a lower buffer resolution is invisible — while the fill cost of 81
+ * blended quads dominates the frame budget at full DPR (~20ms/frame at rest
+ * on a desktop at DPR 2, measured). Phones ship DPR 3 on far weaker GPUs and
+ * native scrolling exposes every dropped frame, so below the desktop-nav
+ * breakpoint the buffer renders at 1x.
+ */
+export function useStripeDpr(): number | [number, number] {
+  const [phone, setPhone] = useState(false);
+  useEffect(() => {
+    const mq = window.matchMedia("(max-width: 767px)");
+    const update = () => setPhone(mq.matches);
+    update();
+    mq.addEventListener?.("change", update);
+    return () => mq.removeEventListener?.("change", update);
+  }, []);
+  return useMemo(() => (phone ? 1 : ([1, 1.5] as [number, number])), [phone]);
+}
+
 export function StripeField(props: {
   ramp: number[][],
 }) {
@@ -268,6 +288,7 @@ export function StripeField(props: {
 export default function HeroSection() {
   // the letter fill reads the accent of the page-wide media pick
   const media = useHeroMedia();
+  const dpr = useStripeDpr();
   // the drift loop parks while the hero is scrolled offscreen
   const { ref: sectionRef, inView } = useInView<HTMLElement>({
     threshold: 0.01,
@@ -285,7 +306,7 @@ export default function HeroSection() {
       // small viewport height fits the bars-visible screen and never moves.
       className="relative h-svh overflow-hidden bg-white"
     >
-      <Canvas orthographic frameloop={inView ? "always" : "never"} aria-hidden="true" className="hero-intro-canvas">
+      <Canvas orthographic dpr={dpr} frameloop={inView ? "always" : "never"} aria-hidden="true" className="hero-intro-canvas">
         <color attach="background" args={["#ffffff"]} />
         {media && <StripeField ramp={media.ramp}/>}
       </Canvas>
