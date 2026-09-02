@@ -348,7 +348,7 @@ export default function StorySection() {
     >
       <div
         ref={motionRef}
-        className={`sticky top-0 flex h-screen w-full items-center justify-center overflow-hidden bg-surface ${
+        className={`sticky top-0 flex h-dvh w-full items-center justify-center overflow-hidden bg-surface ${
           run ? "fc-run" : ""
         } ${motionActive ? "fc-motion-active" : ""}`}
       >

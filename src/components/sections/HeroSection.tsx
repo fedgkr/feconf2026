@@ -279,7 +279,7 @@ export default function HeroSection() {
       ref={sectionRef}
       id="home"
       aria-label="FEConf 2026 intro"
-      className="relative h-screen overflow-hidden bg-white"
+      className="relative h-dvh overflow-hidden bg-white"
     >
       <Canvas orthographic frameloop={inView ? "always" : "never"} aria-hidden="true" className="hero-intro-canvas">
         <color attach="background" args={["#ffffff"]} />
