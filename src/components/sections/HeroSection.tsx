@@ -285,10 +285,7 @@ export default function HeroSection() {
       // small viewport height fits the bars-visible screen and never moves.
       className="relative h-svh overflow-hidden bg-white"
     >
-      {/* the stripes are soft gradients, so capping the render buffer at
-          1.5x has no visible cost — at DPR 2 the fill cost of 81 blended
-          quads dominated the frame budget (measured ~20ms/frame at rest) */}
-      <Canvas orthographic dpr={[1, 1.5]} frameloop={inView ? "always" : "never"} aria-hidden="true" className="hero-intro-canvas">
+      <Canvas orthographic frameloop={inView ? "always" : "never"} aria-hidden="true" className="hero-intro-canvas">
         <color attach="background" args={["#ffffff"]} />
         {media && <StripeField ramp={media.ramp}/>}
       </Canvas>

@@ -28,9 +28,7 @@ export default function FooterSection() {
     >
       {inView && (
         <div className="pointer-events-none absolute inset-0 z-0">
-          {/* same stripe art as the hero: cap the buffer at 1.5x (see
-              HeroSection) to keep the closing banner off the fill-rate wall */}
-          <Canvas orthographic dpr={[1, 1.5]} aria-hidden="true">
+          <Canvas orthographic aria-hidden="true">
             <color attach="background" args={["#ffffff"]} />
             {media && <StripeField ramp={media.ramp} />}
           </Canvas>
