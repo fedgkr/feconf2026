@@ -3040,22 +3040,37 @@ body {
 /* Sponsors / Code of Conducts frames                                 */
 /* ---------------------------------------------------------------- */
 
+.sponsor-section-heading {
+  padding-left: 0;
+  padding-right: 0;
+}
+
+.sponsor-section-heading h2 {
+  font-size: clamp(42px, 10vw, 80px);
+  line-height: 1.08;
+  letter-spacing: 0;
+}
+
+.sponsor-section-heading p {
+  max-width: min(100%, 560px);
+}
+
 .sponsor-cell {
   min-width: 0;
-  min-height: 112px;
+  min-height: 88px;
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 18px 24px;
+  padding: 14px 20px;
 }
 
 .sponsor-cell.is-diamond {
-  min-height: 136px;
+  min-height: 108px;
 }
 
 .sponsor-tier-stack {
   display: grid;
-  gap: clamp(42px, 5.6vw, 72px);
+  gap: clamp(34px, 5vw, 62px);
 }
 
 .sponsor-tier-row + .sponsor-tier-row {
@@ -3087,20 +3102,21 @@ body {
   font-family: "Special Gothic", sans-serif;
   font-stretch: 112.5%;
   flex: 0 0 auto;
-  font-size: 36px;
+  font-size: clamp(20px, 2.15vw, 28px);
   font-weight: 600;
   line-height: 1;
   color: var(--color-navy);
   text-transform: uppercase;
+  white-space: nowrap;
 }
 
 .sponsor-tier-logos {
   display: grid;
   align-items: center;
-  gap: clamp(22px, 3.4vw, 48px) clamp(28px, 5vw, 84px);
+  gap: clamp(18px, 3vw, 40px) clamp(28px, 5vw, 84px);
   justify-items: center;
   min-width: 0;
-  padding-top: clamp(22px, 3vw, 38px);
+  padding-top: clamp(16px, 2.4vw, 30px);
 }
 
 .sponsor-tier-logos.is-count-1 {
@@ -3148,7 +3164,7 @@ body {
 
 @media (max-width: 639px) {
   .sponsor-tier-stack {
-    gap: 42px;
+    gap: 36px;
   }
 
   .sponsor-tier-row + .sponsor-tier-row {
@@ -3171,14 +3187,18 @@ body {
   }
 
   .sponsor-tier-title {
-    font-size: 30px;
+    font-size: 22px;
   }
 
   .sponsor-tier-logos {
     grid-template-columns: minmax(0, 1fr);
-    gap: 18px;
-    padding-top: 20px;
+    gap: 14px;
+    padding-top: 16px;
     border-top: 0;
+  }
+
+  .sponsor-tier-logos.is-count-2 {
+    grid-template-columns: minmax(0, 1fr);
   }
 
   .sponsor-tier-logos.is-count-2 .sponsor-cell + .sponsor-cell {
@@ -3186,12 +3206,12 @@ body {
   }
 
   .sponsor-cell {
-    min-height: 104px;
-    padding: 16px 0;
+    min-height: 82px;
+    padding: 12px 0;
   }
 
   .sponsor-cell.is-diamond {
-    min-height: 124px;
+    min-height: 100px;
   }
 
   .sponsor-cell + .sponsor-cell {
@@ -3220,15 +3240,9 @@ body {
   }
 }
 
-@media (min-width: 1024px) {
-  .sponsor-tier-title {
-    font-size: 40px;
-  }
-}
-
 @media (max-width: 374px) {
   .sponsor-tier-title {
-    font-size: 26px;
+    font-size: 19px;
   }
 }
 

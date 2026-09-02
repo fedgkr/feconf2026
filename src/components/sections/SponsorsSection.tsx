@@ -1,8 +1,7 @@
 "use client";
 
-import type { CSSProperties } from "react";
 import SectionHeading from "../SectionHeading";
-import { useCoverRise, useInView, useStaggerChildren } from "@/hooks/useAnimation";
+import { useCoverRise } from "@/hooks/useAnimation";
 import { SPONSORS_SECTION, type Sponsor, type SponsorTier } from "@/data/site";
 
 function SponsorMark({ sponsor, tier }: { sponsor: Sponsor; tier: SponsorTier["id"] }) {
@@ -26,14 +25,12 @@ function SponsorMark({ sponsor, tier }: { sponsor: Sponsor; tier: SponsorTier["i
 function SponsorCell({
   sponsor,
   tier,
-  style,
 }: {
   sponsor: Sponsor;
   tier: SponsorTier["id"];
-  style: CSSProperties;
 }) {
   return (
-    <div className={`sponsor-cell is-${tier}`} style={style}>
+    <div className={`sponsor-cell is-${tier}`}>
       <SponsorMark sponsor={sponsor} tier={tier} />
     </div>
   );
@@ -41,10 +38,8 @@ function SponsorCell({
 
 function SponsorTierRow({
   tier,
-  styles,
 }: {
   tier: SponsorTier;
-  styles: CSSProperties[];
 }) {
   return (
     <div className={`sponsor-tier-row is-${tier.id}`}>
@@ -52,12 +47,11 @@ function SponsorTierRow({
         <span className="sponsor-tier-title">{tier.title}</span>
       </div>
       <div className={`sponsor-tier-logos is-count-${tier.sponsors.length}`}>
-        {tier.sponsors.map((sponsor, index) => (
+        {tier.sponsors.map((sponsor) => (
           <SponsorCell
             key={sponsor.name}
             sponsor={sponsor}
             tier={tier.id}
-            style={styles[index]}
           />
         ))}
       </div>
@@ -67,22 +61,6 @@ function SponsorTierRow({
 
 export default function SponsorsSection() {
   const coverRef = useCoverRise<HTMLElement>();
-  const { ref: gridRef, inView } = useInView<HTMLDivElement>({ threshold: 0.1 });
-  const totalSponsorCount = SPONSORS_SECTION.tiers.reduce(
-    (total, tier) => total + tier.sponsors.length,
-    0,
-  );
-  const stagger = useStaggerChildren(inView, totalSponsorCount, 70);
-  const tierRows = SPONSORS_SECTION.tiers.map((tier, tierIndex) => {
-    const startIndex = SPONSORS_SECTION.tiers
-      .slice(0, tierIndex)
-      .reduce((total, currentTier) => total + currentTier.sponsors.length, 0);
-
-    return {
-      tier,
-      styles: stagger.slice(startIndex, startIndex + tier.sponsors.length),
-    };
-  });
 
   return (
     <section
@@ -91,18 +69,16 @@ export default function SponsorsSection() {
       data-nav-bg="#ffffff"
       className="z-30 bg-white px-6 py-24 max-sm:px-5 sm:py-36"
     >
-      <div className="mx-auto max-w-[1366px]">
+      <div className="mx-auto max-w-[1246px]">
         <SectionHeading
           title={SPONSORS_SECTION.heading.title}
           subtitle={SPONSORS_SECTION.heading.subtitle}
-          className="mb-12"
+          className="sponsor-section-heading mb-10 sm:mb-14"
         />
-        <div className="mx-auto max-w-[1246px]">
-          <div ref={gridRef} className="sponsor-tier-stack">
-            {tierRows.map(({ tier, styles }) => (
-              <SponsorTierRow key={tier.id} tier={tier} styles={styles} />
-            ))}
-          </div>
+        <div className="sponsor-tier-stack">
+          {SPONSORS_SECTION.tiers.map((tier) => (
+            <SponsorTierRow key={tier.id} tier={tier} />
+          ))}
         </div>
       </div>
     </section>
