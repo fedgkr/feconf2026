@@ -3042,61 +3042,65 @@ body {
 
 .sponsor-cell {
   min-width: 0;
-  min-height: 156px;
+  min-height: 112px;
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 24px;
+  padding: 18px 24px;
 }
 
 .sponsor-cell.is-diamond {
-  min-height: 184px;
+  min-height: 136px;
 }
 
-.sponsor-tier-row {
+.sponsor-tier-stack {
   display: grid;
-  grid-template-columns: minmax(190px, 22.5%) minmax(0, 1fr);
+  gap: clamp(42px, 5.6vw, 72px);
 }
 
 .sponsor-tier-row + .sponsor-tier-row {
-  border-top: 1px solid transparent;
-  border-image: linear-gradient(
-    90deg,
-    rgb(212 218 237 / 0) 0,
-    var(--color-hairline) 30px,
-    var(--color-hairline) calc(100% - 30px),
-    rgb(212 218 237 / 0) 100%
-  )
-  1;
+  border-top: 0;
 }
 
 .sponsor-tier-label {
   min-width: 0;
-  min-height: 156px;
   display: flex;
-  flex-direction: column;
-  justify-content: center;
-  gap: 10px;
-  padding: 28px 36px;
-  border-right: 1px solid var(--color-hairline);
+  align-items: center;
+  gap: clamp(16px, 2.2vw, 28px);
+  padding: 0;
+  border-right: 0;
 }
 
-.sponsor-tier-row.is-diamond .sponsor-tier-label {
-  min-height: 184px;
+.sponsor-tier-label::after {
+  content: "";
+  flex: 1 1 auto;
+  height: 1px;
+  background-image: linear-gradient(
+    90deg,
+    rgb(16 24 61 / 0.24) 0,
+    rgb(16 24 61 / 0.24) calc(100% - 30px),
+    rgb(16 24 61 / 0) 100%
+  );
 }
 
 .sponsor-tier-title {
   font-family: "Special Gothic", sans-serif;
   font-stretch: 112.5%;
-  font-size: clamp(28px, 3vw, 48px);
+  flex: 0 0 auto;
+  font-size: 36px;
   font-weight: 600;
   line-height: 1;
   color: var(--color-navy);
+  text-transform: uppercase;
 }
 
 .sponsor-tier-logos {
   display: grid;
+  align-items: center;
+  gap: clamp(22px, 3.4vw, 48px) clamp(28px, 5vw, 84px);
+  justify-items: center;
   min-width: 0;
+  padding-top: clamp(22px, 3vw, 38px);
 }
 
 .sponsor-tier-logos.is-count-1 {
@@ -3108,7 +3112,7 @@ body {
 }
 
 .sponsor-tier-logos.is-count-2 .sponsor-cell + .sponsor-cell {
-  border-left: 1px solid var(--color-hairline);
+  border-left: 0;
 }
 
 .sponsor-logo {
@@ -3120,6 +3124,11 @@ body {
 .sponsor-logo.is-diamond {
   max-width: 240px;
   max-height: 88px;
+}
+
+.sponsor-logo.is-special {
+  max-width: 230px;
+  max-height: 96px;
 }
 
 .sponsor-logo.is-media {
@@ -3138,33 +3147,38 @@ body {
 }
 
 @media (max-width: 639px) {
-  .sponsor-tier-row {
-    display: block;
+  .sponsor-tier-stack {
+    gap: 42px;
   }
 
   .sponsor-tier-row + .sponsor-tier-row {
-    border-top: 1px solid var(--color-hairline);
-    border-image: none;
+    border-top: 0;
   }
 
   .sponsor-tier-label {
-    min-height: 0;
-    gap: 8px;
-    padding: 24px 0 18px;
+    gap: 14px;
+    padding: 0;
     border-right: 0;
   }
 
-  .sponsor-tier-row.is-diamond .sponsor-tier-label {
-    min-height: 0;
+  .sponsor-tier-label::after {
+    background-image: linear-gradient(
+      90deg,
+      rgb(16 24 61 / 0.24) 0,
+      rgb(16 24 61 / 0.24) calc(100% - 20px),
+      rgb(16 24 61 / 0) 100%
+    );
   }
 
   .sponsor-tier-title {
-    font-size: 34px;
+    font-size: 30px;
   }
 
   .sponsor-tier-logos {
     grid-template-columns: minmax(0, 1fr);
-    border-top: 1px solid var(--color-hairline);
+    gap: 18px;
+    padding-top: 20px;
+    border-top: 0;
   }
 
   .sponsor-tier-logos.is-count-2 .sponsor-cell + .sponsor-cell {
@@ -3172,16 +3186,16 @@ body {
   }
 
   .sponsor-cell {
-    min-height: 136px;
-    padding: 22px 0;
+    min-height: 104px;
+    padding: 16px 0;
   }
 
   .sponsor-cell.is-diamond {
-    min-height: 156px;
+    min-height: 124px;
   }
 
   .sponsor-cell + .sponsor-cell {
-    border-top: 1px solid var(--color-hairline);
+    border-top: 0;
   }
 
   .sponsor-logo {
@@ -3192,12 +3206,29 @@ body {
     max-width: min(230px, 78vw);
   }
 
+  .sponsor-logo.is-special {
+    max-width: min(220px, 78vw);
+    max-height: 96px;
+  }
+
   .sponsor-logo.is-media {
     max-width: min(150px, 62vw);
   }
 
   .sponsor-wordmark {
     font-size: clamp(28px, 9vw, 38px);
+  }
+}
+
+@media (min-width: 1024px) {
+  .sponsor-tier-title {
+    font-size: 40px;
+  }
+}
+
+@media (max-width: 374px) {
+  .sponsor-tier-title {
+    font-size: 26px;
   }
 }
 

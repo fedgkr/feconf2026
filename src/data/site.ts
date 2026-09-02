@@ -623,14 +623,32 @@ export const SPONSORS_SECTION = {
       id: "platinum",
       title: "Platinum",
       sponsors: [
-        { name: "미리디" },
+        {
+          name: "미리디",
+          src: assetPath("/images/sponsor-miridih.png"),
+          width: 202,
+          height: 56,
+        },
         { name: "당근", src: assetPath("/images/sponsor-2.svg") },
       ],
     },
     {
       id: "special",
       title: "Special",
-      sponsors: [{ name: "티켓타코" }, { name: "제이펍" }],
+      sponsors: [
+        {
+          name: "티켓타코",
+          src: assetPath("/images/sponsor-ticketaco.png"),
+          width: 520,
+          height: 208,
+        },
+        {
+          name: "제이펍",
+          src: assetPath("/images/sponsor-jpub.jpg"),
+          width: 459,
+          height: 262,
+        },
+      ],
     },
     {
       id: "media",

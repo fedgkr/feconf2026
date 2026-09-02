@@ -98,24 +98,10 @@ export default function SponsorsSection() {
           className="mb-12"
         />
         <div className="mx-auto max-w-[1246px]">
-          <div className="relative py-[30px]">
-            <div
-              className="fe-line-v fe-fade-30 absolute inset-y-0 left-[30px] hidden w-px sm:block"
-            />
-            <div
-              className="fe-line-v fe-fade-30 absolute inset-y-0 right-[30px] hidden w-px sm:block"
-            />
-            <div className="px-[30px] max-sm:px-0">
-              <div ref={gridRef} className="relative">
-                <div className="fe-line-h fe-fade-30 -mx-[30px] h-px max-sm:mx-0" />
-                <div className="sponsor-tier-stack">
-                  {tierRows.map(({ tier, styles }) => (
-                    <SponsorTierRow key={tier.id} tier={tier} styles={styles} />
-                  ))}
-                </div>
-                <div className="fe-line-h fe-fade-30 -mx-[30px] h-px max-sm:mx-0" />
-              </div>
-            </div>
+          <div ref={gridRef} className="sponsor-tier-stack">
+            {tierRows.map(({ tier, styles }) => (
+              <SponsorTierRow key={tier.id} tier={tier} styles={styles} />
+            ))}
           </div>
         </div>
       </div>
