@@ -67,7 +67,10 @@ export default function ExperienceSection() {
       ref={sectionRef}
       id="feconf-experience"
       data-nav-bg="#fafafd"
-      className="overflow-hidden bg-surface text-navy"
+      // the shallow pt (64/48px) alone would leave the heading under the
+      // fixed header on anchor arrival; land it at the same 144px rhythm as
+      // the other nav targets (scroll-mt + pt = 144)
+      className="overflow-hidden scroll-mt-20 bg-surface text-navy max-sm:scroll-mt-24"
     >
       <div className="mx-auto pt-16 max-sm:pt-12">
         <div className="mx-auto mb-16 max-w-[1366px] px-[60px] max-sm:px-6">

@@ -56,8 +56,14 @@ function jumpTo(e: React.MouseEvent, href: string) {
   const el = document.querySelector<HTMLElement>(href);
   if (!el) return;
   e.preventDefault();
-  const matrix = new DOMMatrixReadOnly(getComputedStyle(el).transform);
-  const top = el.getBoundingClientRect().top - (matrix.m42 || 0) + window.scrollY;
+  const style = getComputedStyle(el);
+  const matrix = new DOMMatrixReadOnly(style.transform);
+  // manual scrolls skip CSS scroll-margin, so honour it here: targets whose
+  // own top padding is shallower than the fixed header (e.g. experience)
+  // declare their clearance with scroll-margin-top
+  const margin = parseFloat(style.scrollMarginTop) || 0;
+  const top =
+    el.getBoundingClientRect().top - (matrix.m42 || 0) + window.scrollY - margin;
   window.scrollTo({ top, behavior: "smooth" });
   history.pushState(null, "", href);
 }
