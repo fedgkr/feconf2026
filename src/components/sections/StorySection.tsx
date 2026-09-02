@@ -407,21 +407,31 @@ export default function StorySection() {
       touchVel.current =
         touchVel.current * (1 - FLING_VELOCITY_SMOOTHING) +
         (dy / dt) * FLING_VELOCITY_SMOOTHING;
+      // every downward move arms the rAF hold's input grace, owned or native:
+      // the hold is what clamps native drags and their momentum at the
+      // interior limits, so it must know the user is scrolling
+      if (dy > 0) lastInputAt.current = now;
       if (!touchOwned.current) {
         if (unlockedSegmentCount.current >= STORY_PHRASES.length) return;
+        // Interior limits all sit inside the pinned travel, where the sticky
+        // stage paints the same frame no matter what scrollY does — a
+        // one-frame overshoot pulled back by the rAF hold is invisible, so
+        // those segments can keep native scrolling (compositor-smooth even
+        // while the hero's WebGL keeps the main thread busy; JS-driven
+        // scrollTo there is what juddered on iOS). Only the last unseen
+        // phrase's limit doubles as the unpin point where an overshoot
+        // visibly yanks the page — momentum can never be canceled once it
+        // starts, so only that segment's gestures are owned from the first
+        // downward move. (iOS kills a gesture's native scroll for good once
+        // one touchmove is canceled, which is also why an owned gesture is
+        // then driven manually to its end.)
+        if (unlockedSegmentCount.current < STORY_PHRASES.length - 1) return;
         // upward drags stay native: the lock never fights the user's way up
         if (dy <= 0) return;
-        // native fling momentum outlives touchmove and can only be fought a
-        // frame late by the rAF hold — the visible jolt at the last phrase.
-        // So while the lock is armed, no native scroll may start downward at
-        // all: own the gesture from its first downward move. (iOS kills a
-        // gesture's native scroll for good once one touchmove is canceled,
-        // which is also why the rest of the gesture is driven manually.)
         if (!e.cancelable) return; // already scrolling natively: hold covers
         touchOwned.current = true;
       }
       if (e.cancelable) e.preventDefault();
-      if (dy > 0) lastInputAt.current = now;
       const limit =
         unlockedSegmentCount.current >= STORY_PHRASES.length
           ? Infinity
