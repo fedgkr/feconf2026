@@ -177,13 +177,29 @@ export default function StorySection() {
   const flingFrame = useRef(0);
   // last scrollY the scroll pass saw: the hold only fights downward movement
   const lastScrollY = useRef(Infinity);
+  // Android's URL bar animates window.innerHeight mid-scroll; lock limits
+  // computed from the live value wobble by tens of px while the hold is
+  // clamping, which twitched the phrase timings. Pin the metrics to the
+  // largest height seen at the current width (the useCoverRise pattern) —
+  // it also matches the CSS vh the section's 340vh height is written in.
+  const stableViewport = useRef({ width: 0, height: 0 });
+  const stableVh = () => {
+    const sv = stableViewport.current;
+    if (window.innerWidth !== sv.width) {
+      sv.width = window.innerWidth;
+      sv.height = window.innerHeight;
+    } else if (window.innerHeight > sv.height) {
+      sv.height = window.innerHeight;
+    }
+    return sv.height;
+  };
 
   useScrollEffect(() => {
     const el = sectionRef.current;
     if (!el) return;
     const rect = el.getBoundingClientRect();
     const vh = window.innerHeight;
-    const { travel, segment } = getScrollMetrics(el.offsetHeight, vh);
+    const { travel, segment } = getScrollMetrics(el.offsetHeight, stableVh());
     let along = -rect.top;
     const scrollingDown = window.scrollY > lastScrollY.current;
     lastScrollY.current = window.scrollY;
@@ -216,6 +232,10 @@ export default function StorySection() {
         window.scrollTo({ top: held, behavior: "instant" });
         lastScrollY.current = held;
         along = limit;
+        // the push just fought is live momentum: sustain the grace so a
+        // long fling cannot simply outlive it and sail through the lock
+        // (menu jumps stay exempt — onNavClick clears the grace first)
+        lastInputAt.current = performance.now();
       } else if (along >= travel) {
         // got past without user input (menu jump, scrollbar drag): stand down
         unlockedSegmentCount.current = STORY_PHRASES.length;
@@ -301,7 +321,7 @@ export default function StorySection() {
       const el = sectionRef.current;
       if (!el) return Infinity;
       const rect = el.getBoundingClientRect();
-      const { segment } = getScrollMetrics(el.offsetHeight, window.innerHeight);
+      const { segment } = getScrollMetrics(el.offsetHeight, stableVh());
       return window.scrollY + rect.top + segment * (unlockedSegmentCount.current + 1) - 1;
     };
 
@@ -415,19 +435,21 @@ export default function StorySection() {
       if (dy > 0) lastInputAt.current = now;
       if (!touchOwned.current) {
         if (unlockedSegmentCount.current >= STORY_PHRASES.length) return;
-        // Interior limits all sit inside the pinned travel, where the sticky
-        // stage paints the same frame no matter what scrollY does — a
-        // one-frame overshoot pulled back by the rAF hold is invisible, so
-        // those segments can keep native scrolling (compositor-smooth even
-        // while the hero's WebGL keeps the main thread busy; JS-driven
-        // scrollTo there is what juddered on iOS). Only the last unseen
-        // phrase's limit doubles as the unpin point where an overshoot
-        // visibly yanks the page — momentum can never be canceled once it
-        // starts, so only that segment's gestures are owned from the first
-        // downward move. (iOS kills a gesture's native scroll for good once
-        // one touchmove is canceled, which is also why an owned gesture is
-        // then driven manually to its end.)
-        if (unlockedSegmentCount.current < STORY_PHRASES.length - 1) return;
+        // Own every downward gesture that starts while the stage is pinned:
+        // the screen is a static frame there, so JS-driven scrolling cannot
+        // judder anything visible, and owning is what keeps native momentum
+        // from ever starting — momentum that outlives a phrase dwell is what
+        // used to blow through the unpin limit and visibly yank the page
+        // between the later phrases. Outside the pin (the hero, where the
+        // screen actually moves) scrolling stays native and the rAF hold
+        // clamps any incoming momentum invisibly inside the pin. (iOS kills
+        // a gesture's native scroll for good once one touchmove is canceled,
+        // which is also why an owned gesture is then driven manually.)
+        const el = sectionRef.current;
+        if (!el) return;
+        const rect = el.getBoundingClientRect();
+        const pinned = rect.top <= 0 && rect.bottom >= window.innerHeight;
+        if (!pinned) return;
         // upward drags stay native: the lock never fights the user's way up
         if (dy <= 0) return;
         if (!e.cancelable) return; // already scrolling natively: hold covers
