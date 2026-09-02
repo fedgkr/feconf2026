@@ -297,8 +297,22 @@ export default function StorySection() {
       const unit =
         e.deltaMode === 1 ? 16 : e.deltaMode === 2 ? window.innerHeight : 1;
       const limit = lockLimit();
-      if (window.scrollY <= limit && window.scrollY + e.deltaY * unit > limit) {
+      // Chromium latches wheel gestures: unless a gesture's FIRST event is
+      // canceled, the rest arrive cancelable:false and preventDefault is
+      // ignored. A cancel only at the boundary therefore misses mid-gesture
+      // crossings, and the rAF hold above would paint the overshoot for a
+      // frame before snapping back — the jolt at the last phrase, where the
+      // limit is also the unpin point. So while the lock is armed, cancel
+      // every downward tick from the gesture's start and walk the page
+      // ourselves, clamped to the limit.
+      if (e.cancelable) {
         e.preventDefault();
+        const target = Math.min(window.scrollY + e.deltaY * unit, limit);
+        if (target > window.scrollY)
+          window.scrollTo({ top: target, behavior: "instant" });
+      } else if (window.scrollY > limit) {
+        // a gesture latched before the lock armed: clamp per tick, ahead of
+        // the per-frame rAF hold, so the overshoot never reaches a paint
         window.scrollTo({ top: limit, behavior: "instant" });
       }
     };
