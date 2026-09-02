@@ -596,9 +596,8 @@ export interface Sponsor {
 }
 
 export interface SponsorTier {
-  id: "diamond" | "platinum" | "special";
+  id: "diamond" | "platinum" | "special" | "media";
   title: string;
-  titleKo: string;
   sponsors: Sponsor[];
 }
 
@@ -611,7 +610,6 @@ export const SPONSORS_SECTION = {
     {
       id: "diamond",
       title: "Diamond",
-      titleKo: "다이아몬드",
       sponsors: [
         {
           name: "토스",
@@ -624,7 +622,6 @@ export const SPONSORS_SECTION = {
     {
       id: "platinum",
       title: "Platinum",
-      titleKo: "플래티넘",
       sponsors: [
         { name: "미리디" },
         { name: "당근", src: assetPath("/images/sponsor-2.svg") },
@@ -633,8 +630,19 @@ export const SPONSORS_SECTION = {
     {
       id: "special",
       title: "Special",
-      titleKo: "스페셜",
       sponsors: [{ name: "티켓타코" }, { name: "제이펍" }],
+    },
+    {
+      id: "media",
+      title: "Media Partner",
+      sponsors: [
+        {
+          name: "요즘 IT",
+          src: assetPath("/images/sponsor-yozm.png"),
+          width: 104,
+          height: 28,
+        },
+      ],
     },
   ] as SponsorTier[],
 };

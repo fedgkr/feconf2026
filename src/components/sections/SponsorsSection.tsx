@@ -50,7 +50,6 @@ function SponsorTierRow({
     <div className={`sponsor-tier-row is-${tier.id}`}>
       <div className="sponsor-tier-label">
         <span className="sponsor-tier-title">{tier.title}</span>
-        <span className="sponsor-tier-title-ko">{tier.titleKo}</span>
       </div>
       <div className={`sponsor-tier-logos is-count-${tier.sponsors.length}`}>
         {tier.sponsors.map((sponsor, index) => (

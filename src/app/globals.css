@@ -3094,13 +3094,6 @@ body {
   color: var(--color-navy);
 }
 
-.sponsor-tier-title-ko {
-  font-size: 15px;
-  font-weight: 700;
-  line-height: 1.3;
-  color: rgb(16 24 61 / 0.42);
-}
-
 .sponsor-tier-logos {
   display: grid;
   min-width: 0;
@@ -3127,6 +3120,11 @@ body {
 .sponsor-logo.is-diamond {
   max-width: 240px;
   max-height: 88px;
+}
+
+.sponsor-logo.is-media {
+  max-width: 150px;
+  max-height: 44px;
 }
 
 .sponsor-wordmark {
@@ -3192,6 +3190,10 @@ body {
 
   .sponsor-logo.is-diamond {
     max-width: min(230px, 78vw);
+  }
+
+  .sponsor-logo.is-media {
+    max-width: min(150px, 62vw);
   }
 
   .sponsor-wordmark {
