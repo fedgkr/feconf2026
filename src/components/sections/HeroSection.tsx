@@ -163,7 +163,7 @@ const fragmentShader = /* glsl */ `
   }
 `;
 
-function StripeField(props: {
+export function StripeField(props: {
   ramp: number[][],
 }) {
   const rampFrom = props.ramp[0];
