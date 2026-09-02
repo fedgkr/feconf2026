@@ -139,15 +139,25 @@ export default function SiteNav() {
     setActive(next);
   });
 
-  const fg = whiteInk ? "rgb(255, 255, 255)" : "rgb(21, 21, 21)";
-  const dim = whiteInk ? "rgba(255, 255, 255, 0.35)" : "rgba(21, 21, 21, 0.35)";
+  // over the open mobile menu the bar is painted white (below), so its
+  // glyphs draw in ink even when the section under it wanted white text
+  const whiteText = whiteInk && !open;
+  const fg = whiteText ? "rgb(255, 255, 255)" : "rgb(21, 21, 21)";
+  const dim = whiteText ? "rgba(255, 255, 255, 0.35)" : "rgba(21, 21, 21, 0.35)";
 
   return (
     <header
       ref={header}
       className="site-nav fixed inset-x-0 top-0 z-50"
       style={{
-        backgroundColor: "var(--fe-nav-bg, transparent)",
+        // an open mobile menu paints the bar row like its dropdown panel:
+        // over the hero the row is otherwise transparent, and the panel
+        // looked detached from the top of the screen
+        backgroundColor: open
+          ? "rgba(255, 255, 255, 0.95)"
+          : "var(--fe-nav-bg, transparent)",
+        backdropFilter: open ? "blur(24px)" : undefined,
+        WebkitBackdropFilter: open ? "blur(24px)" : undefined,
         transition: "background-color 0.4s ease",
       }}
     >

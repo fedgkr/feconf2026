@@ -54,7 +54,10 @@ function StoryCopy({
   return (
     <div className="overflow-hidden">
       <p
-        className="min-h-[60px] text-center text-xl font-semibold leading-[1.4] tracking-[-1.2px] text-ink sm:min-h-[90px] sm:text-2xl md:text-[32px]"
+        // flex-centred: the copy is shorter than the reserved min-height on
+        // phones, and block flow left it pinned to the top — visibly above
+        // the centre line of the stage frame
+        className="flex min-h-[60px] flex-col items-center justify-center text-center text-xl font-semibold leading-[1.4] tracking-[-1.2px] text-ink sm:min-h-[90px] sm:text-2xl md:text-[32px]"
         style={{
           opacity: shown ? 1 : 0,
           transform: leaving
@@ -66,7 +69,6 @@ function StoryCopy({
         }}
       >
         <span>{lines[0]}</span>
-        <br />
         <span>{lines[1]}</span>
       </p>
     </div>
