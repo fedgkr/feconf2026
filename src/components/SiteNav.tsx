@@ -76,9 +76,10 @@ export default function SiteNav() {
   const header = useRef<HTMLElement>(null);
   const [open, setOpen] = useState(false);
   // The bar row paints white the instant the menu opens (a fading row
-  // visibly split from the already-white panel), holds white through the
-  // panel's collapse, then dissolves in a short fade the moment the collapse
-  // ends — a lingering 0.4s fade read as a second, separate animation.
+  // visibly split from the already-white panel). On close the row fades on
+  // the panel's own opacity curve, from the same moment — the collapsing
+  // panel is already fading, and any row white outliving it reads as a
+  // second, separate animation.
   const [menuPaint, setMenuPaint] = useState<"off" | "on" | "fade">("off");
 
   // safety net: if the dissolve's transitionend never fires (the section
@@ -172,7 +173,7 @@ export default function SiteNav() {
           menuPaint === "on"
             ? "background-color 0s"
             : menuPaint === "fade"
-              ? "background-color 0.15s ease"
+              ? "background-color 0.3s ease" // the panel's opacity curve
               : "background-color 0.4s ease",
       }}
       onTransitionEnd={(e) => {
@@ -210,7 +211,7 @@ export default function SiteNav() {
           onClick={() => {
             const next = !open;
             setOpen(next);
-            if (next) setMenuPaint("on");
+            setMenuPaint(next ? "on" : "fade");
           }}
           aria-label={open ? "메뉴 닫기" : "메뉴 열기"}
           style={{ color: dim, transition: "color 0.4s ease" }}
@@ -224,11 +225,6 @@ export default function SiteNav() {
         // solid white like the bar row above it — 5% translucency drew a
         // faint seam between the two boxes over vivid hero colours
         className="overflow-hidden bg-white md:hidden"
-        onTransitionEnd={(e) => {
-          // the row's dissolve starts the moment the panel finishes
-          // collapsing, so the close reads as one motion with a short tail
-          if (e.propertyName === "max-height" && !open) setMenuPaint("fade");
-        }}
         style={{
           maxHeight: open ? "300px" : "0",
           opacity: open ? 1 : 0,
