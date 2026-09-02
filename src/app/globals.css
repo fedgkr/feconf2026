@@ -884,40 +884,56 @@ body {
   transition: color 260ms ease;
 }
 
-.session-card:hover,
 .session-card:focus-visible,
 .session-card.is-active {
   box-shadow: 0 18px 42px rgb(16 24 61 / 0.12);
 }
 
-.session-card:hover > .sched-flood,
 .session-card:focus-visible > .sched-flood,
 .session-card.is-active > .sched-flood {
   opacity: 1;
 }
 
-.session-card:hover p,
 .session-card:focus-visible p,
 .session-card.is-active p,
-.session-card:hover .sched-affiliation,
 .session-card:focus-visible .sched-affiliation,
 .session-card.is-active .sched-affiliation,
-.session-card:hover .session-badge,
 .session-card:focus-visible .session-badge,
 .session-card.is-active .session-badge {
   color: #fff !important;
 }
 
-.session-card:hover .sched-mark,
 .session-card:focus-visible .sched-mark,
 .session-card.is-active .sched-mark {
   opacity: 1;
 }
 
-.session-card:hover .sched-mark img,
 .session-card:focus-visible .sched-mark img,
 .session-card.is-active .sched-mark img {
   filter: brightness(0) invert(1);
+}
+
+/* hover effects live behind (hover: hover): on touch screens iOS keeps
+ * :hover latched after a tap, which left a closed card flooded — touch
+ * devices flood only the expanded (.is-active) card */
+@media (hover: hover) {
+  .session-card:hover {
+    box-shadow: 0 18px 42px rgb(16 24 61 / 0.12);
+  }
+  .session-card:hover > .sched-flood {
+    opacity: 1;
+  }
+  .session-card:hover p,
+  .session-card:hover .sched-affiliation,
+  .session-card:hover .session-badge {
+    color: #fff !important;
+  }
+  .session-card:hover .sched-mark {
+    opacity: 1;
+  }
+  .session-card:hover .sched-mark img {
+    filter: brightness(0) invert(1);
+  }
 }
 
 .session-card:focus-visible {
@@ -1104,7 +1120,14 @@ body {
     padding-right: 0;
     background: var(--color-surface);
   }
+  /* phones keep the flood inside the padded column — the tablet block's
+   * edge-to-edge bleed pushed the background past the section padding */
+  .sched-card-cell {
+    margin-left: 0;
+    margin-right: 0;
+  }
   .sched-card-cell .session-card {
+    width: 100%;
     min-height: 154px !important;
     padding: 18px var(--sched-oh) !important;
   }

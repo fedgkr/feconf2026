@@ -75,7 +75,11 @@ function SessionCard({
           onToggle();
         }
       }}
-      onPointerEnter={light}
+      // touch taps fire pointerenter too, which kept the video gate lit on a
+      // closed card — on touch, only the expanded state lights the card
+      onPointerEnter={(e) => {
+        if (e.pointerType !== "touch") light();
+      }}
       onPointerLeave={() => setHovered(false)}
       onFocus={light}
       onBlur={() => setHovered(false)}
