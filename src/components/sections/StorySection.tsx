@@ -17,6 +17,9 @@ const CAR_RETURN_MS = 300;
 const SNAIL_CLEARED_MS = 400;
 /** how long wheel/touch/key input keeps counting as "the user is scrolling" */
 const INPUT_GRACE_MS = 2000;
+/** wheel ticks further apart than this belong to a new gesture; ticks inside
+ * a continuous gesture (and its momentum) arrive far more often */
+const WHEEL_GESTURE_GAP_MS = 150;
 /** synthetic fling for owned touch gestures: iOS-like decay per millisecond */
 const FLING_DECAY_PER_MS = 0.998;
 /** below this speed (px/ms) the synthetic fling stops */
@@ -166,6 +169,9 @@ export default function StorySection() {
   const touchOwned = useRef(false);
   const touchVel = useRef(0); // px/ms, positive = scrolling down
   const touchMoveAt = useRef(0);
+  // when the wheel path last canceled a tick: the gesture it owns has no
+  // native scrolling left, so its remaining ticks must be walked manually
+  const lastOwnedWheelAt = useRef(-Infinity);
   const flingFrame = useRef(0);
   // last scrollY the scroll pass saw: the hold only fights downward movement
   const lastScrollY = useRef(Infinity);
@@ -305,11 +311,27 @@ export default function StorySection() {
     };
 
     const onWheel = (e: WheelEvent) => {
-      if (unlockedSegmentCount.current >= STORY_PHRASES.length || e.ctrlKey || e.deltaY <= 0)
-        return;
-      lastInputAt.current = performance.now();
+      if (unlockedSegmentCount.current >= STORY_PHRASES.length || e.ctrlKey) return;
+      const now = performance.now();
       const unit =
         e.deltaMode === 1 ? 16 : e.deltaMode === 2 ? window.innerHeight : 1;
+      if (e.deltaY <= 0) {
+        // Upward ticks in a gesture we own would otherwise be dropped —
+        // cancelling its first event killed the gesture's native scrolling
+        // for good — and tiny up/down wheel movement would ratchet the page
+        // downward in visible judders. Walk them back manually. Gestures we
+        // never canceled (pure upward scrolling) stay native and untouched.
+        const owned = now - lastOwnedWheelAt.current < WHEEL_GESTURE_GAP_MS;
+        if (owned && e.cancelable) {
+          e.preventDefault();
+          lastOwnedWheelAt.current = now;
+          const target = Math.max(0, window.scrollY + e.deltaY * unit);
+          if (target < window.scrollY)
+            window.scrollTo({ top: target, behavior: "instant" });
+        }
+        return;
+      }
+      lastInputAt.current = now;
       const limit = lockLimit();
       // Chromium latches wheel gestures: unless a gesture's FIRST event is
       // canceled, the rest arrive cancelable:false and preventDefault is
@@ -321,6 +343,7 @@ export default function StorySection() {
       // ourselves, clamped to the limit.
       if (e.cancelable) {
         e.preventDefault();
+        lastOwnedWheelAt.current = now;
         const target = Math.min(window.scrollY + e.deltaY * unit, limit);
         if (target > window.scrollY)
           window.scrollTo({ top: target, behavior: "instant" });
