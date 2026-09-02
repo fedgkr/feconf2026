@@ -48,7 +48,13 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
           rel="stylesheet"
         />
       </head>
-      <body>{children}</body>
+      <body>
+        {/* the story lock caps this wrapper's max-height (overflow: clip) to
+            bound compositor scrolling — body/html styles must stay untouched:
+            overflow set on body propagates to the viewport on some engines
+            and froze page scrolling entirely */}
+        <div id="fc-scroll-cap">{children}</div>
+      </body>
     </html>
   );
 }

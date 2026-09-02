@@ -202,12 +202,13 @@ export default function StorySection() {
   }, []);
   const applyCap = useCallback(() => {
     const el = sectionRef.current;
-    if (!el) return;
+    const wrap = document.getElementById("fc-scroll-cap");
+    if (!el || !wrap) return;
     if (unlockedSegmentCount.current >= STORY_PHRASES.length) {
       if (appliedCap.current !== -1) {
         appliedCap.current = -1;
-        document.body.style.maxHeight = "";
-        document.body.style.overflow = "";
+        wrap.style.maxHeight = "";
+        wrap.style.overflow = "";
       }
       return;
     }
@@ -221,17 +222,31 @@ export default function StorySection() {
         stableVh(),
     );
     if (cap === appliedCap.current) return;
+    // overflow: clip, never hidden — hidden would make the wrapper a scroll
+    // container, which both breaks position: sticky inside it (the story
+    // stage would stick to the wrapper, not the viewport) and, on body,
+    // propagated to the viewport and froze page scrolling on real devices.
+    // clip only truncates layout overflow, so document scrolling stays on
+    // the viewport and the scroll bound shrinks with the wrapper.
+    wrap.style.overflow = "clip";
+    if (getComputedStyle(wrap).overflowY !== "clip") {
+      // engine without overflow: clip — leave the page uncapped rather than
+      // risk freezing it; the main-thread defences still apply
+      wrap.style.overflow = "";
+      appliedCap.current = -1;
+      return;
+    }
     appliedCap.current = cap;
-    document.body.style.maxHeight = `${cap}px`;
-    document.body.style.overflow = "hidden";
+    wrap.style.maxHeight = `${cap}px`;
   }, [stableVh]);
 
   // the cap must never outlive the section
   useEffect(
     () => () => {
-      if (appliedCap.current === -1) return;
-      document.body.style.maxHeight = "";
-      document.body.style.overflow = "";
+      const wrap = document.getElementById("fc-scroll-cap");
+      if (appliedCap.current === -1 || !wrap) return;
+      wrap.style.maxHeight = "";
+      wrap.style.overflow = "";
     },
     [],
   );
