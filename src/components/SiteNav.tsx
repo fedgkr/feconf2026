@@ -1,15 +1,9 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useRef, useState } from "react";
 import { useScrollEffect } from "@/hooks/useAnimation";
 import { useTicketDday } from "@/hooks/useTicketDday";
 import { NAV_MENU, TICKET_LINK } from "@/data/site";
-
-/**
- * The hero's intro clock (`3.1s` after a `0.65s` delay, shared with the logo
- * animations) lands at 3.75s. The bar stays docked until just past it.
- */
-const INTRO_MS = 3950;
 
 /**
  * How far into the page the bar finishes climbing, as a share of the viewport.
@@ -71,8 +65,8 @@ function jumpTo(e: React.MouseEvent, href: string) {
 /**
  * Fixed top navigation.
  *
- * Over the hero the bar sits at the bottom of the viewport through the logo
- * intro, then climbs to the top over the first 5vh of scroll — desktop only.
+ * Over the top of the hero the bar sits at the bottom of the viewport, then
+ * climbs to the top over the first 5vh of scroll — desktop only.
  * Its background follows the section under it via `--fe-nav-bg`, measured
  * here from each section's `data-nav-bg`, and its text is drawn white over the
  * hero and over any dark surface, ink over the light ones. The menu item for
@@ -80,7 +74,6 @@ function jumpTo(e: React.MouseEvent, href: string) {
  */
 export default function SiteNav() {
   const header = useRef<HTMLElement>(null);
-  const introDone = useRef(false);
   const [open, setOpen] = useState(false);
   // the bar starts over the hero, where the reference holds it white
   const [whiteInk, setWhiteInk] = useState(true);
@@ -104,21 +97,12 @@ export default function SiteNav() {
     }
     const nav = el.querySelector("nav");
     const navHeight = nav?.offsetHeight || el.offsetHeight;
-    // the intro holds the bar down even if the page is already being scrolled
-    const rise = introDone.current
-      ? smoothstep(window.scrollY / (window.innerHeight * RISE_VH))
-      : 0;
+    // scroll position alone drives the climb, so a reader who skips the logo
+    // intro still meets the bar at the top before the story section arrives
+    const rise = smoothstep(window.scrollY / (window.innerHeight * RISE_VH));
     const drop = (1 - rise) * Math.max(0, window.innerHeight - navHeight);
     el.style.transform = `translate3d(0, ${drop}px, 0)`;
   }, []);
-
-  useEffect(() => {
-    const timer = window.setTimeout(() => {
-      introDone.current = true;
-      applyDock();
-    }, INTRO_MS);
-    return () => window.clearTimeout(timer);
-  }, [applyDock]);
 
   useScrollEffect(() => {
     applyDock();
