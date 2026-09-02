@@ -3070,7 +3070,7 @@ body {
 
 .sponsor-tier-stack {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: clamp(34px, 5vw, 62px) clamp(32px, 5vw, 72px);
 }
 
@@ -3081,6 +3081,10 @@ body {
 .sponsor-tier-row.is-diamond,
 .sponsor-tier-row.is-platinum {
   grid-column: 1 / -1;
+}
+
+.sponsor-tier-row.is-special {
+  grid-column: span 2;
 }
 
 .sponsor-tier-row + .sponsor-tier-row {
@@ -3146,12 +3150,21 @@ body {
 }
 
 .sponsor-logo {
+  width: auto;
+  height: auto;
   max-width: 200px;
   max-height: 72px;
   object-fit: contain;
 }
 
 .sponsor-logo.is-diamond {
+  width: min(240px, 100%);
+  max-width: 240px;
+  max-height: 88px;
+}
+
+.sponsor-logo.is-platinum {
+  width: min(240px, 100%);
   max-width: 240px;
   max-height: 88px;
 }
@@ -3159,6 +3172,11 @@ body {
 .sponsor-logo.is-special {
   max-width: 230px;
   max-height: 96px;
+}
+
+.sponsor-logo.is-jpub {
+  max-width: 184px;
+  max-height: 76px;
 }
 
 .sponsor-logo.is-media {
@@ -3209,11 +3227,11 @@ body {
   }
 
   .sponsor-tier-row.is-media .sponsor-tier-title {
-    font-size: 16px;
+    font-size: clamp(12px, 3.1vw, 14px);
   }
 
   .sponsor-tier-row.is-media .sponsor-tier-label {
-    gap: 8px;
+    gap: 6px;
   }
 
   .sponsor-tier-logos {
@@ -3252,6 +3270,12 @@ body {
     max-width: min(230px, 78vw);
   }
 
+  .sponsor-logo.is-platinum {
+    width: min(230px, 64vw);
+    max-width: min(230px, 64vw);
+    max-height: 88px;
+  }
+
   .sponsor-logo.is-special {
     max-width: min(220px, 78vw);
     max-height: 96px;
@@ -3260,6 +3284,11 @@ body {
   .sponsor-tier-row.is-special .sponsor-logo.is-special {
     max-width: min(160px, 40vw);
     max-height: 78px;
+  }
+
+  .sponsor-tier-row.is-special .sponsor-logo.is-jpub {
+    max-width: min(126px, 35vw);
+    max-height: 62px;
   }
 
   .sponsor-logo.is-media {

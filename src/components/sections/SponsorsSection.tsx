@@ -16,8 +16,13 @@ function SponsorMark({ sponsor, tier }: { sponsor: Sponsor; tier: SponsorTier["i
       loading="lazy"
       width={sponsor.width}
       height={sponsor.height}
-      className={`sponsor-logo is-${tier}`}
-      style={{ width: "auto", height: "auto" }}
+      className={[
+        "sponsor-logo",
+        `is-${tier}`,
+        sponsor.logoVariant ? `is-${sponsor.logoVariant}` : "",
+      ]
+        .filter(Boolean)
+        .join(" ")}
     />
   );
 }

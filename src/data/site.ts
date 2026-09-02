@@ -593,6 +593,7 @@ export interface Sponsor {
   src?: string;
   width?: number;
   height?: number;
+  logoVariant?: "jpub";
 }
 
 export interface SponsorTier {
@@ -647,6 +648,7 @@ export const SPONSORS_SECTION = {
           src: assetPath("/images/sponsor-jpub.jpg"),
           width: 459,
           height: 262,
+          logoVariant: "jpub",
         },
       ],
     },
