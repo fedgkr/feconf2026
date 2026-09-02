@@ -3245,6 +3245,11 @@ body {
     grid-template-columns: minmax(0, 1fr);
   }
 
+  .sponsor-tier-row.is-special .sponsor-tier-logos.is-count-2 {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    column-gap: 10px;
+  }
+
   .sponsor-tier-logos.is-count-2 .sponsor-cell + .sponsor-cell {
     border-left: 0;
   }
@@ -3282,13 +3287,13 @@ body {
   }
 
   .sponsor-tier-row.is-special .sponsor-logo.is-special {
-    max-width: min(160px, 40vw);
-    max-height: 78px;
+    max-width: min(116px, 100%);
+    max-height: 58px;
   }
 
   .sponsor-tier-row.is-special .sponsor-logo.is-jpub {
-    max-width: min(126px, 35vw);
-    max-height: 62px;
+    max-width: min(96px, 100%);
+    max-height: 52px;
   }
 
   .sponsor-logo.is-media {
@@ -3296,7 +3301,7 @@ body {
   }
 
   .sponsor-tier-row.is-media .sponsor-logo.is-media {
-    max-width: min(132px, 38vw);
+    max-width: min(116px, 100%);
   }
 
   .sponsor-wordmark {
