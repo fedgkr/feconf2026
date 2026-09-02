@@ -153,6 +153,8 @@ export default function StorySection() {
   const lockInit = useRef(false);
   const lastInputAt = useRef(-Infinity);
   const lastTouchY = useRef(0);
+  // a touch gesture we canceled once: we drive its scrolling until touchend
+  const touchOwned = useRef(false);
   // last scrollY the scroll pass saw: the hold only fights downward movement
   const lastScrollY = useRef(Infinity);
 
@@ -319,19 +321,40 @@ export default function StorySection() {
 
     const onTouchStart = (e: TouchEvent) => {
       lastTouchY.current = e.touches[0]?.clientY ?? 0;
+      touchOwned.current = false;
     };
 
     const onTouchMove = (e: TouchEvent) => {
       const touch = e.touches[0];
-      if (unlockedSegmentCount.current >= STORY_PHRASES.length || !touch) return;
-      const pullingDown = lastTouchY.current > touch.clientY;
+      if (!touch) return;
+      const dy = lastTouchY.current - touch.clientY; // > 0: pulling down
       lastTouchY.current = touch.clientY;
+      if (touchOwned.current) {
+        // iOS kills a gesture's native scroll for good once any of its
+        // touchmoves is canceled — without this, reversing upward in the
+        // same gesture goes dead and the page "catches" until the next
+        // touch. So after the first cancel, walk the page ourselves for the
+        // rest of the gesture: down stays clamped to the limit, up follows
+        // the finger immediately.
+        if (e.cancelable) e.preventDefault();
+        if (dy > 0) lastInputAt.current = performance.now();
+        const limit =
+          unlockedSegmentCount.current >= STORY_PHRASES.length
+            ? Infinity
+            : lockLimit();
+        const target = Math.max(0, Math.min(window.scrollY + dy, limit));
+        window.scrollTo({ top: target, behavior: "instant" });
+        return;
+      }
+      if (unlockedSegmentCount.current >= STORY_PHRASES.length) return;
       // only downward drags arm the hold: an upward drag must never let the
       // scroll pass snap the page against the user's direction
-      if (!pullingDown) return;
+      if (dy <= 0) return;
       lastInputAt.current = performance.now();
-      if (e.cancelable && window.scrollY >= lockLimit() - 1)
+      if (e.cancelable && window.scrollY >= lockLimit() - 1) {
         e.preventDefault();
+        touchOwned.current = true;
+      }
     };
 
     const onKeyDown = (e: KeyboardEvent) => {
