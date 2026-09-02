@@ -75,6 +75,10 @@ function jumpTo(e: React.MouseEvent, href: string) {
 export default function SiteNav() {
   const header = useRef<HTMLElement>(null);
   const [open, setOpen] = useState(false);
+  // the bar row paints white the instant the menu opens (no fade — a fading
+  // row visibly split from the already-white panel), and stays white until
+  // the panel's collapse transition has finished, then fades back
+  const [paintWhite, setPaintWhite] = useState(false);
   // the bar starts over the hero, where the reference holds it white
   const [whiteInk, setWhiteInk] = useState(true);
   const [active, setActive] = useState<string>(NAV_MENU[0].id);
@@ -139,9 +143,9 @@ export default function SiteNav() {
     setActive(next);
   });
 
-  // over the open mobile menu the bar is painted white (below), so its
-  // glyphs draw in ink even when the section under it wanted white text
-  const whiteText = whiteInk && !open;
+  // over the white-painted bar the glyphs draw in ink even when the section
+  // under it wanted white text — including while the close is animating
+  const whiteText = whiteInk && !paintWhite;
   const fg = whiteText ? "rgb(255, 255, 255)" : "rgb(21, 21, 21)";
   const dim = whiteText ? "rgba(255, 255, 255, 0.35)" : "rgba(21, 21, 21, 0.35)";
 
@@ -150,11 +154,11 @@ export default function SiteNav() {
       ref={header}
       className="site-nav fixed inset-x-0 top-0 z-50"
       style={{
-        // an open mobile menu paints the bar row solid white: over the hero
-        // the row is otherwise transparent and the panel looked detached —
+        // solid white while the menu is open or closing: over the hero the
+        // row is otherwise transparent and the panel looked detached —
         // translucency let the hero tint through, so no alpha here
-        backgroundColor: open ? "rgb(255, 255, 255)" : "var(--fe-nav-bg, transparent)",
-        transition: "background-color 0.4s ease",
+        backgroundColor: paintWhite ? "rgb(255, 255, 255)" : "var(--fe-nav-bg, transparent)",
+        transition: paintWhite ? "background-color 0s" : "background-color 0.4s ease",
       }}
     >
       <nav
@@ -184,7 +188,11 @@ export default function SiteNav() {
         </a>
         <button
           className="ml-auto md:hidden"
-          onClick={() => setOpen(!open)}
+          onClick={() => {
+            const next = !open;
+            setOpen(next);
+            if (next) setPaintWhite(true);
+          }}
           aria-label={open ? "메뉴 닫기" : "메뉴 열기"}
           style={{ color: dim, transition: "color 0.4s ease" }}
         >
@@ -194,7 +202,14 @@ export default function SiteNav() {
         </button>
       </nav>
       <div
-        className="overflow-hidden bg-white/95 backdrop-blur-xl md:hidden"
+        // solid white like the bar row above it — 5% translucency drew a
+        // faint seam between the two boxes over vivid hero colours
+        className="overflow-hidden bg-white md:hidden"
+        onTransitionEnd={(e) => {
+          // the row fades back only after the panel has fully collapsed —
+          // fading them together showed the seam between the two boxes
+          if (e.propertyName === "max-height" && !open) setPaintWhite(false);
+        }}
         style={{
           maxHeight: open ? "300px" : "0",
           opacity: open ? 1 : 0,
