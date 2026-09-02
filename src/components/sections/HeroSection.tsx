@@ -279,7 +279,11 @@ export default function HeroSection() {
       ref={sectionRef}
       id="home"
       aria-label="FEConf 2026 intro"
-      className="relative h-dvh overflow-hidden bg-white"
+      // svh, not dvh: iOS Safari resizes the dynamic viewport every time its
+      // bars collapse or expand mid-scroll, and a dvh hero re-centres its logo
+      // and rescales its canvas on each toggle — the visible shaking. The
+      // small viewport height fits the bars-visible screen and never moves.
+      className="relative h-svh overflow-hidden bg-white"
     >
       {/* the stripes are soft gradients, so capping the render buffer at
           1.5x has no visible cost — at DPR 2 the fill cost of 81 blended

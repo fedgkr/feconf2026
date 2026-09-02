@@ -467,13 +467,17 @@ export default function StorySection() {
   return (
     <section
       ref={sectionRef}
-      className="relative"
+      // bg-surface: with the stage at svh, hiding the mobile browser bars
+      // leaves a strip below it — painted the same surface so nothing shows
+      className="relative bg-surface"
       style={{ height: "340vh" }}
       data-nav-bg="#fafafd"
     >
       <div
         ref={motionRef}
-        className={`sticky top-0 flex h-dvh w-full items-center justify-center overflow-hidden bg-surface ${
+        // svh, not dvh: see HeroSection — a dvh stage re-centres its copy on
+        // every iOS bar toggle mid-scroll
+        className={`sticky top-0 flex h-svh w-full items-center justify-center overflow-hidden bg-surface ${
           run ? "fc-run" : ""
         } ${motionActive ? "fc-motion-active" : ""}`}
       >
