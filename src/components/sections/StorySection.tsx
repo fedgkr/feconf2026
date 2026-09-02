@@ -17,6 +17,14 @@ const CAR_RETURN_MS = 300;
 const SNAIL_CLEARED_MS = 400;
 /** how long wheel/touch/key input keeps counting as "the user is scrolling" */
 const INPUT_GRACE_MS = 2000;
+/** synthetic fling for owned touch gestures: iOS-like decay per millisecond */
+const FLING_DECAY_PER_MS = 0.998;
+/** below this speed (px/ms) the synthetic fling stops */
+const FLING_STOP_SPEED = 0.02;
+/** a finger that paused this long before lifting releases with no fling */
+const FLING_PAUSE_MS = 90;
+/** weight of the newest touchmove sample in the release-velocity estimate */
+const FLING_VELOCITY_SMOOTHING = 0.4;
 /** keys that scroll the page downward */
 const DOWN_KEYS = new Set(["ArrowDown", "PageDown", "End", " "]);
 
@@ -153,8 +161,12 @@ export default function StorySection() {
   const lockInit = useRef(false);
   const lastInputAt = useRef(-Infinity);
   const lastTouchY = useRef(0);
-  // a touch gesture we canceled once: we drive its scrolling until touchend
+  // a touch gesture we canceled once: we drive its scrolling until touchend,
+  // then hand over to a synthetic fling (native momentum never starts)
   const touchOwned = useRef(false);
+  const touchVel = useRef(0); // px/ms, positive = scrolling down
+  const touchMoveAt = useRef(0);
+  const flingFrame = useRef(0);
   // last scrollY the scroll pass saw: the hold only fights downward movement
   const lastScrollY = useRef(Infinity);
 
@@ -319,9 +331,46 @@ export default function StorySection() {
       }
     };
 
+    const stopFling = () => {
+      if (flingFrame.current) {
+        cancelAnimationFrame(flingFrame.current);
+        flingFrame.current = 0;
+      }
+    };
+
+    // An owned gesture killed its native momentum, so play our own: same
+    // clamp as the drag, decaying until it stops or reaches the lock limit.
+    const startFling = () => {
+      let v = touchVel.current;
+      if (performance.now() - touchMoveAt.current > FLING_PAUSE_MS) return;
+      if (Math.abs(v) < FLING_STOP_SPEED) return;
+      let prev = performance.now();
+      const step = () => {
+        flingFrame.current = 0;
+        const now = performance.now();
+        const dt = Math.min(now - prev, 48); // dropped frames must not teleport
+        prev = now;
+        if (v > 0) lastInputAt.current = now;
+        const limit =
+          unlockedSegmentCount.current >= STORY_PHRASES.length
+            ? Infinity
+            : lockLimit();
+        const target = Math.max(0, Math.min(window.scrollY + v * dt, limit));
+        window.scrollTo({ top: target, behavior: "instant" });
+        v *= Math.pow(FLING_DECAY_PER_MS, dt);
+        const hitEdge = (v > 0 && target >= limit) || (v < 0 && target <= 0);
+        if (!hitEdge && Math.abs(v) >= FLING_STOP_SPEED)
+          flingFrame.current = requestAnimationFrame(step);
+      };
+      flingFrame.current = requestAnimationFrame(step);
+    };
+
     const onTouchStart = (e: TouchEvent) => {
+      stopFling();
       lastTouchY.current = e.touches[0]?.clientY ?? 0;
       touchOwned.current = false;
+      touchVel.current = 0;
+      touchMoveAt.current = performance.now();
     };
 
     const onTouchMove = (e: TouchEvent) => {
@@ -329,32 +378,43 @@ export default function StorySection() {
       if (!touch) return;
       const dy = lastTouchY.current - touch.clientY; // > 0: pulling down
       lastTouchY.current = touch.clientY;
-      if (touchOwned.current) {
-        // iOS kills a gesture's native scroll for good once any of its
-        // touchmoves is canceled — without this, reversing upward in the
-        // same gesture goes dead and the page "catches" until the next
-        // touch. So after the first cancel, walk the page ourselves for the
-        // rest of the gesture: down stays clamped to the limit, up follows
-        // the finger immediately.
-        if (e.cancelable) e.preventDefault();
-        if (dy > 0) lastInputAt.current = performance.now();
-        const limit =
-          unlockedSegmentCount.current >= STORY_PHRASES.length
-            ? Infinity
-            : lockLimit();
-        const target = Math.max(0, Math.min(window.scrollY + dy, limit));
-        window.scrollTo({ top: target, behavior: "instant" });
-        return;
-      }
-      if (unlockedSegmentCount.current >= STORY_PHRASES.length) return;
-      // only downward drags arm the hold: an upward drag must never let the
-      // scroll pass snap the page against the user's direction
-      if (dy <= 0) return;
-      lastInputAt.current = performance.now();
-      if (e.cancelable && window.scrollY >= lockLimit() - 1) {
-        e.preventDefault();
+      const now = performance.now();
+      const dt = Math.max(now - touchMoveAt.current, 1);
+      touchMoveAt.current = now;
+      touchVel.current =
+        touchVel.current * (1 - FLING_VELOCITY_SMOOTHING) +
+        (dy / dt) * FLING_VELOCITY_SMOOTHING;
+      if (!touchOwned.current) {
+        if (unlockedSegmentCount.current >= STORY_PHRASES.length) return;
+        // upward drags stay native: the lock never fights the user's way up
+        if (dy <= 0) return;
+        // native fling momentum outlives touchmove and can only be fought a
+        // frame late by the rAF hold — the visible jolt at the last phrase.
+        // So while the lock is armed, no native scroll may start downward at
+        // all: own the gesture from its first downward move. (iOS kills a
+        // gesture's native scroll for good once one touchmove is canceled,
+        // which is also why the rest of the gesture is driven manually.)
+        if (!e.cancelable) return; // already scrolling natively: hold covers
         touchOwned.current = true;
       }
+      if (e.cancelable) e.preventDefault();
+      if (dy > 0) lastInputAt.current = now;
+      const limit =
+        unlockedSegmentCount.current >= STORY_PHRASES.length
+          ? Infinity
+          : lockLimit();
+      const target = Math.max(0, Math.min(window.scrollY + dy, limit));
+      window.scrollTo({ top: target, behavior: "instant" });
+    };
+
+    const onTouchEnd = () => {
+      if (!touchOwned.current) return;
+      touchOwned.current = false;
+      startFling();
+    };
+
+    const onTouchCancel = () => {
+      touchOwned.current = false;
     };
 
     const onKeyDown = (e: KeyboardEvent) => {
@@ -366,12 +426,17 @@ export default function StorySection() {
     window.addEventListener("wheel", onWheel, { passive: false });
     window.addEventListener("touchstart", onTouchStart, { passive: true });
     window.addEventListener("touchmove", onTouchMove, { passive: false });
+    window.addEventListener("touchend", onTouchEnd, { passive: true });
+    window.addEventListener("touchcancel", onTouchCancel, { passive: true });
     window.addEventListener("keydown", onKeyDown);
     return () => {
+      stopFling();
       window.removeEventListener("click", onNavClick, { capture: true });
       window.removeEventListener("wheel", onWheel);
       window.removeEventListener("touchstart", onTouchStart);
       window.removeEventListener("touchmove", onTouchMove);
+      window.removeEventListener("touchend", onTouchEnd);
+      window.removeEventListener("touchcancel", onTouchCancel);
       window.removeEventListener("keydown", onKeyDown);
     };
   }, [motionActive]);
