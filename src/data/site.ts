@@ -590,11 +590,16 @@ export const EXPERIENCE = {
 
 export interface Sponsor {
   name: string;
-  src: string;
-  /** media partners carry a small label above the logo */
-  label?: string;
+  src?: string;
   width?: number;
   height?: number;
+}
+
+export interface SponsorTier {
+  id: "diamond" | "platinum" | "special";
+  title: string;
+  titleKo: string;
+  sponsors: Sponsor[];
 }
 
 export const SPONSORS_SECTION = {
@@ -602,38 +607,36 @@ export const SPONSORS_SECTION = {
     title: ["Sponsors"],
     subtitle: ["FECONF 10주년을 빛내줄 스폰서를 소개합니다"],
   },
-  /** two rows of four; the grid draws hairlines between them */
-  sponsors: [
+  tiers: [
     {
-      name: "wyyyes",
-      src: assetPath("/images/sponsor-wyyyes-4a5aac.png"),
-      width: 200,
-      height: 80,
-    },
-    { name: "imweb", src: assetPath("/images/sponsor-1.svg") },
-    {
-      name: "Toss",
-      src: assetPath("/images/sponsor-toss.png"),
-      width: 200,
-      height: 80,
-    },
-    { name: "당근", src: assetPath("/images/sponsor-2.svg") },
-    { name: "stibee", src: assetPath("/images/sponsor-3.svg") },
-    { name: "F-Lab", src: assetPath("/images/sponsor-4.svg") },
-    {
-      name: "Olive Young",
-      src: assetPath("/images/sponsor-oliveyoung-6dc94d.png"),
-      width: 200,
-      height: 80,
+      id: "diamond",
+      title: "Diamond",
+      titleKo: "다이아몬드",
+      sponsors: [
+        {
+          name: "토스",
+          src: assetPath("/images/sponsor-toss.png"),
+          width: 200,
+          height: 80,
+        },
+      ],
     },
     {
-      name: "요즘 IT",
-      src: assetPath("/images/sponsor-yozm.png"),
-      label: "Media Partner",
-      width: 104,
-      height: 28,
+      id: "platinum",
+      title: "Platinum",
+      titleKo: "플래티넘",
+      sponsors: [
+        { name: "미리디" },
+        { name: "당근", src: assetPath("/images/sponsor-2.svg") },
+      ],
     },
-  ] as Sponsor[],
+    {
+      id: "special",
+      title: "Special",
+      titleKo: "스페셜",
+      sponsors: [{ name: "티켓타코" }, { name: "제이펍" }],
+    },
+  ] as SponsorTier[],
 };
 
 /* ------------------------------- buddy -------------------------------- */

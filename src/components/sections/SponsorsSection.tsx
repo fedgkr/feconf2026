@@ -1,38 +1,67 @@
 "use client";
 
+import type { CSSProperties } from "react";
 import SectionHeading from "../SectionHeading";
 import { useCoverRise, useInView, useStaggerChildren } from "@/hooks/useAnimation";
-import { SPONSORS_SECTION, type Sponsor } from "@/data/site";
+import { SPONSORS_SECTION, type Sponsor, type SponsorTier } from "@/data/site";
 
-function SponsorCell({ sponsor, style }: { sponsor: Sponsor; style: React.CSSProperties }) {
-  const logo = (
+function SponsorMark({ sponsor, tier }: { sponsor: Sponsor; tier: SponsorTier["id"] }) {
+  if (!sponsor.src) {
+    return <span className="sponsor-wordmark">{sponsor.name}</span>;
+  }
+
+  return (
     <img
       src={sponsor.src}
       alt={sponsor.name}
       loading="lazy"
       width={sponsor.width}
       height={sponsor.height}
-      className="max-h-[80px] max-w-[200px] object-contain"
+      className={`sponsor-logo is-${tier}`}
       style={{ width: "auto", height: "auto" }}
     />
   );
+}
 
-  if (sponsor.label) {
-    return (
-      <div
-        className="sponsor-cell flex h-[140px] w-full flex-col items-center justify-center gap-3 p-4"
-        style={style}
-      >
-        <span className="text-base font-semibold leading-[1.4] text-ink/30">
-          {sponsor.label}
-        </span>
-        {logo}
-      </div>
-    );
-  }
+function SponsorCell({
+  sponsor,
+  tier,
+  style,
+}: {
+  sponsor: Sponsor;
+  tier: SponsorTier["id"];
+  style: CSSProperties;
+}) {
   return (
-    <div className="sponsor-cell" style={style}>
-      <div className="flex h-[140px] w-full items-center justify-center p-4">{logo}</div>
+    <div className={`sponsor-cell is-${tier}`} style={style}>
+      <SponsorMark sponsor={sponsor} tier={tier} />
+    </div>
+  );
+}
+
+function SponsorTierRow({
+  tier,
+  styles,
+}: {
+  tier: SponsorTier;
+  styles: CSSProperties[];
+}) {
+  return (
+    <div className={`sponsor-tier-row is-${tier.id}`}>
+      <div className="sponsor-tier-label">
+        <span className="sponsor-tier-title">{tier.title}</span>
+        <span className="sponsor-tier-title-ko">{tier.titleKo}</span>
+      </div>
+      <div className={`sponsor-tier-logos is-count-${tier.sponsors.length}`}>
+        {tier.sponsors.map((sponsor, index) => (
+          <SponsorCell
+            key={sponsor.name}
+            sponsor={sponsor}
+            tier={tier.id}
+            style={styles[index]}
+          />
+        ))}
+      </div>
     </div>
   );
 }
@@ -40,11 +69,21 @@ function SponsorCell({ sponsor, style }: { sponsor: Sponsor; style: React.CSSPro
 export default function SponsorsSection() {
   const coverRef = useCoverRise<HTMLElement>();
   const { ref: gridRef, inView } = useInView<HTMLDivElement>({ threshold: 0.1 });
-  const stagger = useStaggerChildren(inView, SPONSORS_SECTION.sponsors.length, 70);
-  const rows = [
-    SPONSORS_SECTION.sponsors.slice(0, 4),
-    SPONSORS_SECTION.sponsors.slice(4),
-  ];
+  const totalSponsorCount = SPONSORS_SECTION.tiers.reduce(
+    (total, tier) => total + tier.sponsors.length,
+    0,
+  );
+  const stagger = useStaggerChildren(inView, totalSponsorCount, 70);
+  const tierRows = SPONSORS_SECTION.tiers.map((tier, tierIndex) => {
+    const startIndex = SPONSORS_SECTION.tiers
+      .slice(0, tierIndex)
+      .reduce((total, currentTier) => total + currentTier.sponsors.length, 0);
+
+    return {
+      tier,
+      styles: stagger.slice(startIndex, startIndex + tier.sponsors.length),
+    };
+  });
 
   return (
     <section
@@ -69,24 +108,13 @@ export default function SponsorsSection() {
             />
             <div className="px-[30px] max-sm:px-0">
               <div ref={gridRef} className="relative">
-                <div className="fe-line-v fe-fade-0 absolute inset-y-0 left-1/4 hidden w-px sm:block" />
-                <div className="fe-line-v fe-fade-0 absolute inset-y-0 left-1/2 hidden w-px sm:block" />
-                <div className="fe-line-v fe-fade-0 absolute inset-y-0 left-3/4 hidden w-px sm:block" />
                 <div className="fe-line-h fe-fade-30 -mx-[30px] h-px max-sm:mx-0" />
-                {rows.map((row, r) => (
-                  <div key={r} className="contents">
-                    <div className="grid grid-cols-1 sm:grid-cols-4">
-                      {row.map((sponsor, i) => (
-                        <SponsorCell
-                          key={sponsor.name}
-                          sponsor={sponsor}
-                          style={stagger[r * 4 + i]}
-                        />
-                      ))}
-                    </div>
-                    <div className="fe-line-h fe-fade-30 -mx-[30px] h-px max-sm:mx-0" />
-                  </div>
-                ))}
+                <div className="sponsor-tier-stack">
+                  {tierRows.map(({ tier, styles }) => (
+                    <SponsorTierRow key={tier.id} tier={tier} styles={styles} />
+                  ))}
+                </div>
+                <div className="fe-line-h fe-fade-30 -mx-[30px] h-px max-sm:mx-0" />
               </div>
             </div>
           </div>
