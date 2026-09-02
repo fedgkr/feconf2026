@@ -50,7 +50,7 @@ export default function BuddySection() {
           />
         </div>
         <div className="relative z-[3] mt-auto flex justify-center pt-14">
-          <div data-fc-keepout className="pointer-events-auto">
+          <div data-fc-keepout className="pointer-events-auto max-sm:w-full">
             <ClickFrame
               label={BUDDY.button.label}
               icon={BUDDY.button.icon}
