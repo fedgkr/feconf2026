@@ -150,14 +150,10 @@ export default function SiteNav() {
       ref={header}
       className="site-nav fixed inset-x-0 top-0 z-50"
       style={{
-        // an open mobile menu paints the bar row like its dropdown panel:
-        // over the hero the row is otherwise transparent, and the panel
-        // looked detached from the top of the screen
-        backgroundColor: open
-          ? "rgba(255, 255, 255, 0.95)"
-          : "var(--fe-nav-bg, transparent)",
-        backdropFilter: open ? "blur(24px)" : undefined,
-        WebkitBackdropFilter: open ? "blur(24px)" : undefined,
+        // an open mobile menu paints the bar row solid white: over the hero
+        // the row is otherwise transparent and the panel looked detached —
+        // translucency let the hero tint through, so no alpha here
+        backgroundColor: open ? "rgb(255, 255, 255)" : "var(--fe-nav-bg, transparent)",
         transition: "background-color 0.4s ease",
       }}
     >
