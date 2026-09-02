@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useScrollEffect } from "@/hooks/useAnimation";
 import { useTicketDday } from "@/hooks/useTicketDday";
 import { NAV_MENU, TICKET_LINK } from "@/data/site";
@@ -75,10 +75,19 @@ function jumpTo(e: React.MouseEvent, href: string) {
 export default function SiteNav() {
   const header = useRef<HTMLElement>(null);
   const [open, setOpen] = useState(false);
-  // the bar row paints white the instant the menu opens (no fade — a fading
-  // row visibly split from the already-white panel), and stays white until
-  // the panel's collapse transition has finished, then fades back
-  const [paintWhite, setPaintWhite] = useState(false);
+  // The bar row paints white the instant the menu opens (a fading row
+  // visibly split from the already-white panel), holds white through the
+  // panel's collapse, then dissolves in a short fade the moment the collapse
+  // ends — a lingering 0.4s fade read as a second, separate animation.
+  const [menuPaint, setMenuPaint] = useState<"off" | "on" | "fade">("off");
+
+  // safety net: if the dissolve's transitionend never fires (the section
+  // under the bar was already white, so nothing transitioned), unstick
+  useEffect(() => {
+    if (menuPaint !== "fade") return;
+    const timer = window.setTimeout(() => setMenuPaint("off"), 400);
+    return () => window.clearTimeout(timer);
+  }, [menuPaint]);
   // the bar starts over the hero, where the reference holds it white
   const [whiteInk, setWhiteInk] = useState(true);
   const [active, setActive] = useState<string>(NAV_MENU[0].id);
@@ -145,7 +154,7 @@ export default function SiteNav() {
 
   // over the white-painted bar the glyphs draw in ink even when the section
   // under it wanted white text — including while the close is animating
-  const whiteText = whiteInk && !paintWhite;
+  const whiteText = whiteInk && menuPaint === "off";
   const fg = whiteText ? "rgb(255, 255, 255)" : "rgb(21, 21, 21)";
   const dim = whiteText ? "rgba(255, 255, 255, 0.35)" : "rgba(21, 21, 21, 0.35)";
 
@@ -157,8 +166,18 @@ export default function SiteNav() {
         // solid white while the menu is open or closing: over the hero the
         // row is otherwise transparent and the panel looked detached —
         // translucency let the hero tint through, so no alpha here
-        backgroundColor: paintWhite ? "rgb(255, 255, 255)" : "var(--fe-nav-bg, transparent)",
-        transition: paintWhite ? "background-color 0s" : "background-color 0.4s ease",
+        backgroundColor:
+          menuPaint === "on" ? "rgb(255, 255, 255)" : "var(--fe-nav-bg, transparent)",
+        transition:
+          menuPaint === "on"
+            ? "background-color 0s"
+            : menuPaint === "fade"
+              ? "background-color 0.15s ease"
+              : "background-color 0.4s ease",
+      }}
+      onTransitionEnd={(e) => {
+        if (e.propertyName === "background-color" && menuPaint === "fade")
+          setMenuPaint("off");
       }}
     >
       <nav
@@ -191,7 +210,7 @@ export default function SiteNav() {
           onClick={() => {
             const next = !open;
             setOpen(next);
-            if (next) setPaintWhite(true);
+            if (next) setMenuPaint("on");
           }}
           aria-label={open ? "메뉴 닫기" : "메뉴 열기"}
           style={{ color: dim, transition: "color 0.4s ease" }}
@@ -206,9 +225,9 @@ export default function SiteNav() {
         // faint seam between the two boxes over vivid hero colours
         className="overflow-hidden bg-white md:hidden"
         onTransitionEnd={(e) => {
-          // the row fades back only after the panel has fully collapsed —
-          // fading them together showed the seam between the two boxes
-          if (e.propertyName === "max-height" && !open) setPaintWhite(false);
+          // the row's dissolve starts the moment the panel finishes
+          // collapsing, so the close reads as one motion with a short tail
+          if (e.propertyName === "max-height" && !open) setMenuPaint("fade");
         }}
         style={{
           maxHeight: open ? "300px" : "0",
