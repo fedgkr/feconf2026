@@ -14,6 +14,9 @@ import { BUDDY_SNAILS } from "@/data/site";
 const SNAIL_W = 165;
 const SNAIL_H = 87;
 const COUNT = 7;
+/** narrow screens have only 2–3 free lanes — fewer, smaller snails spread
+ * across them instead of piling up on the same spots */
+const MOBILE_COUNT = 5;
 const SPEED: [number, number] = [22, 36]; // px/s
 const BODY_HEX = /#FF5080/gi; // body colour in the source SVGs
 
@@ -156,7 +159,8 @@ export function mountBuddySnails(
     H = layer.clientHeight;
     if (!W || !H) return;
 
-    const scale = W < 720 ? 0.75 : 1;
+    const count = W < 720 ? MOBILE_COUNT : COUNT;
+    const scale = W < 480 ? 0.6 : W < 720 ? 0.75 : 1;
     const w = Math.round(SNAIL_W * scale);
     const h = Math.round(SNAIL_H * scale);
 
@@ -166,8 +170,17 @@ export function mountBuddySnails(
       [slots[i], slots[j]] = [slots[j], slots[i]];
     }
 
+    // crossing the mobile breakpoint changes the herd size — rebuild
+    if (snails.length && snails.length !== count) {
+      snails.forEach((s) => {
+        clearTimeout(s.returnTimer);
+        s.el.remove();
+      });
+      snails.length = 0;
+    }
+
     // snails already walking keep their spot; only size and lane are fixed up
-    if (snails.length === COUNT) {
+    if (snails.length === count) {
       snails.forEach((s, k) => {
         if (s.w !== w) {
           s.el.style.width = `${w}px`;
@@ -185,7 +198,12 @@ export function mountBuddySnails(
       return;
     }
 
-    for (let k = 0; k < COUNT; k++) {
+    // lane k % slots.length walks round-robin, so snails sharing a lane are
+    // staggered along the full walking track [-w, W] — on narrow screens the
+    // old (W - w) / COUNT spacing painted them as one overlapping clump
+    const laneShare = slots.length ? Math.ceil(count / slots.length) : count;
+
+    for (let k = 0; k < count; k++) {
       const el = document.createElement("div");
       el.className = "fc-snail";
       el.style.width = `${w}px`;
@@ -201,13 +219,15 @@ export function mountBuddySnails(
       const lane = slots.length
         ? slots[k % slots.length]
         : Math.round((H - h) * Math.random());
+      const seat = slots.length ? Math.floor(k / slots.length) : k;
       const s: Snail = {
         el,
         img,
         w,
         h,
-        // spread out so nobody wraps around immediately
-        x: -w + ((k + Math.random()) * (W - w)) / COUNT,
+        // seats within a lane split the track evenly, with jitter inside the
+        // seat so nobody wraps around immediately or paints on a neighbour
+        x: ((seat + 0.15 + Math.random() * 0.7) / laneShare) * (W + w) - w,
         y: clamp(lane, 0, Math.max(0, H - h - 6)) + Math.round(Math.random() * 6),
         speed: SPEED[0] + Math.random() * (SPEED[1] - SPEED[0]),
         boost: 1,

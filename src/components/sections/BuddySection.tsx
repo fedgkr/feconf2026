@@ -10,8 +10,6 @@ import { BUDDY } from "@/data/site";
 
 /** Halves the default 80vh so the white gap after sponsors reads shorter. */
 const BUDDY_COVER_RISE_DISTANCE_VH = 40;
-/** 77% of the old 520px floor, matching the 77vh section height. */
-const BUDDY_STAGE_MIN_HEIGHT_PX = 400;
 
 /**
  * Forever Buddy: the copy and the button keep their places while the
@@ -39,8 +37,10 @@ export default function BuddySection() {
       <div ref={layerRef} className="absolute inset-0 z-[1] overflow-hidden" />
       <div
         ref={stageRef}
-        className="pointer-events-none relative mx-auto flex w-full min-w-0 max-w-[1366px] flex-1 flex-col px-6 max-sm:px-5"
-        style={{ minHeight: BUDDY_STAGE_MIN_HEIGHT_PX }}
+        // desktop floor is 77% of the old 520px, matching the 77vh section
+        // height; the taller mobile floor opens a free lane between the copy
+        // and the button so the snails spread through the middle too
+        className="pointer-events-none relative mx-auto flex min-h-[560px] w-full min-w-0 max-w-[1366px] flex-1 flex-col px-6 max-sm:px-5 sm:min-h-[400px]"
       >
         <div data-fc-keepout className="relative z-[3] [&_h2]:pointer-events-auto [&_p]:pointer-events-auto">
           <SectionHeading

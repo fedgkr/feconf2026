@@ -448,7 +448,11 @@ export const BUDDY = {
     title: ["FORWARD EVER", "Forever Buddy"],
     subtitle: ["FEConf의 마스코트를 직접 키워보고, 10주년 굿즈도 받아보세요."],
   },
-  button: { label: "View on npm", icon: "external" as const, href: "#" },
+  button: {
+    label: "View on npm",
+    icon: "external" as const,
+    href: "https://www.npmjs.com/package/feconf-26-mascot",
+  },
 };
 
 /**

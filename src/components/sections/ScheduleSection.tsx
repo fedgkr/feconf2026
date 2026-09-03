@@ -5,10 +5,8 @@ import ClickFrame from "../ClickFrame";
 import Reveal from "../Reveal";
 import SectionHeading from "../SectionHeading";
 import { useInView } from "@/hooks/useAnimation";
-import { useHeroMedia, useManagedVideo } from "@/hooks/useMedia";
 import {
   HALL_COLOR,
-  HERO,
   SCHEDULE,
   SESSIONS,
   TOSS_BADGE_SRC,
@@ -32,27 +30,15 @@ function SessionCard({
   active,
   inView,
   delay,
-  mediaSrc,
   onToggle,
 }: {
   session: Session;
   active: boolean;
   inView: boolean;
   delay: number;
-  mediaSrc?: string;
   onToggle: () => void;
 }) {
   const color = HALL_COLOR[session.hall];
-  const [hovered, setHovered] = useState(false);
-  // the video layer mounts on first touch, so 18 decoders never start at once
-  const [everLit, setEverLit] = useState(false);
-  const lit = hovered || active;
-  const videoRef = useManagedVideo(lit);
-
-  const light = () => {
-    setHovered(true);
-    setEverLit(true);
-  };
 
   return (
     <div
@@ -75,40 +61,17 @@ function SessionCard({
           onToggle();
         }
       }}
-      // touch taps fire pointerenter too, which kept the video gate lit on a
-      // closed card — on touch, only the expanded state lights the card
-      onPointerEnter={(e) => {
-        if (e.pointerType !== "touch") light();
-      }}
-      onPointerLeave={() => setHovered(false)}
-      onFocus={light}
-      onBlur={() => setHovered(false)}
     >
-      {/* hover flood: hall colour + still gradient, the picked WEBM over it */}
+      {/* hover flood: the hall colour flat (A pink / B sky-blue / TOSS blue)
+          with the original light streaks over it */}
       <div
         className="sched-flood absolute inset-0 opacity-0 transition-opacity duration-[260ms]"
         style={{
           backgroundColor: color,
-          backgroundImage: `linear-gradient(118deg, rgba(255,255,255,.14) 0 10%, rgba(255,255,255,0) 11% 30%, rgba(255,255,255,.12) 31% 43%, rgba(255,255,255,0) 44% 100%), url(${HERO.posterSrc})`,
-          backgroundBlendMode: "screen, normal",
-          backgroundSize: "cover",
-          backgroundPosition: "center",
+          backgroundImage: `linear-gradient(118deg, rgba(255,255,255,.14) 0 10%, rgba(255,255,255,0) 11% 30%, rgba(255,255,255,.12) 31% 43%, rgba(255,255,255,0) 44% 100%)`,
+          backgroundBlendMode: "screen",
         }}
-      >
-        {(everLit || active) && mediaSrc && (
-          <div className="sched-hover-media">
-            <video
-              ref={videoRef}
-              src={mediaSrc}
-              loop
-              muted
-              playsInline
-              preload="auto"
-              aria-hidden="true"
-            />
-          </div>
-        )}
-      </div>
+      />
       <div className="relative z-10 flex items-start justify-between">
         <div className="sched-speaker">
           <p className="sched-speaker-name text-[18px] font-medium leading-[1.4] text-navy/80">
@@ -149,8 +112,21 @@ function SessionCard({
   );
 }
 
+/** captures the schedule table (`.sched-wrap`) and saves it as a JPG */
+async function downloadScheduleJpg(wrap: HTMLElement) {
+  const { toJpeg } = await import("html-to-image");
+  const url = await toJpeg(wrap, {
+    quality: 0.92,
+    backgroundColor: "#ffffff",
+    pixelRatio: 2,
+  });
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = "FullSchedule.jpg";
+  link.click();
+}
+
 export default function ScheduleSection() {
-  const media = useHeroMedia();
   const [active, setActive] = useState<number | null>(null);
   // The single-column grid grows past 3000px on phones, so any ratio-based
   // threshold would hold the reveal until deep into the section.
@@ -223,7 +199,6 @@ export default function ScheduleSection() {
                             active={active === r * 3 + c}
                             inView={inView}
                             delay={rowDelay(r)}
-                            mediaSrc={media?.src}
                             onToggle={() =>
                               setActive(active === r * 3 + c ? null : r * 3 + c)
                             }
@@ -243,6 +218,11 @@ export default function ScheduleSection() {
             label={SCHEDULE.download.label}
             href={SCHEDULE.download.href}
             icon="download"
+            onClick={(e) => {
+              e.preventDefault();
+              const wrap = gridRef.current?.closest<HTMLElement>(".sched-wrap");
+              if (wrap) void downloadScheduleJpg(wrap);
+            }}
           />
         </Reveal>
       </div>
