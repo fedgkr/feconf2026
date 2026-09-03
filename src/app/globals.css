@@ -3148,7 +3148,7 @@ body {
 }
 
 .sponsor-tier-row.is-platinum .sponsor-tier-logos.is-count-2 {
-  column-gap: clamp(22px, 4vw, 67px);
+  column-gap: clamp(18px, 2.8vw, 48px);
 }
 
 .sponsor-tier-row.is-special .sponsor-tier-logos.is-count-2 {
