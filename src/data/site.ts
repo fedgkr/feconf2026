@@ -627,8 +627,8 @@ export const SPONSORS_SECTION = {
         {
           name: "미리디",
           src: assetPath("/images/sponsor-miridih.png"),
-          width: 202,
-          height: 56,
+          width: 687,
+          height: 157,
         },
         { name: "당근", src: assetPath("/images/sponsor-2.svg") },
       ],

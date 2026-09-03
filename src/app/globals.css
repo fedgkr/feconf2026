@@ -3041,8 +3041,8 @@ body {
 /* ---------------------------------------------------------------- */
 
 .sponsor-section-heading {
-  padding-left: 0;
-  padding-right: 0;
+  padding-left: 60px;
+  padding-right: 60px;
 }
 
 .sponsor-section-heading h2 {
@@ -3072,6 +3072,8 @@ body {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: clamp(34px, 5vw, 62px) clamp(32px, 5vw, 72px);
+  padding-left: 60px;
+  padding-right: 60px;
 }
 
 .sponsor-tier-row {
@@ -3195,8 +3197,15 @@ body {
 }
 
 @media (max-width: 639px) {
+  .sponsor-section-heading {
+    padding-left: 0;
+    padding-right: 0;
+  }
+
   .sponsor-tier-stack {
     gap: 36px 20px;
+    padding-left: 0;
+    padding-right: 0;
   }
 
   .sponsor-tier-row + .sponsor-tier-row {

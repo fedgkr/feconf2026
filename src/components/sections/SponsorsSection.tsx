@@ -74,7 +74,7 @@ export default function SponsorsSection() {
       data-nav-bg="#ffffff"
       className="z-30 bg-white px-6 py-24 max-sm:px-5 sm:py-36"
     >
-      <div className="mx-auto max-w-[1246px]">
+      <div className="mx-auto max-w-[1366px]">
         <SectionHeading
           title={SPONSORS_SECTION.heading.title}
           subtitle={SPONSORS_SECTION.heading.subtitle}
