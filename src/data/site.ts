@@ -645,7 +645,7 @@ export const SPONSORS_SECTION = {
         },
         {
           name: "제이펍",
-          src: assetPath("/images/sponsor-jpub.jpg"),
+          src: assetPath("/images/sponsor-jpub.png"),
           width: 459,
           height: 262,
           logoVariant: "jpub",
