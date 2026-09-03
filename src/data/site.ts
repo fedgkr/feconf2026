@@ -502,7 +502,11 @@ export const SHARE_CONTACT = {
         "국내 최고의 프론트엔드 개발 인사이트를 얻을 수 있는",
         "기회를 공유하여 함께 배우고, 함께 성장해보세요.",
       ],
-      button: { label: "Share", icon: "link" as const, href: "#" },
+      button: {
+        label: "Share",
+        icon: "link" as const,
+        href: "https://www.linkedin.com/groups/14618353/",
+      },
     },
     {
       title: "Contact",
