@@ -12,6 +12,8 @@ interface ClickFrameProps {
   icon: keyof typeof ICONS;
   href?: string;
   target?: "_self" | "_blank";
+  /** save the href as a file with this name instead of navigating */
+  download?: string;
   onClick?: (e: React.MouseEvent<HTMLAnchorElement>) => void;
 }
 
@@ -26,6 +28,7 @@ export default function ClickFrame({
   icon,
   href = "#",
   target,
+  download,
   onClick,
 }: ClickFrameProps) {
   // external destinations (npm, socials) open in a new tab unless the
@@ -48,6 +51,7 @@ export default function ClickFrame({
           href={href}
           target={resolvedTarget}
           rel={rel}
+          download={download}
           onClick={onClick}
           className="absolute left-[38px] right-[38px] top-[39px] z-40 flex h-[51px] items-center justify-center gap-2.5 text-lg font-semibold tracking-[-0.08px] text-navy"
         >

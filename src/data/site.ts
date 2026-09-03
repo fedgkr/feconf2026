@@ -526,8 +526,11 @@ export const SCHEDULE = {
     subtitle: ["최종 세션 시간표와", "라이트닝 토크를 소개합니다"],
   },
   download: {
-    label: "FullSchedule.svg",
-    href: assetPath("/images/generated/full-schedule-overview.svg"),
+    // pre-rasterized from full-schedule-overview.svg (same document the
+    // browser would show) so the click saves a ready-to-share image —
+    // regenerate the PNG whenever the SVG is regenerated
+    label: "FullSchedule.png",
+    href: assetPath("/images/generated/full-schedule-overview.png"),
   },
 };
 

@@ -1431,8 +1431,8 @@ export default function ScheduleSection() {
           <ClickFrame
             label={SCHEDULE.download.label}
             href={SCHEDULE.download.href}
-            icon="external"
-            target="_blank"
+            icon="download"
+            download="FullSchedule.png"
           />
         </Reveal>
       </div>
