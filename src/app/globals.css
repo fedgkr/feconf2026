@@ -3057,15 +3057,15 @@ body {
 
 .sponsor-cell {
   min-width: 0;
-  min-height: 88px;
+  min-height: 64px;
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 14px 20px;
+  padding: 10px 16px;
 }
 
 .sponsor-cell.is-diamond {
-  min-height: 108px;
+  min-height: 70px;
 }
 
 .sponsor-tier-stack {
@@ -3158,31 +3158,31 @@ body {
 .sponsor-logo {
   width: auto;
   height: auto;
-  max-width: 200px;
-  max-height: 72px;
+  max-width: 150px;
+  max-height: 44px;
   object-fit: contain;
 }
 
 .sponsor-logo.is-diamond {
-  width: min(240px, 100%);
-  max-width: 240px;
-  max-height: 88px;
+  width: auto;
+  max-width: 150px;
+  max-height: 44px;
 }
 
 .sponsor-logo.is-platinum {
-  width: min(240px, 100%);
-  max-width: 240px;
-  max-height: 88px;
+  width: auto;
+  max-width: 150px;
+  max-height: 44px;
 }
 
 .sponsor-logo.is-special {
-  max-width: 230px;
-  max-height: 96px;
+  max-width: 136px;
+  max-height: 40px;
 }
 
 .sponsor-logo.is-jpub {
-  max-width: 184px;
-  max-height: 76px;
+  max-width: 104px;
+  max-height: 38px;
 }
 
 .sponsor-logo.is-media {
@@ -3297,13 +3297,13 @@ body {
   }
 
   .sponsor-tier-row.is-special .sponsor-logo.is-special {
-    max-width: min(104px, 29vw);
-    max-height: 46px;
+    max-width: min(96px, 27vw);
+    max-height: 40px;
   }
 
   .sponsor-tier-row.is-special .sponsor-logo.is-jpub {
-    max-width: min(78px, 22vw);
-    max-height: 40px;
+    max-width: min(70px, 20vw);
+    max-height: 36px;
   }
 
   .sponsor-logo.is-media {
