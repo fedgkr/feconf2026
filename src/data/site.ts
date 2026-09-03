@@ -525,7 +525,10 @@ export const SCHEDULE = {
     title: ["Schedule"],
     subtitle: ["최종 세션 시간표와", "라이트닝 토크를 소개합니다"],
   },
-  download: { label: "FullSchedule.jpg", href: "#" },
+  download: {
+    label: "FullSchedule.svg",
+    href: assetPath("/images/generated/full-schedule-overview.svg"),
+  },
 };
 
 /* ----------------------------- experience ----------------------------- */

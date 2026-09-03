@@ -776,6 +776,46 @@ body {
   padding: var(--sched-oh);
 }
 
+.sched-section-inner {
+  --sched-stage-height: clamp(640px, 68svh, 760px);
+  --sched-heading-gap: 64px;
+  --sched-download-gap: 48px;
+  --sched-download-height: 129px;
+}
+
+.sched-section-heading {
+  margin-bottom: var(--sched-heading-gap);
+}
+
+.sched-section-stage {
+  width: 100%;
+  height: var(--sched-stage-height);
+  min-height: 0;
+}
+
+.sched-section-stage > .sched-wrap {
+  height: 100%;
+}
+
+.sched-section-stage .sched-timeflow {
+  height: calc(100% - (var(--sched-oh) * 2));
+  min-height: 0;
+}
+
+.sched-section-stage .sched-timeflow-control {
+  min-height: 0;
+}
+
+.sched-section-stage .sched-timeflow-list {
+  max-height: 100%;
+}
+
+.sched-download-cta {
+  min-height: var(--sched-download-height);
+  align-items: flex-start;
+  margin-top: var(--sched-download-gap);
+}
+
 .sched-overview-wrap {
   width: min(1366px, calc(100vw - 48px));
   margin-right: calc((100% - min(1366px, calc(100vw - 48px))) / 2);
@@ -1589,18 +1629,28 @@ body {
   right: 0;
   left: 0;
   z-index: 2;
-  height: 48px;
+  height: 84px;
   pointer-events: none;
 }
 
 .sched-timeflow-control::before {
   top: 0;
-  background: linear-gradient(180deg, #fff 0%, rgb(255 255 255 / 0) 100%);
+  background: linear-gradient(
+    180deg,
+    #fff 0%,
+    #fff 34%,
+    rgb(255 255 255 / 0) 100%
+  );
 }
 
 .sched-timeflow-control::after {
   bottom: 0;
-  background: linear-gradient(0deg, #fff 0%, rgb(255 255 255 / 0) 100%);
+  background: linear-gradient(
+    0deg,
+    #fff 0%,
+    #fff 34%,
+    rgb(255 255 255 / 0) 100%
+  );
 }
 
 .sched-timeflow-list {
@@ -1665,14 +1715,24 @@ body {
   right: 0;
   width: 15px;
   height: 1px;
-  background: rgb(16 24 61 / 0.24);
+  background: linear-gradient(
+    90deg,
+    rgb(16 24 61 / 0.24) 0,
+    rgb(16 24 61 / 0.24) 70%,
+    rgb(16 24 61 / 0) 100%
+  );
   transform: translateY(-50%);
 }
 
 .sched-timeflow-ghost span.is-hour::before {
-  width: 32px;
-  height: 2px;
-  background: rgb(16 24 61 / 0.34);
+  width: 15px;
+  height: 1px;
+  background: linear-gradient(
+    90deg,
+    rgb(16 24 61 / 0.24) 0,
+    rgb(16 24 61 / 0.24) 70%,
+    rgb(16 24 61 / 0) 100%
+  );
 }
 
 .sched-timeflow-item {
@@ -1703,7 +1763,12 @@ body {
   right: 0;
   width: 15px;
   height: 1px;
-  background: rgb(16 24 61 / 0.32);
+  background: linear-gradient(
+    90deg,
+    rgb(16 24 61 / 0.32) 0,
+    rgb(16 24 61 / 0.32) 70%,
+    rgb(16 24 61 / 0) 100%
+  );
   transform: translateY(-50%);
   transform-origin: right center;
   transition:
@@ -1713,13 +1778,23 @@ body {
 }
 
 .sched-timeflow-item.is-hour::before {
-  width: 32px;
-  height: 2px;
-  background: rgb(16 24 61 / 0.52);
+  width: 15px;
+  height: 1px;
+  background: linear-gradient(
+    90deg,
+    rgb(16 24 61 / 0.32) 0,
+    rgb(16 24 61 / 0.32) 70%,
+    rgb(16 24 61 / 0) 100%
+  );
 }
 
 .sched-timeflow-item.is-session-start::before {
-  background: rgb(16 24 61 / 0.44);
+  background: linear-gradient(
+    90deg,
+    rgb(16 24 61 / 0.44) 0,
+    rgb(16 24 61 / 0.44) 70%,
+    rgb(16 24 61 / 0) 100%
+  );
 }
 
 .sched-timeflow-item span {
@@ -1745,26 +1820,31 @@ body {
 }
 
 .sched-timeflow-item.is-active {
-  padding-right: 42px;
+  padding-right: 46px;
   background: transparent;
   color: var(--color-navy);
 }
 
 .sched-timeflow-item.is-active::before {
   width: 38px;
-  height: 3px;
-  background: var(--color-navy);
+  height: 1px;
+  background: linear-gradient(
+    90deg,
+    var(--color-navy) 0,
+    var(--color-navy) 70%,
+    rgb(16 24 61 / 0) 100%
+  );
   transform: translateY(-50%);
 }
 
 .sched-timeflow-item.is-minute.is-active::before {
-  width: 26px;
+  width: 38px;
 }
 
 .sched-timeflow-item.is-active span {
   opacity: 1;
   font-weight: 900;
-  transform: translateX(-7px);
+  transform: translateX(-5px);
 }
 
 .sched-timeflow-boundary {
@@ -1800,19 +1880,38 @@ body {
 }
 
 .sched-timeflow-detail {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
   min-width: 0;
+  min-height: 0;
+  overflow: hidden;
   padding: 0;
   background: #fff;
 }
 
 .sched-timeflow-active {
+  position: relative;
   display: flex;
   align-items: flex-end;
   justify-content: space-between;
   gap: 24px;
   margin-bottom: 12px;
-  border-bottom: 1px solid var(--color-hairline);
   padding-bottom: 24px;
+}
+
+.sched-timeflow-active::after {
+  content: "";
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  height: 1px;
+  background: linear-gradient(
+    90deg,
+    var(--color-hairline) 0,
+    var(--color-hairline) calc(100% - 30px),
+    rgb(212 218 237 / 0) 100%
+  );
 }
 
 .sched-timeflow-active-copy {
@@ -1929,6 +2028,13 @@ body {
 .sched-timeflow-spaces.is-vertical {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
+  min-height: 0;
+  overflow-y: auto;
+  scrollbar-width: none;
+}
+
+.sched-timeflow-spaces.is-vertical::-webkit-scrollbar {
+  display: none;
 }
 
 .sched-timeflow-spaces.is-vertical .sched-timeflow-space {
@@ -1945,21 +2051,16 @@ body {
 
 .sched-timeflow-spaces.is-vertical
   .sched-timeflow-space
-  + .sched-timeflow-space::before {
-  content: "";
-  position: absolute;
-  top: 0;
-  right: 0;
-  left: 0;
-  height: 1px;
-  pointer-events: none;
-  background-image: linear-gradient(
+  + .sched-timeflow-space {
+  border-top: 1px solid transparent;
+  border-image: linear-gradient(
     90deg,
     rgb(212 218 237 / 0) 0,
     var(--color-hairline) 30px,
     var(--color-hairline) calc(100% - 30px),
     rgb(212 218 237 / 0) 100%
-  );
+  )
+  1;
 }
 
 .sched-timeflow-spaces.is-vertical .sched-timeflow-space.is-break {
@@ -2469,6 +2570,11 @@ body {
   #sessions {
     overflow: hidden;
   }
+  .sched-section-inner {
+    --sched-stage-height: clamp(620px, 74svh, 760px);
+    --sched-heading-gap: 56px;
+    --sched-download-gap: 40px;
+  }
   .sched-group-head {
     display: block;
     padding-right: 0;
@@ -2633,7 +2739,7 @@ body {
   }
   .sched-timeflow-control::before,
   .sched-timeflow-control::after {
-    height: 36px;
+    height: 60px;
   }
   .sched-timeflow-list {
     display: block;
@@ -2736,6 +2842,11 @@ body {
 }
 
 @media (max-width: 639px) {
+  .sched-section-inner {
+    --sched-stage-height: clamp(560px, 76svh, 680px);
+    --sched-heading-gap: 40px;
+    --sched-download-gap: 28px;
+  }
   .sched-wrap {
     --sched-oh: 20px;
   }
@@ -2834,17 +2945,18 @@ body {
     width: 12px;
   }
   .sched-timeflow-item.is-hour::before {
-    width: 22px;
+    width: 12px;
+    height: 1px;
   }
   .sched-timeflow-item.is-active {
-    padding-right: 27px;
+    padding-right: 31px;
   }
   .sched-timeflow-item.is-active::before {
-    width: 28px;
-    height: 3px;
+    width: 25px;
+    height: 1px;
   }
   .sched-timeflow-item.is-minute.is-active::before {
-    width: 19px;
+    width: 25px;
   }
   .sched-timeflow-item span {
     min-width: 54px;
@@ -2860,7 +2972,8 @@ body {
     width: 12px;
   }
   .sched-timeflow-ghost span.is-hour::before {
-    width: 22px;
+    width: 12px;
+    height: 1px;
   }
   .sched-timeflow-boundary {
     right: 0;
@@ -2868,7 +2981,7 @@ body {
   }
   .sched-timeflow-control::before,
   .sched-timeflow-control::after {
-    height: 28px;
+    height: 40px;
   }
   .sched-timeflow-space {
     padding: 18px 0;

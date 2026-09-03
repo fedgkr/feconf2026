@@ -224,6 +224,16 @@ function timeScheduleStartMinutes() {
   ).sort((a, b) => a - b);
 }
 
+function timeScheduleFinishMinute() {
+  const rows = [MAIN_GROUP?.rows ?? [], LIGHTNING_GROUP?.rows ?? []].flat();
+
+  return rows.reduce((latest, row) => {
+    if (row.kind === "break" || !row.sessions.some(Boolean)) return latest;
+
+    return Math.max(latest, parseRange(row.time).end);
+  }, 0);
+}
+
 function nearestTimeScheduleStart(minute: number, starts: number[]) {
   return starts.reduce((nearest, candidate) => {
     const nearestDistance = Math.abs(nearest - minute);
@@ -257,8 +267,9 @@ function timeScheduleItems(): TimeScheduleItem[] {
   const starts = timeScheduleStartMinutes();
   if (starts.length === 0) return [];
 
+  const finishMinute = timeScheduleFinishMinute();
   const firstHour = Math.floor(starts[0] / 60) * 60;
-  const lastHour = Math.ceil(starts[starts.length - 1] / 60) * 60;
+  const lastHour = Math.ceil(finishMinute / 60) * 60;
   const tickCount = Math.floor((lastHour - firstHour) / TIMEFLOW_TICK_STEP);
   const tickMinutes = Array.from(
     new Set([
@@ -267,6 +278,7 @@ function timeScheduleItems(): TimeScheduleItem[] {
         (_, index) => firstHour + index * TIMEFLOW_TICK_STEP,
       ),
       ...starts,
+      finishMinute,
     ]),
   ).sort((a, b) => a - b);
 
@@ -283,7 +295,7 @@ function timeScheduleItems(): TimeScheduleItem[] {
       boundary:
         minute === starts[0]
           ? "start"
-          : minute === starts[starts.length - 1]
+          : minute === finishMinute
             ? "finish"
             : undefined,
     };
@@ -1406,20 +1418,21 @@ export default function ScheduleSection() {
       data-nav-bg="#ffffff"
       className="relative isolate z-20 min-h-screen bg-white px-6 py-24 max-sm:px-5 sm:py-36"
     >
-      <div className="mx-auto max-w-[1366px]">
+      <div className="sched-section-inner mx-auto max-w-[1366px]">
         <SectionHeading
           title={SCHEDULE.heading.title}
           subtitle={SCHEDULE.heading.subtitle}
-          className="mb-8"
+          className="sched-section-heading"
         />
-        <div className="mx-auto max-w-[1366px]">
+        <div className="sched-section-stage mx-auto max-w-[1366px]">
           <TimeScheduleView />
         </div>
-        <Reveal delay={200} className="mt-12 flex justify-center">
+        <Reveal delay={200} className="sched-download-cta flex justify-center">
           <ClickFrame
             label={SCHEDULE.download.label}
             href={SCHEDULE.download.href}
-            icon="download"
+            icon="external"
+            target="_blank"
           />
         </Reveal>
       </div>
