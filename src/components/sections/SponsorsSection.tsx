@@ -51,6 +51,7 @@ function SponsorTierRow({
       <div className="sponsor-tier-label">
         <span className="sponsor-tier-title">{tier.title}</span>
       </div>
+      <span className="sponsor-tier-rule" aria-hidden="true" />
       <div className={`sponsor-tier-logos is-count-${tier.sponsors.length}`}>
         {tier.sponsors.map((sponsor) => (
           <SponsorCell
