@@ -3147,6 +3147,10 @@ body {
   grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
+.sponsor-tier-row.is-platinum .sponsor-tier-logos.is-count-2 {
+  column-gap: clamp(22px, 4vw, 67px);
+}
+
 .sponsor-tier-row.is-special .sponsor-tier-logos.is-count-2 {
   gap: clamp(18px, 3vw, 34px) clamp(20px, 3vw, 42px);
 }
@@ -3251,6 +3255,10 @@ body {
 
   .sponsor-tier-logos.is-count-2 {
     grid-template-columns: minmax(0, 1fr);
+  }
+
+  .sponsor-tier-row.is-platinum .sponsor-tier-logos.is-count-2 {
+    column-gap: 8px;
   }
 
   .sponsor-tier-row.is-special .sponsor-tier-logos.is-count-2 {
