@@ -3176,13 +3176,13 @@ body {
 }
 
 .sponsor-logo.is-special {
-  max-width: 136px;
-  max-height: 40px;
+  max-width: 148px;
+  max-height: 42px;
 }
 
 .sponsor-logo.is-jpub {
-  max-width: 104px;
-  max-height: 38px;
+  max-width: 114px;
+  max-height: 40px;
 }
 
 .sponsor-logo.is-media {
@@ -3297,13 +3297,13 @@ body {
   }
 
   .sponsor-tier-row.is-special .sponsor-logo.is-special {
-    max-width: min(96px, 27vw);
-    max-height: 40px;
+    max-width: min(104px, 29vw);
+    max-height: 42px;
   }
 
   .sponsor-tier-row.is-special .sponsor-logo.is-jpub {
-    max-width: min(70px, 20vw);
-    max-height: 36px;
+    max-width: min(76px, 21vw);
+    max-height: 38px;
   }
 
   .sponsor-logo.is-media {
