@@ -11,6 +11,7 @@ interface ClickFrameProps {
   label: string;
   icon: keyof typeof ICONS;
   href?: string;
+  target?: "_self" | "_blank";
   onClick?: (e: React.MouseEvent<HTMLAnchorElement>) => void;
 }
 
@@ -24,10 +25,14 @@ export default function ClickFrame({
   label,
   icon,
   href = "#",
+  target,
   onClick,
 }: ClickFrameProps) {
-  // external destinations (npm, socials) open in a new tab
-  const external = href.startsWith("http");
+  // external destinations (npm, socials) open in a new tab unless the
+  // caller pins a target explicitly
+  const resolvedTarget =
+    target ?? (href.startsWith("http") ? "_blank" : undefined);
+  const rel = resolvedTarget === "_blank" ? "noopener noreferrer" : undefined;
   return (
     <div className="click-btn-group flex flex-col items-center max-sm:w-full">
       <div className="click-btn-wrap relative h-[129px] w-[433px] max-w-[90vw] max-sm:w-full max-sm:max-w-none">
@@ -41,8 +46,8 @@ export default function ClickFrame({
         </div>
         <a
           href={href}
-          target={external ? "_blank" : undefined}
-          rel={external ? "noopener noreferrer" : undefined}
+          target={resolvedTarget}
+          rel={rel}
           onClick={onClick}
           className="absolute left-[38px] right-[38px] top-[39px] z-40 flex h-[51px] items-center justify-center gap-2.5 text-lg font-semibold tracking-[-0.08px] text-navy"
         >
