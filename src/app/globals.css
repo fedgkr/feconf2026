@@ -3119,7 +3119,7 @@ body {
   font-stretch: 112.5%;
   flex: 0 0 auto;
   font-size: clamp(20px, 2.15vw, 28px);
-  font-weight: 600;
+  font-weight: 500;
   line-height: 1;
   color: var(--color-navy);
   text-transform: uppercase;
