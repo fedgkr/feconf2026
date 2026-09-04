@@ -2,16 +2,10 @@
 
 import SectionHeading from "../SectionHeading";
 import { useCoverRise, useInView, useStaggerChildren } from "@/hooks/useAnimation";
-import { useScrubHighlight } from "@/hooks/useTypeMotion";
 import { CONDUCT } from "@/data/site";
 
 function GuidelineBody({ body }: { body: string }) {
-  const ref = useScrubHighlight();
-  return (
-    <p ref={ref} className="text-[18px] leading-[1.4] text-ink/80">
-      {body}
-    </p>
-  );
+  return <p className="text-[18px] leading-[1.4] text-ink/80">{body}</p>;
 }
 
 export default function ConductSection() {

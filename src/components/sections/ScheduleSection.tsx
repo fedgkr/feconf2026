@@ -30,6 +30,7 @@ const EASE = "cubic-bezier(0.16, 1, 0.3, 1)";
 /** the scrub clock advances in one-minute steps during drag and inertia */
 const SCRUB_QUANT_MIN = 1;
 const DRAG_TRAVEL_GEAR = 0.5;
+const AOS_TOUCH_DRAG_TRAVEL_GEAR = 0.25;
 const FLICK_SAMPLE_WINDOW_MS = 100;
 const FLICK_SAMPLE_LIMIT = 24;
 const FLICK_MIN_VELOCITY = 1; // px/ms
@@ -43,6 +44,12 @@ const CONTENT_RENDER_CHASE_TAU_MS: number = 140;
 const RENDER_CHASE_EPSILON_PX = 0.1;
 
 type TravelDirection = -1 | 0 | 1;
+
+function travelGearForPointer(pointerType: string) {
+  return pointerType === "touch" && /Android/i.test(navigator.userAgent)
+    ? AOS_TOUCH_DRAG_TRAVEL_GEAR
+    : DRAG_TRAVEL_GEAR;
+}
 
 function chasePosition(
   rendered: number,
@@ -644,6 +651,7 @@ function TimeScheduleView() {
   const dragState = useRef<{
     pointerId: number;
     area: TimeflowArea;
+    travelGear: number;
     direction: TravelDirection;
     sessionProgress: number | null;
     sessionStep: number | null;
@@ -948,7 +956,7 @@ function TimeScheduleView() {
       ) {
         const current = drag.sessionProgress;
         const progressDelta =
-          (delta * DRAG_TRAVEL_GEAR) / drag.sessionStep;
+          (delta * drag.travelGear) / drag.sessionStep;
         const next = Math.max(
           0,
           Math.min(current + progressDelta, starts.length - 1),
@@ -963,11 +971,11 @@ function TimeScheduleView() {
           ),
         );
         const consumed =
-          ((next - current) * drag.sessionStep) / DRAG_TRAVEL_GEAR;
+          ((next - current) * drag.sessionStep) / drag.travelGear;
         leftover = delta - consumed;
       } else {
-        const railDelta = delta * DRAG_TRAVEL_GEAR;
-        leftover = feedRail(railDelta) / DRAG_TRAVEL_GEAR;
+        const railDelta = delta * drag.travelGear;
+        leftover = feedRail(railDelta) / drag.travelGear;
       }
 
       syncStripModel();
@@ -1138,14 +1146,18 @@ function TimeScheduleView() {
     requestMotionFrame();
   };
 
-  const startInertia = (releaseVelocity: number, area: TimeflowArea) => {
+  const startInertia = (
+    releaseVelocity: number,
+    area: TimeflowArea,
+    travelGear: number,
+  ) => {
     const bounds = snapBounds();
     if (!bounds) return false;
     if (Math.abs(releaseVelocity) <= FLICK_MIN_VELOCITY) return false;
     const motion = motionRef.current;
     const velocity = Math.max(
       -FLICK_MAX_VELOCITY,
-      Math.min(releaseVelocity * DRAG_TRAVEL_GEAR, FLICK_MAX_VELOCITY),
+      Math.min(releaseVelocity * travelGear, FLICK_MAX_VELOCITY),
     );
     if (
       (velocity < 0 && motion.railModel <= bounds.lo) ||
@@ -1247,6 +1259,7 @@ function TimeScheduleView() {
     dragState.current = {
       pointerId: event.pointerId,
       area,
+      travelGear: travelGearForPointer(event.pointerType),
       direction: 0,
       sessionProgress:
         area === "B" && minute != null
@@ -1327,7 +1340,7 @@ function TimeScheduleView() {
     }
     if (
       drag.moved &&
-      !startInertia(releaseVelocity, drag.area) &&
+      !startInertia(releaseVelocity, drag.area, drag.travelGear) &&
       drag.area === "B"
     ) {
       settleHighlightedStart();

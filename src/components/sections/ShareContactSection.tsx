@@ -5,16 +5,14 @@ import MultiLine from "../MultiLine";
 import Reveal from "../Reveal";
 import SectionHeading from "../SectionHeading";
 import { useCoverRise } from "@/hooks/useAnimation";
-import { useScrubHighlight } from "@/hooks/useTypeMotion";
 import { SHARE_CONTACT } from "@/data/site";
 
 /** Halves the default 80vh so the gap after buddy reads shorter. */
 const SHARE_CONTACT_COVER_RISE_DISTANCE_VH = 40;
 
 function RowBody({ lines }: { lines: readonly string[] }) {
-  const ref = useScrubHighlight();
   return (
-    <p ref={ref} className="text-base font-medium leading-[1.5] text-ink/80">
+    <p className="text-base font-medium leading-[1.5] text-ink/80">
       <MultiLine lines={lines} />
     </p>
   );
@@ -39,9 +37,9 @@ export default function ShareContactSection() {
           <Reveal
             key={title}
             delay={100 + i * 100}
-            className={`flex flex-col gap-8 px-[60px] py-8 max-sm:px-0 lg:flex-row lg:items-start lg:justify-between ${
-              i > 0 ? "mt-8" : ""
-            }`}
+            className={`flex flex-col gap-8 px-[60px] py-8 max-sm:px-0 lg:flex-row lg:justify-between ${
+              mail ? "lg:items-center" : "lg:items-start"
+            } ${i > 0 ? "mt-8" : ""}`}
           >
             <div className="max-w-[733px]">
               <h3 className="font-display mb-5 text-3xl leading-[1.4] text-ink sm:text-[44px]">

@@ -7,10 +7,8 @@ import { SplitText } from "gsap/SplitText";
 import { CustomEase } from "gsap/CustomEase";
 
 /* GSAP SplitText typography layer, shared by every section:
- * - `reveal`: lines (or words) rise out of a per-line mask when scrolled to,
- *   and replay on every re-entry.
- * - `highlight`: body copy brightens character by character, scrubbed by
- *   scroll position. */
+ * lines (or words) rise out of a per-line mask when scrolled to and replay on
+ * every re-entry. */
 
 let ease = "power3.out";
 let registered = false;
@@ -184,50 +182,6 @@ export function useSplitReveal<T extends HTMLElement = HTMLHeadingElement>(
       };
     });
   }, [kind, delay, observeEntry, onComplete]);
-
-  return ref;
-}
-
-/** Scroll-scrubbed character brightening for body copy. */
-export function useScrubHighlight<T extends HTMLElement = HTMLParagraphElement>() {
-  const ref = useRef<T | null>(null);
-
-  useEffect(() => {
-    const el = ref.current;
-    if (!el || reducedMotion()) return;
-    register();
-
-    return whenReady(() => {
-      el.classList.add("fe-split");
-      const split = SplitText.create(el, {
-        type: "lines,words,chars",
-        autoSplit: true,
-        linesClass: "fe-line",
-        wordsClass: "fe-word",
-        charsClass: "fe-letter",
-        onSplit(self) {
-          const byLine = self.lines.map((line) =>
-            self.chars.filter((c) => line.contains(c)),
-          );
-          const tl = gsap.timeline({
-            scrollTrigger: {
-              trigger: el,
-              start: "clamp(top 92%)",
-              end: "clamp(bottom 58%)",
-              scrub: true,
-            },
-          });
-          byLine.forEach((chars, i) => {
-            if (chars.length) {
-              tl.from(chars, { opacity: 0.22, stagger: 0.1, ease: "none" }, i * 0.3);
-            }
-          });
-          return tl;
-        },
-      });
-      return () => split.revert();
-    });
-  }, []);
 
   return ref;
 }
