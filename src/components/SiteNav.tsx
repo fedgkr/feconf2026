@@ -6,12 +6,6 @@ import { useTicketDday } from "@/hooks/useTicketDday";
 import { NAV_MENU, TICKET_LINK } from "@/data/site";
 
 /**
- * The hero's intro clock (`3.1s` after a `0.65s` delay, shared with the logo
- * animations) lands at 3.75s. The bar stays docked until just past it.
- */
-const INTRO_MS = 3950;
-
-/**
  * How far into the page the bar finishes climbing, as a share of the viewport.
  * The reference reaches the top about 5vh into its 220vh hero sequence; this
  * hero is one screen tall, so the distance comes off the scroll position.
@@ -56,8 +50,14 @@ function jumpTo(e: React.MouseEvent, href: string) {
   const el = document.querySelector<HTMLElement>(href);
   if (!el) return;
   e.preventDefault();
-  const matrix = new DOMMatrixReadOnly(getComputedStyle(el).transform);
-  const top = el.getBoundingClientRect().top - (matrix.m42 || 0) + window.scrollY;
+  const style = getComputedStyle(el);
+  const matrix = new DOMMatrixReadOnly(style.transform);
+  // manual scrolls skip CSS scroll-margin, so honour it here: targets whose
+  // own top padding is shallower than the fixed header (e.g. experience)
+  // declare their clearance with scroll-margin-top
+  const margin = parseFloat(style.scrollMarginTop) || 0;
+  const top =
+    el.getBoundingClientRect().top - (matrix.m42 || 0) + window.scrollY - margin;
   window.scrollTo({ top, behavior: "smooth" });
   history.pushState(null, "", href);
 }
@@ -65,8 +65,8 @@ function jumpTo(e: React.MouseEvent, href: string) {
 /**
  * Fixed top navigation.
  *
- * Over the hero the bar sits at the bottom of the viewport through the logo
- * intro, then climbs to the top over the first 5vh of scroll — desktop only.
+ * Over the top of the hero the bar sits at the bottom of the viewport, then
+ * climbs to the top over the first 5vh of scroll — desktop only.
  * Its background follows the section under it via `--fe-nav-bg`, measured
  * here from each section's `data-nav-bg`, and its text is drawn white over the
  * hero and over any dark surface, ink over the light ones. The menu item for
@@ -74,8 +74,21 @@ function jumpTo(e: React.MouseEvent, href: string) {
  */
 export default function SiteNav() {
   const header = useRef<HTMLElement>(null);
-  const introDone = useRef(false);
   const [open, setOpen] = useState(false);
+  // The bar row paints white the instant the menu opens (a fading row
+  // visibly split from the already-white panel). On close the row fades on
+  // the panel's own opacity curve, from the same moment — the collapsing
+  // panel is already fading, and any row white outliving it reads as a
+  // second, separate animation.
+  const [menuPaint, setMenuPaint] = useState<"off" | "on" | "fade">("off");
+
+  // safety net: if the dissolve's transitionend never fires (the section
+  // under the bar was already white, so nothing transitioned), unstick
+  useEffect(() => {
+    if (menuPaint !== "fade") return;
+    const timer = window.setTimeout(() => setMenuPaint("off"), 400);
+    return () => window.clearTimeout(timer);
+  }, [menuPaint]);
   // the bar starts over the hero, where the reference holds it white
   const [whiteInk, setWhiteInk] = useState(true);
   const [active, setActive] = useState<string>(NAV_MENU[0].id);
@@ -98,21 +111,12 @@ export default function SiteNav() {
     }
     const nav = el.querySelector("nav");
     const navHeight = nav?.offsetHeight || el.offsetHeight;
-    // the intro holds the bar down even if the page is already being scrolled
-    const rise = introDone.current
-      ? smoothstep(window.scrollY / (window.innerHeight * RISE_VH))
-      : 0;
+    // scroll position alone drives the climb, so a reader who skips the logo
+    // intro still meets the bar at the top before the story section arrives
+    const rise = smoothstep(window.scrollY / (window.innerHeight * RISE_VH));
     const drop = (1 - rise) * Math.max(0, window.innerHeight - navHeight);
     el.style.transform = `translate3d(0, ${drop}px, 0)`;
   }, []);
-
-  useEffect(() => {
-    const timer = window.setTimeout(() => {
-      introDone.current = true;
-      applyDock();
-    }, INTRO_MS);
-    return () => window.clearTimeout(timer);
-  }, [applyDock]);
 
   useScrollEffect(() => {
     applyDock();
@@ -149,16 +153,32 @@ export default function SiteNav() {
     setActive(next);
   });
 
-  const fg = whiteInk ? "rgb(255, 255, 255)" : "rgb(21, 21, 21)";
-  const dim = whiteInk ? "rgba(255, 255, 255, 0.35)" : "rgba(21, 21, 21, 0.35)";
+  // over the white-painted bar the glyphs draw in ink even when the section
+  // under it wanted white text — including while the close is animating
+  const whiteText = whiteInk && menuPaint === "off";
+  const fg = whiteText ? "rgb(255, 255, 255)" : "rgb(21, 21, 21)";
+  const dim = whiteText ? "rgba(255, 255, 255, 0.35)" : "rgba(21, 21, 21, 0.35)";
 
   return (
     <header
       ref={header}
       className="site-nav fixed inset-x-0 top-0 z-50"
       style={{
-        backgroundColor: "var(--fe-nav-bg, transparent)",
-        transition: "background-color 0.4s ease",
+        // solid white while the menu is open or closing: over the hero the
+        // row is otherwise transparent and the panel looked detached —
+        // translucency let the hero tint through, so no alpha here
+        backgroundColor:
+          menuPaint === "on" ? "rgb(255, 255, 255)" : "var(--fe-nav-bg, transparent)",
+        transition:
+          menuPaint === "on"
+            ? "background-color 0s"
+            : menuPaint === "fade"
+              ? "background-color 0.3s ease" // the panel's opacity curve
+              : "background-color 0.4s ease",
+      }}
+      onTransitionEnd={(e) => {
+        if (e.propertyName === "background-color" && menuPaint === "fade")
+          setMenuPaint("off");
       }}
     >
       <nav
@@ -188,7 +208,11 @@ export default function SiteNav() {
         </a>
         <button
           className="ml-auto md:hidden"
-          onClick={() => setOpen(!open)}
+          onClick={() => {
+            const next = !open;
+            setOpen(next);
+            setMenuPaint(next ? "on" : "fade");
+          }}
           aria-label={open ? "메뉴 닫기" : "메뉴 열기"}
           style={{ color: dim, transition: "color 0.4s ease" }}
         >
@@ -198,7 +222,9 @@ export default function SiteNav() {
         </button>
       </nav>
       <div
-        className="overflow-hidden bg-white/95 backdrop-blur-xl md:hidden"
+        // solid white like the bar row above it — 5% translucency drew a
+        // faint seam between the two boxes over vivid hero colours
+        className="overflow-hidden bg-white md:hidden"
         style={{
           maxHeight: open ? "300px" : "0",
           opacity: open ? 1 : 0,

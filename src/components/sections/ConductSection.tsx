@@ -2,16 +2,10 @@
 
 import SectionHeading from "../SectionHeading";
 import { useCoverRise, useInView, useStaggerChildren } from "@/hooks/useAnimation";
-import { useScrubHighlight } from "@/hooks/useTypeMotion";
 import { CONDUCT } from "@/data/site";
 
 function GuidelineBody({ body }: { body: string }) {
-  const ref = useScrubHighlight();
-  return (
-    <p ref={ref} className="text-[18px] leading-[1.4] text-ink/80">
-      {body}
-    </p>
-  );
+  return <p className="text-[18px] leading-[1.4] text-ink/80">{body}</p>;
 }
 
 export default function ConductSection() {
@@ -23,10 +17,14 @@ export default function ConductSection() {
     <section
       ref={coverRef}
       data-nav-bg="#ffffff"
-      className="z-32 bg-white px-6 py-24 max-sm:px-5 sm:py-36"
+      className="z-32 bg-white px-6 py-24 [--heading-reveal-offset:48px] max-sm:px-5 sm:py-36 sm:[--heading-reveal-offset:80px]"
     >
       <div className="mx-auto max-w-[1366px]">
-        <SectionHeading title={CONDUCT.heading.title} className="mb-12" />
+        <SectionHeading
+          title={CONDUCT.heading.title}
+          className="mb-12"
+          revealOnEntry
+        />
         <div className="mx-auto max-w-[1246px]">
           <div ref={tableRef} className="relative py-[30px]">
             <div className="fe-line-v fe-fade-30 absolute inset-y-0 left-[30px] hidden w-px lg:block" />

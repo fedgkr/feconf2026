@@ -16,7 +16,7 @@ export const NAV_MENU = [
 ] as const;
 
 /** Ticket opening moment the D-day counters count down to. */
-export const TICKET_OPEN_AT = "2026-10-23T00:00:00+09:00";
+export const TICKET_OPEN_AT = "2026-10-01T00:00:00+09:00";
 
 export const TICKET_LINK = { label: "TICKET OPEN", href: "#tickets" };
 
@@ -526,8 +526,11 @@ export const SCHEDULE = {
     subtitle: ["최종 세션 시간표와", "라이트닝 토크를 소개합니다"],
   },
   download: {
-    label: "FullSchedule.svg",
-    href: assetPath("/images/generated/full-schedule-overview.svg"),
+    // pre-rasterized from full-schedule-overview.svg (same document the
+    // browser would show) so the click saves a ready-to-share image —
+    // regenerate the PNG whenever the SVG is regenerated
+    label: "FullSchedule.png",
+    href: assetPath("/images/generated/full-schedule-overview.png"),
   },
 };
 
@@ -677,7 +680,11 @@ export const BUDDY = {
     title: ["FORWARD EVER", "Forever Buddy"],
     subtitle: ["FEConf의 마스코트를 직접 키워보고, 10주년 굿즈도 받아보세요."],
   },
-  button: { label: "View on npm", icon: "external" as const, href: "#" },
+  button: {
+    label: "View on npm",
+    icon: "external" as const,
+    href: "https://www.npmjs.com/package/feconf-26-mascot",
+  },
 };
 
 /**
@@ -727,7 +734,11 @@ export const SHARE_CONTACT = {
         "국내 최고의 프론트엔드 개발 인사이트를 얻을 수 있는",
         "기회를 공유하여 함께 배우고, 함께 성장해보세요.",
       ],
-      button: { label: "Share", icon: "link" as const, href: "#" },
+      button: {
+        label: "Share",
+        icon: "link" as const,
+        href: "https://www.linkedin.com/groups/14618353/",
+      },
     },
     {
       title: "Contact",

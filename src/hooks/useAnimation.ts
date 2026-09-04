@@ -107,13 +107,24 @@ const clamp01 = (v: number) => Math.min(1, Math.max(0, v));
 const smoothstep = (t: number) => t * t * (3 - 2 * t);
 
 /**
- * The section rises from 80vh below into its place while it approaches, about
- * 5.5x scroll speed, and settles by the time its top reaches 18% of the
- * window. The class carrying the transform is added here rather than in the
- * markup so a render without JavaScript stays in plain flow.
+ * The section rises from `distanceVh` below (default 80vh) into its place
+ * while it approaches, about 5.5x scroll speed, and settles by the time its
+ * top reaches 18% of the window. The class carrying the transform is added
+ * here rather than in the markup so a render without JavaScript stays in
+ * plain flow.
  */
-export function useCoverRise<T extends HTMLElement = HTMLElement>() {
+export function useCoverRise<T extends HTMLElement = HTMLElement>(
+  distanceVh = 80,
+) {
   const ref = useRef<T | null>(null);
+  // Mobile Safari steps innerHeight up and down as its toolbar hides and
+  // shows mid-scroll; feeding that into the progress would jolt a mid-rise
+  // section by tens of px on every toggle (the boundary shake on slow
+  // scrolls). Use the largest height seen at the current width — the "large
+  // viewport", which also matches the CSS vh the offset is written in — so
+  // toolbar steps leave the target alone. A width change (rotation, a real
+  // window resize) resets the cache.
+  const stableViewport = useRef({ width: 0, height: 0 });
 
   useEffect(() => {
     ref.current?.classList.add("fc-cover");
@@ -122,14 +133,20 @@ export function useCoverRise<T extends HTMLElement = HTMLElement>() {
   useScrollEffect(() => {
     const el = ref.current;
     if (!el) return;
+    const sv = stableViewport.current;
+    if (window.innerWidth !== sv.width) {
+      sv.width = window.innerWidth;
+      sv.height = window.innerHeight;
+    } else if (window.innerHeight > sv.height) {
+      sv.height = window.innerHeight;
+    }
+    const vh = sv.height;
     // the transform moves the box, so read the layout top from under it
     const rect = el.getBoundingClientRect();
     const matrix = new DOMMatrixReadOnly(getComputedStyle(el).transform);
     const layoutTop = rect.top - (matrix.m42 || 0);
-    const progress = smoothstep(
-      clamp01((window.innerHeight - layoutTop) / (window.innerHeight * 0.82)),
-    );
-    el.style.setProperty("--fc-cover-y", `${(1 - progress) * 80}vh`);
+    const progress = smoothstep(clamp01((vh - layoutTop) / (vh * 0.82)));
+    el.style.setProperty("--fc-cover-y", `${(1 - progress) * distanceVh}vh`);
   });
 
   return ref;

@@ -5,36 +5,41 @@ import MultiLine from "../MultiLine";
 import Reveal from "../Reveal";
 import SectionHeading from "../SectionHeading";
 import { useCoverRise } from "@/hooks/useAnimation";
-import { useScrubHighlight } from "@/hooks/useTypeMotion";
 import { SHARE_CONTACT } from "@/data/site";
 
+/** Halves the default 80vh so the gap after buddy reads shorter. */
+const SHARE_CONTACT_COVER_RISE_DISTANCE_VH = 40;
+
 function RowBody({ lines }: { lines: readonly string[] }) {
-  const ref = useScrubHighlight();
   return (
-    <p ref={ref} className="text-base font-medium leading-[1.5] text-ink/80">
+    <p className="text-base font-medium leading-[1.5] text-ink/80">
       <MultiLine lines={lines} />
     </p>
   );
 }
 
 export default function ShareContactSection() {
-  const coverRef = useCoverRise<HTMLElement>();
+  const coverRef = useCoverRise<HTMLElement>(SHARE_CONTACT_COVER_RISE_DISTANCE_VH);
 
   return (
     <section
       ref={coverRef}
       data-nav-bg="#fafafd"
-      className="z-33 bg-surface px-6 py-24 max-sm:px-5 sm:py-36"
+      className="z-33 bg-surface px-6 py-24 [--heading-reveal-offset:48px] max-sm:px-5 sm:py-36 sm:[--heading-reveal-offset:80px]"
     >
       <div className="mx-auto max-w-[1366px]">
-        <SectionHeading title={SHARE_CONTACT.heading.title} className="mb-12" />
+        <SectionHeading
+          title={SHARE_CONTACT.heading.title}
+          className="mb-12"
+          revealOnEntry
+        />
         {SHARE_CONTACT.rows.map(({ title, lines, mail, button }, i) => (
           <Reveal
             key={title}
             delay={100 + i * 100}
-            className={`flex flex-col gap-8 px-[60px] py-8 max-sm:px-0 lg:flex-row lg:items-start lg:justify-between ${
-              i > 0 ? "mt-8" : ""
-            }`}
+            className={`flex flex-col gap-8 px-[60px] py-8 max-sm:px-0 lg:flex-row lg:justify-between ${
+              mail ? "lg:items-center" : "lg:items-start"
+            } ${i > 0 ? "mt-8" : ""}`}
           >
             <div className="max-w-[733px]">
               <h3 className="font-display mb-5 text-3xl leading-[1.4] text-ink sm:text-[44px]">

@@ -18,10 +18,13 @@ const description =
   "프론트엔드 개발 컨퍼런스, FEConf 2026에서 다양한 기술과 트렌드를 경험하세요.";
 
 export const metadata: Metadata = {
+  metadataBase: new URL(
+    process.env.NEXT_PUBLIC_SITE_ORIGIN ?? "http://localhost:3000",
+  ),
   title: "FEConf 2026",
   description,
   openGraph: { title: "FEConf 2026", description, type: "website" },
-  twitter: { card: "summary", title: "FEConf 2026", description },
+  twitter: { card: "summary_large_image", title: "FEConf 2026", description },
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
@@ -48,7 +51,13 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
           rel="stylesheet"
         />
       </head>
-      <body>{children}</body>
+      <body>
+        {/* the story lock caps this wrapper's max-height (overflow: clip) to
+            bound compositor scrolling — body/html styles must stay untouched:
+            overflow set on body propagates to the viewport on some engines
+            and froze page scrolling entirely */}
+        <div id="fc-scroll-cap">{children}</div>
+      </body>
     </html>
   );
 }

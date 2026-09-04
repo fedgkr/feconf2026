@@ -1,39 +1,38 @@
 "use client";
 
-import Image from "next/image";
-import { useHeroMedia, useManagedVideo } from "@/hooks/useMedia";
+import { Canvas } from "@react-three/fiber";
+import { useHeroMedia } from "@/hooks/useMedia";
+import { useInView } from "@/hooks/useAnimation";
 import { useTicketDday } from "@/hooks/useTicketDday";
 import { FOOTER, TICKET_LINK } from "@/data/site";
+import { StripeField, useStripeDpr } from "./HeroSection";
 
 /**
- * Compact closing banner: venue line left, ticket link right, the hero-picked
- * WEBM breathing over the gradient behind both.
+ * Compact closing banner: venue line left, ticket link right, over the same
+ * moving stripe field and palette as the hero.
  */
 export default function FooterSection() {
   const media = useHeroMedia();
   const dday = useTicketDday();
-  const videoRef = useManagedVideo(true);
+  const dpr = useStripeDpr();
+  const { ref: footerRef, inView } = useInView<HTMLElement>({
+    threshold: 0.01,
+    rootMargin: "240px 0px",
+    once: false,
+  });
 
   return (
     <footer
+      ref={footerRef}
       id="site-footer"
-      data-nav-bg="#10183d"
-      className="relative isolate h-[377px] overflow-hidden bg-navy max-[900px]:h-[300px]"
+      className="relative isolate h-[377px] overflow-hidden bg-white max-[900px]:h-[300px]"
     >
-      <Image src={FOOTER.bgSrc} alt="" fill sizes="100vw" className="z-0 object-cover" />
-      {media && (
-        <div className="pointer-events-none absolute inset-0 z-[1] overflow-hidden">
-          <video
-            ref={videoRef}
-            src={media.src}
-            loop
-            muted
-            playsInline
-            preload="auto"
-            aria-hidden="true"
-            className="size-full object-cover"
-          />
-          <div className="absolute inset-0 bg-navy/15" />
+      {inView && (
+        <div className="pointer-events-none absolute inset-0 z-0">
+          <Canvas orthographic dpr={dpr} aria-hidden="true">
+            <color attach="background" args={["#ffffff"]} />
+            {media && <StripeField ramp={media.ramp} />}
+          </Canvas>
         </div>
       )}
       <div className="relative z-[2] mx-auto h-full w-full max-w-[1366px] px-16 max-[900px]:px-7">

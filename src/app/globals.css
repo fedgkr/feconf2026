@@ -31,6 +31,8 @@ body {
     "Pretendard Variable", Pretendard, -apple-system, BlinkMacSystemFont,
     system-ui, Roboto, "Apple SD Gothic Neo", "Noto Sans KR", sans-serif;
   overflow-x: hidden;
+  user-select: none;
+  -webkit-user-select: none;
 }
 
 /* Typography helpers mapped to the fonts used in the handoff.
@@ -759,7 +761,7 @@ body {
 .fc-cover {
   position: relative;
   isolation: isolate;
-  min-height: 100vh;
+  min-height: var(--fc-cover-min-h, 100vh);
   background-clip: padding-box;
   transform: translate3d(0, var(--fc-cover-y, 0), 0);
   transition: transform 0.18s cubic-bezier(0.22, 1, 0.36, 1);
@@ -779,7 +781,7 @@ body {
 .sched-section-inner {
   --sched-stage-height: clamp(640px, 68svh, 760px);
   --sched-heading-gap: 64px;
-  --sched-download-gap: 48px;
+  --sched-download-gap: 0px;
   --sched-download-height: 129px;
 }
 
@@ -992,34 +994,51 @@ body {
   box-shadow: 0 18px 42px rgb(16 24 61 / 0.12);
 }
 
-.session-card:hover > .sched-flood,
 .session-card:focus-visible > .sched-flood,
 .session-card.is-active > .sched-flood {
   opacity: 1;
 }
 
-.session-card:hover p,
 .session-card:focus-visible p,
 .session-card.is-active p,
-.session-card:hover .sched-affiliation,
 .session-card:focus-visible .sched-affiliation,
 .session-card.is-active .sched-affiliation,
-.session-card:hover .session-badge,
 .session-card:focus-visible .session-badge,
 .session-card.is-active .session-badge {
   color: #fff !important;
 }
 
-.session-card:hover .sched-mark,
 .session-card:focus-visible .sched-mark,
 .session-card.is-active .sched-mark {
   opacity: 1;
 }
 
-.session-card:hover .sched-mark img,
 .session-card:focus-visible .sched-mark img,
 .session-card.is-active .sched-mark img {
   filter: brightness(0) invert(1);
+}
+
+/* hover effects live behind (hover: hover): on touch screens iOS keeps
+ * :hover latched after a tap, which left a closed card flooded — touch
+ * devices flood only the expanded (.is-active) card */
+@media (hover: hover) {
+  .session-card:hover {
+    box-shadow: 0 18px 42px rgb(16 24 61 / 0.12);
+  }
+  .session-card:hover > .sched-flood {
+    opacity: 1;
+  }
+  .session-card:hover p,
+  .session-card:hover .sched-affiliation,
+  .session-card:hover .session-badge {
+    color: #fff !important;
+  }
+  .session-card:hover .sched-mark {
+    opacity: 1;
+  }
+  .session-card:hover .sched-mark img {
+    filter: brightness(0) invert(1);
+  }
 }
 
 .session-card:focus-visible {
@@ -1610,11 +1629,22 @@ body {
   grid-template-columns: minmax(0, 1fr) 150px;
   gap: 42px;
   background: #fff;
+  /* Touch input is pointer-driven so A scroll and B drag keep one model;
+     overflow beyond the first/last session is forwarded to the page. */
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
 }
 
 .sched-timeflow-wrap {
   --sched-oh: 60px;
   padding-top: 0;
+}
+
+@media (min-width: 1024px) {
+  .sched-timeflow-wrap {
+    padding-bottom: 0;
+  }
 }
 
 .sched-timeflow-control {
@@ -1657,24 +1687,20 @@ body {
   position: relative;
   min-width: 0;
   max-height: 560px;
-  overflow-y: auto;
+  overflow-y: clip;
   padding: 0;
   background: transparent;
   cursor: grab;
-  scroll-snap-type: y proximity;
-  scrollbar-width: none;
-  scroll-behavior: smooth;
-  touch-action: pan-y;
-  user-select: none;
 }
 
-.sched-timeflow-list.is-dragging {
+.sched-timeflow.is-rail-dragging .sched-timeflow-list {
   cursor: grabbing;
-  scroll-behavior: auto;
 }
 
-.sched-timeflow-list::-webkit-scrollbar {
-  display: none;
+.sched-timeflow-list-track {
+  min-width: 0;
+  transform: translate3d(0, 0, 0);
+  will-change: transform;
 }
 
 .sched-timeflow-ghost {
@@ -1747,7 +1773,6 @@ body {
   background: transparent;
   color: rgb(16 24 61 / 0.58);
   font-variant-numeric: tabular-nums;
-  scroll-snap-align: center;
   text-align: right;
   cursor: inherit;
   transition:
@@ -1981,7 +2006,10 @@ body {
   display: flex;
   align-items: stretch;
   background: #fff;
-  animation: sched-timeflow-spaces-in 260ms cubic-bezier(0.16, 1, 0.3, 1) both;
+  /* fill must not be both/forwards: a finished fill pins the keyframe's
+     transform over the inline translateY the notch nudge sets */
+  animation: sched-timeflow-spaces-in 260ms cubic-bezier(0.16, 1, 0.3, 1)
+    backwards;
 }
 
 @keyframes sched-timeflow-spaces-in {
@@ -1995,15 +2023,17 @@ body {
   }
 }
 
-.sched-timeflow-spaces > .sched-timeflow-space {
+/* entrance stagger only for the first (visible) slot of the strip — the
+   rest are offscreen at mount and animating them would be wasted work */
+.sched-timeflow-slot:first-child > .sched-timeflow-space {
   animation: sched-timeflow-space-in 320ms cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
-.sched-timeflow-spaces > .sched-timeflow-space:nth-child(2) {
+.sched-timeflow-slot:first-child > .sched-timeflow-space:nth-child(2) {
   animation-delay: 45ms;
 }
 
-.sched-timeflow-spaces > .sched-timeflow-space:nth-child(3) {
+.sched-timeflow-slot:first-child > .sched-timeflow-space:nth-child(3) {
   animation-delay: 90ms;
 }
 
@@ -2020,21 +2050,47 @@ body {
 
 @media (prefers-reduced-motion: reduce) {
   .sched-timeflow-spaces,
-  .sched-timeflow-spaces > .sched-timeflow-space {
+  .sched-timeflow-slot:first-child > .sched-timeflow-space {
     animation: none;
   }
 }
 
 .sched-timeflow-spaces.is-vertical {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr);
+  position: relative;
+  display: block;
   min-height: 0;
-  overflow-y: auto;
-  scrollbar-width: none;
+  overflow-y: clip;
 }
 
-.sched-timeflow-spaces.is-vertical::-webkit-scrollbar {
-  display: none;
+.sched-timeflow-spaces-track {
+  display: flex;
+  height: 100%;
+  min-height: 100%;
+  flex-direction: column;
+  transform: translate3d(0, 0, 0);
+  will-change: transform;
+}
+
+.sched-timeflow-slot {
+  display: grid;
+  flex: 0 0 auto;
+  min-width: 0;
+  min-height: 100%;
+  grid-template-columns: minmax(0, 1fr);
+  align-content: start;
+}
+
+/* seam between time slots — the same hairline the cards use */
+.sched-timeflow-slot + .sched-timeflow-slot {
+  border-top: 1px solid transparent;
+  border-image: linear-gradient(
+    90deg,
+    rgb(212 218 237 / 0) 0,
+    var(--color-hairline) 30px,
+    var(--color-hairline) calc(100% - 30px),
+    rgb(212 218 237 / 0) 100%
+  )
+  1;
 }
 
 .sched-timeflow-spaces.is-vertical .sched-timeflow-space {
@@ -2744,16 +2800,12 @@ body {
   .sched-timeflow-list {
     display: block;
     max-height: 520px;
-    overflow-x: hidden;
-    overflow-y: auto;
+    overflow-x: clip;
+    overflow-y: clip;
     padding: 0;
-    scrollbar-width: none;
   }
   .sched-timeflow-ghost {
     height: 252px;
-  }
-  .sched-timeflow-list::-webkit-scrollbar {
-    display: none;
   }
   .sched-timeflow-item {
     min-width: 0;
@@ -2869,7 +2921,14 @@ body {
     padding-right: 0;
     background: var(--color-surface);
   }
+  /* phones keep the flood inside the padded column — the tablet block's
+   * edge-to-edge bleed pushed the background past the section padding */
+  .sched-card-cell {
+    margin-left: 0;
+    margin-right: 0;
+  }
   .sched-card-cell .session-card {
+    width: 100%;
     min-height: 154px !important;
     padding: 18px var(--sched-oh) !important;
   }

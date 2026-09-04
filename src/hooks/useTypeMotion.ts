@@ -7,10 +7,8 @@ import { SplitText } from "gsap/SplitText";
 import { CustomEase } from "gsap/CustomEase";
 
 /* GSAP SplitText typography layer, shared by every section:
- * - `reveal`: lines (or words) rise out of a per-line mask when scrolled to,
- *   and replay on every re-entry.
- * - `highlight`: body copy brightens character by character, scrubbed by
- *   scroll position. */
+ * lines (or words) rise out of a per-line mask when scrolled to and replay on
+ * every re-entry. */
 
 let ease = "power3.out";
 let registered = false;
@@ -28,6 +26,8 @@ const PRESET = {
   line: { type: "lines", unit: "lines", stagger: 0.075, duration: 1.05 },
   sub: { type: "lines,words", unit: "words", stagger: 0.035, duration: 0.9 },
 } as const;
+const HEADING_REVEAL_PERCENT = 86;
+const HEADING_REVEAL_OFFSET_PROPERTY = "--heading-reveal-offset";
 
 const reducedMotion = () =>
   window.matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -58,6 +58,8 @@ function whenReady(run: () => () => void) {
 export function useSplitReveal<T extends HTMLElement = HTMLHeadingElement>(
   kind: keyof typeof PRESET = "line",
   delay = 0,
+  observeEntry = false,
+  onComplete?: () => void,
 ) {
   const ref = useRef<T | null>(null);
 
@@ -68,6 +70,9 @@ export function useSplitReveal<T extends HTMLElement = HTMLHeadingElement>(
 
     return whenReady(() => {
       const p = PRESET[kind];
+      let observer: IntersectionObserver | undefined;
+      let exitObserver: IntersectionObserver | undefined;
+      let removeResizeListener: (() => void) | undefined;
       el.classList.add("fe-split", "fe-hide");
       const split = SplitText.create(el, {
         type: p.type,
@@ -76,72 +81,107 @@ export function useSplitReveal<T extends HTMLElement = HTMLHeadingElement>(
         linesClass: "fe-line",
         wordsClass: "fe-word",
         onSplit(self) {
+          observer?.disconnect();
+          exitObserver?.disconnect();
+          removeResizeListener?.();
           el.classList.remove("fe-hide");
-          // Replays on every entry: `once` dies after the first pass and
-          // `reverse` stalls offscreen, so leave resets the state outright
-          // and enter restarts from the top.
-          return gsap.from(self[p.unit], {
+          // Replays on re-entry from below, but only after a full exit under
+          // the viewport: resetting or replaying right at the reveal line
+          // would blink visible copy on every direction change near it, so
+          // `armed` gates the replay on both trigger paths.
+          let armed = true;
+          const tween = gsap.from(self[p.unit], {
             yPercent: 120,
             opacity: 0,
             duration: p.duration,
             ease,
             stagger: p.stagger,
             delay,
-            scrollTrigger: {
-              trigger: el,
-              start: "clamp(top 86%)",
-              toggleActions: "restart none none reset",
-            },
+            onComplete,
+            ...(observeEntry
+              ? { paused: true }
+              : {
+                  scrollTrigger: {
+                    trigger: el,
+                    // the trigger spans from "top at viewport bottom" to the
+                    // reveal line: crossing the line down plays an armed
+                    // reveal, and only a full exit below (crossing the start
+                    // back up) rewinds it and arms the next entrance
+                    start: "clamp(top bottom)",
+                    end: `clamp(top ${HEADING_REVEAL_PERCENT}%)`,
+                    toggleActions: "none none none none",
+                    onLeave: (st) => {
+                      if (!armed) return;
+                      armed = false;
+                      st.animation?.restart(true);
+                    },
+                    onLeaveBack: (st) => {
+                      armed = true;
+                      st.animation?.pause(0);
+                    },
+                  },
+                }),
           });
-        },
-      });
-      return () => split.revert();
-    });
-  }, [kind, delay]);
 
-  return ref;
-}
+          if (!observeEntry) {
+            // a load restored past the reveal line still plays the entrance
+            const st = tween.scrollTrigger;
+            if (st && st.progress >= 1 && armed) {
+              armed = false;
+              tween.restart(true);
+            }
+            return tween;
+          }
 
-/** Scroll-scrubbed character brightening for body copy. */
-export function useScrubHighlight<T extends HTMLElement = HTMLParagraphElement>() {
-  const ref = useRef<T | null>(null);
-
-  useEffect(() => {
-    const el = ref.current;
-    if (!el || reducedMotion()) return;
-    register();
-
-    return whenReady(() => {
-      el.classList.add("fe-split");
-      const split = SplitText.create(el, {
-        type: "lines,words,chars",
-        autoSplit: true,
-        linesClass: "fe-line",
-        wordsClass: "fe-word",
-        charsClass: "fe-letter",
-        onSplit(self) {
-          const byLine = self.lines.map((line) =>
-            self.chars.filter((c) => line.contains(c)),
-          );
-          const tl = gsap.timeline({
-            scrollTrigger: {
-              trigger: el,
-              start: "clamp(top 92%)",
-              end: "clamp(bottom 58%)",
-              scrub: true,
-            },
-          });
-          byLine.forEach((chars, i) => {
-            if (chars.length) {
-              tl.from(chars, { opacity: 0.22, stagger: 0.1, ease: "none" }, i * 0.3);
+          // A section-specific lead-in observes painted bounds so its CSS
+          // offset changes only the trigger without moving the content.
+          const observeAtSharedLine = () => {
+            observer?.disconnect();
+            const revealOffset =
+              Number.parseFloat(
+                getComputedStyle(el).getPropertyValue(
+                  HEADING_REVEAL_OFFSET_PROPERTY,
+                ),
+              ) || 0;
+            const bottomRootMargin =
+              revealOffset -
+              window.innerHeight * (1 - HEADING_REVEAL_PERCENT / 100);
+            observer = new IntersectionObserver(
+              ([entry]) => {
+                if (entry.isIntersecting && armed) {
+                  armed = false;
+                  tween.restart(true);
+                }
+              },
+              { rootMargin: `0px 0px ${bottomRootMargin}px 0px` },
+            );
+            observer.observe(el);
+          };
+          // the reset side watches the raw viewport: only a full exit below
+          // rewinds the reveal and arms the next entrance
+          exitObserver = new IntersectionObserver(([entry]) => {
+            if (!entry.isIntersecting && entry.boundingClientRect.top > 0) {
+              armed = true;
+              tween.pause(0);
             }
           });
-          return tl;
+          exitObserver.observe(el);
+          const onResize = () => observeAtSharedLine();
+          window.addEventListener("resize", onResize);
+          removeResizeListener = () =>
+            window.removeEventListener("resize", onResize);
+          observeAtSharedLine();
+          return tween;
         },
       });
-      return () => split.revert();
+      return () => {
+        observer?.disconnect();
+        exitObserver?.disconnect();
+        removeResizeListener?.();
+        split.revert();
+      };
     });
-  }, []);
+  }, [kind, delay, observeEntry, onComplete]);
 
   return ref;
 }
