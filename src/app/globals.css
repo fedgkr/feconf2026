@@ -1629,9 +1629,8 @@ body {
   grid-template-columns: minmax(0, 1fr) 150px;
   gap: 42px;
   background: #fff;
-  cursor: grab;
-  /* Only a touch starting inside this box is pointer-driven; overflow beyond
-     the card → rail chain is forwarded to the page by the same gesture. */
+  /* Touch input is pointer-driven so A scroll and B drag keep one model;
+     overflow beyond the first/last session is forwarded to the page. */
   touch-action: none;
   user-select: none;
   -webkit-user-select: none;
@@ -1691,16 +1690,17 @@ body {
   overflow-y: clip;
   padding: 0;
   background: transparent;
+  cursor: grab;
+}
+
+.sched-timeflow.is-rail-dragging .sched-timeflow-list {
+  cursor: grabbing;
 }
 
 .sched-timeflow-list-track {
   min-width: 0;
   transform: translate3d(0, 0, 0);
   will-change: transform;
-}
-
-.sched-timeflow.is-dragging {
-  cursor: grabbing;
 }
 
 .sched-timeflow-ghost {

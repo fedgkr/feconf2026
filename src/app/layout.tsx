@@ -18,6 +18,9 @@ const description =
   "프론트엔드 개발 컨퍼런스, FEConf 2026에서 다양한 기술과 트렌드를 경험하세요.";
 
 export const metadata: Metadata = {
+  metadataBase: new URL(
+    process.env.NEXT_PUBLIC_SITE_ORIGIN ?? "http://localhost:3000",
+  ),
   title: "FEConf 2026",
   description,
   openGraph: { title: "FEConf 2026", description, type: "website" },

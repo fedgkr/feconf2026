@@ -33,6 +33,7 @@ jobs:
       - run: pnpm build
         env:
           NEXT_PUBLIC_BASE_PATH: ${{ steps.pages.outputs.base_path }}
+          NEXT_PUBLIC_SITE_ORIGIN: ${{ steps.pages.outputs.origin }}
       - uses: actions/upload-pages-artifact@v3
         with:
           path: ./out

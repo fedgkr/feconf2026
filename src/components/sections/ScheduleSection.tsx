@@ -27,10 +27,12 @@ import {
 
 const EASE = "cubic-bezier(0.16, 1, 0.3, 1)";
 
-/** the scrub clock advances in one-minute steps during drag and inertia */
+/** the scrub clock advances in one-minute steps during scroll and inertia */
 const SCRUB_QUANT_MIN = 1;
-const DRAG_TRAVEL_GEAR = 0.5;
-const AOS_TOUCH_DRAG_TRAVEL_GEAR = 0.25;
+const PC_INPUT_GEAR = 0.5;
+const IOS_TOUCH_SCROLL_GEAR = 0.4;
+const AOS_TOUCH_SCROLL_GEAR = 0.1;
+const WHEEL_GESTURE_IDLE_MS = 250;
 const FLICK_SAMPLE_WINDOW_MS = 100;
 const FLICK_SAMPLE_LIMIT = 24;
 const FLICK_MIN_VELOCITY = 1; // px/ms
@@ -45,10 +47,10 @@ const RENDER_CHASE_EPSILON_PX = 0.1;
 
 type TravelDirection = -1 | 0 | 1;
 
-function travelGearForPointer(pointerType: string) {
-  return pointerType === "touch" && /Android/i.test(navigator.userAgent)
-    ? AOS_TOUCH_DRAG_TRAVEL_GEAR
-    : DRAG_TRAVEL_GEAR;
+function touchScrollGear() {
+  return /Android/i.test(navigator.userAgent)
+    ? AOS_TOUCH_SCROLL_GEAR
+    : IOS_TOUCH_SCROLL_GEAR;
 }
 
 function chasePosition(
@@ -70,6 +72,24 @@ type SessionListGroupId = "auditorium" | "b-hall" | "lightning";
 type ScheduleTopic = (typeof SCHEDULE_TOPIC_FILTERS)[number];
 type TopicFilter = "all" | ScheduleTopic;
 type TimeflowArea = "A" | "B";
+type TimeflowInputState = {
+  area: TimeflowArea;
+  travelGear: number;
+  direction: TravelDirection;
+  sessionProgress: number | null;
+  sessionStep: number | null;
+  pendingDelta: number;
+};
+type PointerInputState = TimeflowInputState & {
+  pointerId: number;
+  startY: number;
+  lastY: number;
+  moved: boolean;
+  samples: { y: number; at: number }[];
+};
+type WheelScrollState = TimeflowInputState & {
+  idleTimer: number | null;
+};
 type TimeScheduleItem = {
   id: string;
   minute: number;
@@ -648,19 +668,8 @@ function TimeScheduleView() {
     bounds: { lo: number; hi: number } | null;
     slots: Map<number, number> | null;
   }>({ stops: null, bounds: null, slots: null });
-  const dragState = useRef<{
-    pointerId: number;
-    area: TimeflowArea;
-    travelGear: number;
-    direction: TravelDirection;
-    sessionProgress: number | null;
-    sessionStep: number | null;
-    startY: number;
-    lastY: number;
-    moved: boolean;
-    samples: { y: number; at: number }[];
-    pendingDelta: number;
-  } | null>(null);
+  const pointerInputState = useRef<PointerInputState | null>(null);
+  const wheelScrollState = useRef<WheelScrollState | null>(null);
   const motionRef = useRef({
     raf: null as number | null,
     railModel: 0,
@@ -683,7 +692,7 @@ function TimeScheduleView() {
   const suppressClick = useRef(false);
   const activeStartRef = useRef<number | null>(starts[0] ?? null);
   const [activeId, setActiveId] = useState(starts[0] ? String(starts[0]) : "");
-  const [isDragging, setIsDragging] = useState(false);
+  const [isRailDragging, setIsRailDragging] = useState(false);
   // A exposes one-minute progress while B exposes registered starts only;
   // the label remains separate from the active content slot state.
   const [scrubLabel, setScrubLabel] = useState(() =>
@@ -761,7 +770,7 @@ function TimeScheduleView() {
     [tickStops],
   );
 
-  /** The draggable rail range: the first and last session ticks are its
+  /** The scrollable rail range: the first and last session ticks are its
    * physical handoff boundaries, regardless of extra ghost-tick overflow. */
   const snapBounds = useCallback(() => {
     if (geomRef.current.bounds) return geomRef.current.bounds;
@@ -785,7 +794,7 @@ function TimeScheduleView() {
     return bounds;
   }, [starts]);
 
-  /** The rail minute with its first/last draggable boundaries honoured. On
+  /** The rail minute with its first/last scroll boundaries honoured. On
    * short viewports the first centred tick is negative and clamps at zero;
    * raw interpolation there would incorrectly report a mid-gap minute. */
   const railMinute = useCallback(
@@ -840,7 +849,7 @@ function TimeScheduleView() {
   }, []);
 
   /** The strip is a continuous function of the rail model. Exact-start session
-   * centres are interpolation anchors, never catches while the pointer is down. */
+   * centres are interpolation anchors, never catches while input is active. */
   const syncStripModel = useCallback(() => {
     if (!spacesRef.current || starts.length === 0) return;
     const motion = motionRef.current;
@@ -875,8 +884,16 @@ function TimeScheduleView() {
     motionRef.current.inertiaDirection = 0;
   }, []);
 
+  const stopWheelScroll = useCallback(() => {
+    const wheel = wheelScrollState.current;
+    if (wheel?.idleTimer != null) window.clearTimeout(wheel.idleTimer);
+    wheelScrollState.current = null;
+  }, []);
+
   useEffect(
     () => () => {
+      stopWheelScroll();
+      pointerInputState.current = null;
       const motion = motionRef.current;
       if (motion.raf != null) cancelAnimationFrame(motion.raf);
       motion.raf = null;
@@ -884,7 +901,7 @@ function TimeScheduleView() {
       motion.inertiaArea = null;
       motion.inertiaDirection = 0;
     },
-    [],
+    [stopWheelScroll],
   );
 
   /** Move the rail 1:1 inside its first/last session bounds and return every
@@ -908,14 +925,14 @@ function TimeScheduleView() {
     if (minute == null) return;
 
     const motion = motionRef.current;
-    const drag = dragState.current;
+    const input = pointerInputState.current ?? wheelScrollState.current;
     const bDirection =
-      drag?.area === "B"
-        ? drag.direction
+      input?.area === "B"
+        ? input.direction
         : motion.inertiaArea === "B"
           ? motion.inertiaDirection
           : 0;
-    const isBDriven = drag?.area === "B" || motion.inertiaArea === "B";
+    const isBDriven = input?.area === "B" || motion.inertiaArea === "B";
     const currentStart = isBDriven
       ? directionalTimeScheduleStart(minute, starts, bDirection)
       : currentTimeScheduleStart(minute, starts);
@@ -940,29 +957,29 @@ function TimeScheduleView() {
     );
   }, [starts, railMinute]);
 
-  const flushDragDelta = useCallback(
-    (drag: NonNullable<typeof dragState.current>) => {
-      const delta = drag.pendingDelta;
-      drag.pendingDelta = 0;
+  const flushInputDelta = useCallback(
+    (input: TimeflowInputState) => {
+      const delta = input.pendingDelta;
+      input.pendingDelta = 0;
       if (!delta) return;
 
       let leftover: number;
       const bounds = snapBounds();
       if (
-        drag.area === "B" &&
-        drag.sessionProgress != null &&
-        drag.sessionStep != null &&
+        input.area === "B" &&
+        input.sessionProgress != null &&
+        input.sessionStep != null &&
         bounds
       ) {
-        const current = drag.sessionProgress;
+        const current = input.sessionProgress;
         const progressDelta =
-          (delta * drag.travelGear) / drag.sessionStep;
+          (delta * input.travelGear) / input.sessionStep;
         const next = Math.max(
           0,
           Math.min(current + progressDelta, starts.length - 1),
         );
-        drag.direction = progressDelta > 0 ? 1 : -1;
-        drag.sessionProgress = next;
+        input.direction = progressDelta > 0 ? 1 : -1;
+        input.sessionProgress = next;
         motionRef.current.railModel = Math.max(
           bounds.lo,
           Math.min(
@@ -971,11 +988,11 @@ function TimeScheduleView() {
           ),
         );
         const consumed =
-          ((next - current) * drag.sessionStep) / drag.travelGear;
+          ((next - current) * input.sessionStep) / input.travelGear;
         leftover = delta - consumed;
       } else {
-        const railDelta = delta * drag.travelGear;
-        leftover = feedRail(railDelta) / drag.travelGear;
+        const railDelta = delta * input.travelGear;
+        leftover = feedRail(railDelta) / input.travelGear;
       }
 
       syncStripModel();
@@ -1049,8 +1066,10 @@ function TimeScheduleView() {
       const dt = Math.min(Math.max(now - motion.lastAt, 0), 50);
       motion.lastAt = now;
 
-      const drag = dragState.current;
-      if (drag?.pendingDelta) flushDragDelta(drag);
+      const pointer = pointerInputState.current;
+      if (pointer?.pendingDelta) flushInputDelta(pointer);
+      const wheel = wheelScrollState.current;
+      if (wheel?.pendingDelta) flushInputDelta(wheel);
 
       let inertiaEndedIn: TimeflowArea | null = null;
       let inertiaEndedDirection: TravelDirection = 0;
@@ -1116,7 +1135,12 @@ function TimeScheduleView() {
       const stillChasing =
         Math.abs(motion.railModel - motion.railRendered) > 0 ||
         Math.abs(motion.spacesModel - motion.spacesRendered) > 0;
-      if (motion.velocity || dragState.current?.pendingDelta || stillChasing) {
+      if (
+        motion.velocity ||
+        pointerInputState.current?.pendingDelta ||
+        wheelScrollState.current?.pendingDelta ||
+        stillChasing
+      ) {
         motion.raf = requestAnimationFrame((nextNow) =>
           motionFrameRef.current(nextNow),
         );
@@ -1126,7 +1150,7 @@ function TimeScheduleView() {
     },
     [
       applyTrackTransforms,
-      flushDragDelta,
+      flushInputDelta,
       snapBounds,
       settleDirectionalStart,
       syncStripModel,
@@ -1138,13 +1162,36 @@ function TimeScheduleView() {
     motionFrameRef.current = runMotionFrame;
   }, [runMotionFrame]);
 
-  const queueDragDelta = (
-    drag: NonNullable<typeof dragState.current>,
-    delta: number,
-  ) => {
-    drag.pendingDelta += delta;
-    requestMotionFrame();
-  };
+  const queueInputDelta = useCallback(
+    (input: TimeflowInputState, delta: number) => {
+      input.pendingDelta += delta;
+      requestMotionFrame();
+    },
+    [requestMotionFrame],
+  );
+
+  const beginTimeflowInput = useCallback(
+    (area: TimeflowArea, travelGear: number): TimeflowInputState => {
+      stopInertia();
+      const motion = motionRef.current;
+      motion.railModel = motion.railRendered;
+      motion.spacesModel = motion.spacesRendered;
+      const minute = railMinute(motion.railModel);
+      stepTargetRef.current = null;
+      return {
+        area,
+        travelGear,
+        direction: 0,
+        sessionProgress:
+          area === "B" && minute != null
+            ? sessionProgressAtMinute(minute, starts)
+            : null,
+        sessionStep: area === "B" ? railItemStep() : null,
+        pendingDelta: 0,
+      };
+    },
+    [railItemStep, railMinute, starts, stopInertia],
+  );
 
   const startInertia = (
     releaseVelocity: number,
@@ -1236,10 +1283,74 @@ function TimeScheduleView() {
     updateTimeflowFromModel,
   ]);
 
+  useEffect(() => {
+    const box = boxRef.current;
+    const list = listRef.current;
+    if (!box || !list) return;
+
+    const finishWheelScroll = (wheel: WheelScrollState) => {
+      if (wheelScrollState.current !== wheel) return;
+      if (wheel.pendingDelta) {
+        flushInputDelta(wheel);
+        requestMotionFrame();
+      }
+      wheelScrollState.current = null;
+    };
+
+    const onWheel = (event: WheelEvent) => {
+      if (event.ctrlKey || !event.deltaY || pointerInputState.current) return;
+      if (
+        event.target instanceof Element &&
+        event.target.closest(".sched-timeflow-list")
+      ) {
+        return;
+      }
+      if (!event.cancelable) {
+        stopWheelScroll();
+        return;
+      }
+      event.preventDefault();
+
+      let wheel = wheelScrollState.current;
+      if (!wheel) {
+        wheel = {
+          ...beginTimeflowInput("A", PC_INPUT_GEAR),
+          idleTimer: null,
+        };
+        wheelScrollState.current = wheel;
+        suppressClick.current = false;
+      }
+
+      const unit =
+        event.deltaMode === 1
+          ? 16
+          : event.deltaMode === 2
+            ? list.clientHeight
+            : 1;
+      queueInputDelta(wheel, event.deltaY * unit);
+      if (wheel.idleTimer != null) window.clearTimeout(wheel.idleTimer);
+      wheel.idleTimer = window.setTimeout(
+        () => finishWheelScroll(wheel),
+        WHEEL_GESTURE_IDLE_MS,
+      );
+    };
+
+    box.addEventListener("wheel", onWheel, { passive: false });
+    return () => {
+      box.removeEventListener("wheel", onWheel);
+      stopWheelScroll();
+    };
+  }, [
+    beginTimeflowInput,
+    flushInputDelta,
+    queueInputDelta,
+    requestMotionFrame,
+    stopWheelScroll,
+  ]);
+
   const handleTimeflowPointerDown = (event: PointerEvent<HTMLDivElement>) => {
     const list = listRef.current;
     if (!list) return;
-
     if (event.pointerType === "mouse" && event.button !== 0) return;
 
     const area: TimeflowArea =
@@ -1247,53 +1358,46 @@ function TimeScheduleView() {
       event.target.closest(".sched-timeflow-list")
         ? "B"
         : "A";
-    // Re-grabbing freezes the model at the currently rendered position, so
-    // neither inertia nor render chase can continue under the new pointer.
-    stopInertia();
-    const motion = motionRef.current;
-    motion.railModel = motion.railRendered;
-    motion.spacesModel = motion.spacesRendered;
-    const minute = railMinute(motion.railModel);
-    stepTargetRef.current = null;
+    if (area === "A" && event.pointerType !== "touch") {
+      suppressClick.current = false;
+      return;
+    }
+
+    stopWheelScroll();
     suppressClick.current = false;
-    dragState.current = {
+    pointerInputState.current = {
+      ...beginTimeflowInput(
+        area,
+        event.pointerType === "touch" ? touchScrollGear() : PC_INPUT_GEAR,
+      ),
       pointerId: event.pointerId,
-      area,
-      travelGear: travelGearForPointer(event.pointerType),
-      direction: 0,
-      sessionProgress:
-        area === "B" && minute != null
-          ? sessionProgressAtMinute(minute, starts)
-          : null,
-      sessionStep: area === "B" ? railItemStep() : null,
       startY: event.clientY,
       lastY: event.clientY,
       moved: false,
       samples: [{ y: event.clientY, at: performance.now() }],
-      pendingDelta: 0,
     };
-    setIsDragging(true);
+    setIsRailDragging(area === "B");
     // Capture waits for real movement so a tick press can still become click.
   };
 
   const handleTimeflowPointerMove = (event: PointerEvent<HTMLDivElement>) => {
     const list = listRef.current;
-    const drag = dragState.current;
-    if (!list || !drag || drag.pointerId !== event.pointerId) return;
+    const pointer = pointerInputState.current;
+    if (!list || !pointer || pointer.pointerId !== event.pointerId) return;
 
     const now = performance.now();
-    drag.samples.push({ y: event.clientY, at: now });
+    pointer.samples.push({ y: event.clientY, at: now });
     while (
-      drag.samples.length > 1 &&
-      drag.samples[0].at < now - FLICK_SAMPLE_WINDOW_MS
+      pointer.samples.length > 1 &&
+      pointer.samples[0].at < now - FLICK_SAMPLE_WINDOW_MS
     ) {
-      drag.samples.shift();
+      pointer.samples.shift();
     }
-    if (drag.samples.length > FLICK_SAMPLE_LIMIT) drag.samples.shift();
+    if (pointer.samples.length > FLICK_SAMPLE_LIMIT) pointer.samples.shift();
 
-    if (!drag.moved) {
-      if (Math.abs(event.clientY - drag.startY) <= 3) return;
-      drag.moved = true;
+    if (!pointer.moved) {
+      if (Math.abs(event.clientY - pointer.startY) <= 3) return;
+      pointer.moved = true;
       suppressClick.current = true;
       try {
         event.currentTarget.setPointerCapture(event.pointerId);
@@ -1303,67 +1407,67 @@ function TimeScheduleView() {
     }
 
     // Input can arrive faster than paint. Accumulate exact pointer distance;
-    // the rAF queue performs the only drag-position write once per frame.
-    const delta = -(event.clientY - drag.lastY);
-    drag.lastY = event.clientY;
-    queueDragDelta(drag, delta);
+    // the rAF queue performs the only model-position write once per frame.
+    const delta = -(event.clientY - pointer.lastY);
+    pointer.lastY = event.clientY;
+    queueInputDelta(pointer, delta);
   };
 
   const handleTimeflowPointerUp = (event: PointerEvent<HTMLDivElement>) => {
     const list = listRef.current;
-    const drag = dragState.current;
-    if (!list || !drag || drag.pointerId !== event.pointerId) return;
+    const pointer = pointerInputState.current;
+    if (!list || !pointer || pointer.pointerId !== event.pointerId) return;
 
     const now = performance.now();
-    drag.samples.push({ y: event.clientY, at: now });
-    if (drag.samples.length > FLICK_SAMPLE_LIMIT) drag.samples.shift();
-    const recent = drag.samples.filter(
+    pointer.samples.push({ y: event.clientY, at: now });
+    if (pointer.samples.length > FLICK_SAMPLE_LIMIT) pointer.samples.shift();
+    const recent = pointer.samples.filter(
       (sample) => sample.at >= now - FLICK_SAMPLE_WINDOW_MS,
     );
     const first = recent[0];
     const last = recent[recent.length - 1];
     const elapsed = first && last ? last.at - first.at : 0;
     const releaseVelocity =
-      drag.moved && elapsed > 0 ? -(last.y - first.y) / elapsed : 0;
+      pointer.moved && elapsed > 0 ? -(last.y - first.y) / elapsed : 0;
 
-    if (drag.moved) {
-      const finalDelta = -(event.clientY - drag.lastY);
-      drag.pendingDelta += finalDelta;
-      drag.lastY = event.clientY;
+    if (pointer.moved) {
+      const finalDelta = -(event.clientY - pointer.lastY);
+      pointer.pendingDelta += finalDelta;
+      pointer.lastY = event.clientY;
     }
-    flushDragDelta(drag);
+    flushInputDelta(pointer);
     requestMotionFrame();
-    dragState.current = null;
-    setIsDragging(false);
+    pointerInputState.current = null;
+    setIsRailDragging(false);
     if (event.currentTarget.hasPointerCapture(event.pointerId)) {
       event.currentTarget.releasePointerCapture(event.pointerId);
     }
     if (
-      drag.moved &&
-      !startInertia(releaseVelocity, drag.area, drag.travelGear) &&
-      drag.area === "B"
+      pointer.moved &&
+      !startInertia(releaseVelocity, pointer.area, pointer.travelGear) &&
+      pointer.area === "B"
     ) {
       settleHighlightedStart();
     }
   };
 
   const handleTimeflowPointerCancel = (event: PointerEvent<HTMLDivElement>) => {
-    const drag = dragState.current;
+    const pointer = pointerInputState.current;
     const shouldSettle =
-      drag?.pointerId === event.pointerId &&
-      drag.moved &&
-      drag.area === "B";
-    if (drag?.pointerId === event.pointerId) {
-      flushDragDelta(drag);
+      pointer?.pointerId === event.pointerId &&
+      pointer.moved &&
+      pointer.area === "B";
+    if (pointer?.pointerId === event.pointerId) {
+      flushInputDelta(pointer);
       requestMotionFrame();
     }
     if (event.currentTarget.hasPointerCapture(event.pointerId)) {
       event.currentTarget.releasePointerCapture(event.pointerId);
     }
 
-    dragState.current = null;
+    pointerInputState.current = null;
     suppressClick.current = false;
-    setIsDragging(false);
+    setIsRailDragging(false);
     if (shouldSettle) settleHighlightedStart();
   };
 
@@ -1416,6 +1520,7 @@ function TimeScheduleView() {
                 return;
               }
 
+              stopWheelScroll();
               stepTargetRef.current = Number(item.snapId);
               setActiveId(item.snapId);
               centerMinute(Number(item.snapId));
@@ -1430,7 +1535,7 @@ function TimeScheduleView() {
           </button>
         );
       }),
-    [items, activeMinute, centerMinute],
+    [items, activeMinute, centerMinute, stopWheelScroll],
   );
 
   return (
@@ -1440,7 +1545,7 @@ function TimeScheduleView() {
       ) : (
         <div
           ref={boxRef}
-          className={`sched-timeflow ${isDragging ? "is-dragging" : ""}`}
+          className={`sched-timeflow ${isRailDragging ? "is-rail-dragging" : ""}`}
           onPointerDown={handleTimeflowPointerDown}
           onPointerMove={handleTimeflowPointerMove}
           onPointerUp={handleTimeflowPointerUp}
