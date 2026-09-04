@@ -29,20 +29,30 @@ const EASE = "cubic-bezier(0.16, 1, 0.3, 1)";
 
 /** the scrub clock advances in one-minute steps during drag and inertia */
 const SCRUB_QUANT_MIN = 1;
+const DRAG_TRAVEL_GEAR = 0.5;
 const FLICK_SAMPLE_WINDOW_MS = 100;
 const FLICK_SAMPLE_LIMIT = 24;
 const FLICK_MIN_VELOCITY = 1; // px/ms
-const FLICK_DECAY_TAU_MS = 325;
+const A_FLICK_DECAY_TAU_MS = 325;
+const B_FLICK_DECAY_TAU_MS = 220;
 const FLICK_MAX_VELOCITY = 3; // px/ms
 const FLICK_STOP_VELOCITY = 0.02; // px/ms
-const RENDER_CHASE_TAU_MS: number = 90;
+const B_SNAP_DIRECTION_THRESHOLD = 0.35;
+const RAIL_RENDER_CHASE_TAU_MS: number = 90;
+const CONTENT_RENDER_CHASE_TAU_MS: number = 140;
 const RENDER_CHASE_EPSILON_PX = 0.1;
 
-function chasePosition(rendered: number, model: number, dt: number) {
-  if (RENDER_CHASE_TAU_MS === 0) return model;
+type TravelDirection = -1 | 0 | 1;
+
+function chasePosition(
+  rendered: number,
+  model: number,
+  dt: number,
+  tau: number,
+) {
+  if (tau === 0) return model;
   const next =
-    rendered +
-    (model - rendered) * (1 - Math.exp(-dt / RENDER_CHASE_TAU_MS));
+    rendered + (model - rendered) * (1 - Math.exp(-dt / tau));
   return Math.abs(model - next) <= RENDER_CHASE_EPSILON_PX ? model : next;
 }
 
@@ -52,6 +62,7 @@ const rowDelay = (row: number) => 120 + row * 80;
 type SessionListGroupId = "auditorium" | "b-hall" | "lightning";
 type ScheduleTopic = (typeof SCHEDULE_TOPIC_FILTERS)[number];
 type TopicFilter = "all" | ScheduleTopic;
+type TimeflowArea = "A" | "B";
 type TimeScheduleItem = {
   id: string;
   minute: number;
@@ -267,19 +278,69 @@ function nearestTimeScheduleStart(minute: number, starts: number[]) {
   }, starts[0]);
 }
 
-function sessionsForTimeScheduleMinute(minute: number) {
+function currentTimeScheduleStart(minute: number, starts: number[]) {
+  let current = starts[0];
+  for (const start of starts) {
+    if (start <= minute + 0.25) current = start;
+    else break;
+  }
+  return current;
+}
+
+function directionalTimeScheduleStart(
+  minute: number,
+  starts: number[],
+  direction: TravelDirection,
+) {
+  if (direction === 0) return nearestTimeScheduleStart(minute, starts);
+  if (minute <= starts[0]) return starts[0];
+
+  for (let index = 1; index < starts.length; index++) {
+    const previous = starts[index - 1];
+    const next = starts[index];
+    if (minute > next) continue;
+    const progress = (minute - previous) / (next - previous);
+    return direction > 0
+      ? progress >= B_SNAP_DIRECTION_THRESHOLD
+        ? next
+        : previous
+      : progress <= 1 - B_SNAP_DIRECTION_THRESHOLD
+        ? previous
+        : next;
+  }
+
+  return starts[starts.length - 1];
+}
+
+function sessionProgressAtMinute(minute: number, starts: number[]) {
+  if (minute <= starts[0]) return 0;
+  for (let index = 1; index < starts.length; index++) {
+    const previous = starts[index - 1];
+    const next = starts[index];
+    if (minute <= next) {
+      return index - 1 + (minute - previous) / (next - previous);
+    }
+  }
+  return starts.length - 1;
+}
+
+function minuteAtSessionProgress(progress: number, starts: number[]) {
+  if (starts.length === 1) return starts[0];
+  const clamped = Math.max(0, Math.min(progress, starts.length - 1));
+  const index = Math.min(Math.floor(clamped), starts.length - 2);
+  const fraction = clamped - index;
+  return starts[index] + fraction * (starts[index + 1] - starts[index]);
+}
+
+function sessionsStartingAtTimeScheduleMinute(minute: number) {
   const rows = [MAIN_GROUP?.rows ?? [], LIGHTNING_GROUP?.rows ?? []].flat();
 
   return rows.flatMap((row) => {
     if (row.kind === "break") return [];
 
-    const { start, end } = parseRange(row.time);
-
-    if (start > minute || end <= minute) return [];
-
-    return row.sessions.filter((session): session is Session =>
-      Boolean(session),
-    );
+    return row.sessions
+      .filter((session): session is Session => Boolean(session))
+      .filter((session) => parseRange(session.time).start === minute);
   });
 }
 
@@ -484,6 +545,7 @@ function TimeSpaceCard({
             <div
               key={`timeflow-${session.hall}-${session.time}-${session.title}`}
               className="sched-timeflow-session"
+              data-session-start-minute={parseRange(session.time).start}
             >
               <span className="sched-timeflow-session-time">
                 {formatRange(session.time)}
@@ -536,7 +598,7 @@ function TimeScheduleView() {
   const slots = useMemo(
     () =>
       starts.map((minute) => {
-        const sessions = sessionsForTimeScheduleMinute(minute);
+        const sessions = sessionsStartingAtTimeScheduleMinute(minute);
 
         return {
           minute,
@@ -572,18 +634,21 @@ function TimeScheduleView() {
   const boxRef = useRef<HTMLDivElement>(null);
   const spacesRef = useRef<HTMLDivElement>(null);
   const spacesTrackRef = useRef<HTMLDivElement>(null);
-  // Hot-path geometry cache: input frames consult tick offsets and slot bounds;
-  // transforms do not invalidate these layout-space measurements.
+  // Hot-path geometry cache: input frames consult tick positions and exact-start
+  // session-centering anchors; transforms do not invalidate these measurements.
   const geomRef = useRef<{
     stops: { minute: number; top: number }[] | null;
     bounds: { lo: number; hi: number } | null;
-    slots: Map<number, { lo: number; hi: number }> | null;
+    slots: Map<number, number> | null;
   }>({ stops: null, bounds: null, slots: null });
   const dragState = useRef<{
     pointerId: number;
+    area: TimeflowArea;
+    direction: TravelDirection;
+    sessionProgress: number | null;
+    sessionStep: number | null;
     startY: number;
     lastY: number;
-    fromRail: boolean;
     moved: boolean;
     samples: { y: number; at: number }[];
     pendingDelta: number;
@@ -595,6 +660,8 @@ function TimeScheduleView() {
     spacesModel: 0,
     spacesRendered: 0,
     velocity: 0,
+    inertiaArea: null as TimeflowArea | null,
+    inertiaDirection: 0 as TravelDirection,
     lastAt: 0,
     initialized: false,
   });
@@ -606,16 +673,17 @@ function TimeScheduleView() {
     motion.raf = requestAnimationFrame((now) => motionFrameRef.current(now));
   }, []);
   const suppressClick = useRef(false);
+  const activeStartRef = useRef<number | null>(starts[0] ?? null);
   const [activeId, setActiveId] = useState(starts[0] ? String(starts[0]) : "");
   const [isDragging, setIsDragging] = useState(false);
-  // the clock scrubs through in-between times (one-minute steps) while the
-  // copy below only follows whole slots — so the label is its own state
+  // A exposes one-minute progress while B exposes registered starts only;
+  // the label remains separate from the active content slot state.
   const [scrubLabel, setScrubLabel] = useState(() =>
     starts[0] !== undefined ? formatMinute(starts[0]) : "",
   );
   const activeMinute = Number(activeId || starts[0]);
-  // While tick-click centring is in flight, the render chase visually crosses
-  // other starts. The pin keeps the clicked slot active until it arrives.
+  // While release parking or tick-click centring is in flight, the render
+  // chase crosses other starts. The pin keeps the target active until arrival.
   const stepTargetRef = useRef<number | null>(null);
 
   const activeItem = starts.length
@@ -640,6 +708,13 @@ function TimeScheduleView() {
       .sort((a, b) => a.top - b.top);
     geomRef.current.stops = stops;
     return stops;
+  }, []);
+
+  const railItemStep = useCallback(() => {
+    const item = railTrackRef.current?.querySelector<HTMLElement>(
+      ".sched-timeflow-item",
+    );
+    return Math.max(item?.offsetHeight ?? 1, 1);
   }, []);
 
   const minuteAtTop = useCallback(
@@ -719,61 +794,77 @@ function TimeScheduleView() {
     [starts, snapBounds, minuteAtTop],
   );
 
-  /** a slot's window range inside the strip: [its top, its top + overflow] —
-   * parked reading moves within this, travel interpolates between slots */
-  const slotBounds = useCallback((minute: number) => {
+  const slotAnchor = useCallback((minute: number) => {
     let map = geomRef.current.slots;
     if (!map) {
       const spaces = spacesRef.current;
-      if (!spaces) return null;
+      const track = spacesTrackRef.current;
+      if (!spaces || !track) return null;
+      const trackTop = track.getBoundingClientRect().top;
+      const max = Math.max(0, track.scrollHeight - spaces.clientHeight);
       map = new Map();
-      for (const el of [
-        ...spaces.querySelectorAll<HTMLElement>("[data-slot-minute]"),
+      for (const slot of [
+        ...track.querySelectorAll<HTMLElement>("[data-slot-minute]"),
       ]) {
-        const lo = el.offsetTop;
-        map.set(Number(el.dataset.slotMinute), {
-          lo,
-          hi: lo + Math.max(0, el.offsetHeight - spaces.clientHeight),
-        });
+        const slotMinute = Number(slot.dataset.slotMinute);
+        const matchingSessions = [
+          ...slot.querySelectorAll<HTMLElement>(
+            `[data-session-start-minute="${slotMinute}"]`,
+          ),
+        ];
+        const targets = matchingSessions.length ? matchingSessions : [slot];
+        const top = Math.min(
+          ...targets.map(
+            (target) => target.getBoundingClientRect().top - trackTop,
+          ),
+        );
+        const bottom = Math.max(
+          ...targets.map(
+            (target) => target.getBoundingClientRect().bottom - trackTop,
+          ),
+        );
+        const centered = (top + bottom) / 2 - spaces.clientHeight / 2;
+        map.set(slotMinute, Math.max(0, Math.min(centered, max)));
       }
       geomRef.current.slots = map;
     }
     return map.get(minute) ?? null;
   }, []);
 
-  /** Single derivation of the strip model from the rail model: parked on a
-   * start, feedSpaces reads that slot; between starts it follows the rail. */
+  /** The strip is a continuous function of the rail model. Exact-start session
+   * centres are interpolation anchors, never catches while the pointer is down. */
   const syncStripModel = useCallback(() => {
     if (!spacesRef.current || starts.length === 0) return;
     const motion = motionRef.current;
-    const m = railMinute();
-    if (m == null) return;
-    const minute = Math.max(starts[0], Math.min(m, starts[starts.length - 1]));
-    let idx = 0;
+    const currentMinute = railMinute();
+    if (currentMinute == null) return;
+    const minute = Math.max(
+      starts[0],
+      Math.min(currentMinute, starts[starts.length - 1]),
+    );
+    let index = 0;
     for (let i = 0; i < starts.length; i++) {
-      if (starts[i] <= minute + 0.25) idx = i;
+      if (starts[i] <= minute) index = i;
       else break;
     }
-    const from = starts[idx];
-    if (Math.abs(minute - from) < 0.25 || idx === starts.length - 1) {
-      const bounds = slotBounds(from);
-      if (!bounds) return;
-      motion.spacesModel = Math.max(
-        bounds.lo,
-        Math.min(motion.spacesModel, bounds.hi),
-      );
+    const fromAnchor = slotAnchor(starts[index]);
+    if (fromAnchor == null) return;
+    if (index === starts.length - 1) {
+      motion.spacesModel = fromAnchor;
       return;
     }
-    const fromBounds = slotBounds(from);
-    const toBounds = slotBounds(starts[idx + 1]);
-    if (!fromBounds || !toBounds) return;
-    const progress = (minute - from) / (starts[idx + 1] - from);
+    const toAnchor = slotAnchor(starts[index + 1]);
+    if (toAnchor == null) return;
+    const progress =
+      (minute - starts[index]) / (starts[index + 1] - starts[index]);
     motion.spacesModel =
-      fromBounds.hi + progress * (toBounds.lo - fromBounds.hi);
-  }, [starts, railMinute, slotBounds]);
+      fromAnchor + progress * (toAnchor - fromAnchor);
+  }, [starts, railMinute, slotAnchor]);
 
   const stopInertia = useCallback(() => {
     motionRef.current.velocity = 0;
+    motionRef.current.inertiaArea = null;
+    motionRef.current.inertiaDirection = 0;
   }, []);
 
   useEffect(
@@ -782,37 +873,14 @@ function TimeScheduleView() {
       if (motion.raf != null) cancelAnimationFrame(motion.raf);
       motion.raf = null;
       motion.velocity = 0;
+      motion.inertiaArea = null;
+      motion.inertiaDirection = 0;
     },
     [],
   );
 
-  /** First link of the drag chain. While parked on a session start, move
-   * through that slot's overflow 1:1 and return every unconsumed pixel. */
-  const feedSpaces = useCallback(
-    (dy: number) => {
-      if (!spacesRef.current || !dy) return dy;
-      const motion = motionRef.current;
-      const minute = railMinute();
-      const parked =
-        minute != null
-          ? starts.find((start) => Math.abs(start - minute) < 0.25)
-          : undefined;
-      if (parked === undefined) return dy;
-      const bounds = slotBounds(parked);
-      if (!bounds) return dy;
-      const current = Math.max(
-        bounds.lo,
-        Math.min(motion.spacesModel, bounds.hi),
-      );
-      const next = Math.max(bounds.lo, Math.min(current + dy, bounds.hi));
-      motion.spacesModel = next;
-      return dy - (next - current);
-    },
-    [starts, railMinute, slotBounds],
-  );
-
-  /** Second link of the drag chain. Move the rail 1:1 inside its first/last
-   * session bounds and return every pixel beyond them to the page. */
+  /** Move the rail 1:1 inside its first/last session bounds and return every
+   * pixel beyond them to the page. */
   const feedRail = useCallback(
     (dy: number) => {
       const bounds = snapBounds();
@@ -831,25 +899,34 @@ function TimeScheduleView() {
     const minute = railMinute();
     if (minute == null) return;
 
-    // The clock scrubs in one-minute steps, while every session start keeps
-    // its exact time (including starts outside the ten-minute display grid).
+    const motion = motionRef.current;
+    const drag = dragState.current;
+    const bDirection =
+      drag?.area === "B"
+        ? drag.direction
+        : motion.inertiaArea === "B"
+          ? motion.inertiaDirection
+          : 0;
+    const isBDriven = drag?.area === "B" || motion.inertiaArea === "B";
+    const currentStart = isBDriven
+      ? directionalTimeScheduleStart(minute, starts, bDirection)
+      : currentTimeScheduleStart(minute, starts);
+    const selectedStart = stepTargetRef.current ?? currentStart;
+    activeStartRef.current = selectedStart;
+
+    // A scrubs in one-minute steps; B exposes only registered session starts.
     const whole = Math.round(minute);
-    const nextLabel = formatMinute(
-      Math.abs(minute - whole) < 0.5 && starts.includes(whole)
+    const labelMinute = isBDriven
+      ? selectedStart
+      : Math.abs(minute - whole) < 0.5 && starts.includes(whole)
         ? whole
-        : Math.round(minute / SCRUB_QUANT_MIN) * SCRUB_QUANT_MIN,
-    );
+        : Math.round(minute / SCRUB_QUANT_MIN) * SCRUB_QUANT_MIN;
+    const nextLabel = formatMinute(labelMinute);
     setScrubLabel((current) =>
       current === nextLabel ? current : nextLabel,
     );
 
-    let slot = starts[0];
-    for (const start of starts) {
-      if (start <= minute + 0.25) slot = start;
-      else break;
-    }
-
-    const nextActiveId = String(stepTargetRef.current ?? slot);
+    const nextActiveId = String(selectedStart);
     setActiveId((current) =>
       current === nextActiveId ? current : nextActiveId,
     );
@@ -860,14 +937,51 @@ function TimeScheduleView() {
       const delta = drag.pendingDelta;
       drag.pendingDelta = 0;
       if (!delta) return;
-      const leftover = drag.fromRail
-        ? feedRail(delta)
-        : feedRail(feedSpaces(delta));
+
+      let leftover: number;
+      const bounds = snapBounds();
+      if (
+        drag.area === "B" &&
+        drag.sessionProgress != null &&
+        drag.sessionStep != null &&
+        bounds
+      ) {
+        const current = drag.sessionProgress;
+        const progressDelta =
+          (delta * DRAG_TRAVEL_GEAR) / drag.sessionStep;
+        const next = Math.max(
+          0,
+          Math.min(current + progressDelta, starts.length - 1),
+        );
+        drag.direction = progressDelta > 0 ? 1 : -1;
+        drag.sessionProgress = next;
+        motionRef.current.railModel = Math.max(
+          bounds.lo,
+          Math.min(
+            topAtMinute(minuteAtSessionProgress(next, starts)),
+            bounds.hi,
+          ),
+        );
+        const consumed =
+          ((next - current) * drag.sessionStep) / DRAG_TRAVEL_GEAR;
+        leftover = delta - consumed;
+      } else {
+        const railDelta = delta * DRAG_TRAVEL_GEAR;
+        leftover = feedRail(railDelta) / DRAG_TRAVEL_GEAR;
+      }
+
       syncStripModel();
       updateTimeflowFromModel();
       if (leftover) window.scrollBy({ top: leftover, behavior: "instant" });
     },
-    [feedRail, feedSpaces, syncStripModel, updateTimeflowFromModel],
+    [
+      feedRail,
+      snapBounds,
+      starts,
+      syncStripModel,
+      topAtMinute,
+      updateTimeflowFromModel,
+    ],
   );
 
   const applyTrackTransforms = useCallback((rail: number, spaces: number) => {
@@ -878,90 +992,6 @@ function TimeScheduleView() {
       spacesTrackRef.current.style.transform = `translate3d(0, ${-spaces}px, 0)`;
     }
   }, []);
-
-  const runMotionFrame = useCallback(
-    (now: number) => {
-      const motion = motionRef.current;
-      const dt = Math.min(Math.max(now - motion.lastAt, 0), 50);
-      motion.lastAt = now;
-
-      const drag = dragState.current;
-      if (drag?.pendingDelta) flushDragDelta(drag);
-
-      if (motion.velocity) {
-        const bounds = snapBounds();
-        if (!bounds) {
-          motion.velocity = 0;
-        } else {
-          const decay = Math.exp(-dt / FLICK_DECAY_TAU_MS);
-          const rawNext =
-            motion.railModel +
-            motion.velocity * FLICK_DECAY_TAU_MS * (1 - decay);
-          const next = Math.max(bounds.lo, Math.min(rawNext, bounds.hi));
-          const hitBoundary = next !== rawNext;
-          motion.railModel = next;
-          motion.velocity *= decay;
-          if (
-            hitBoundary ||
-            Math.abs(motion.velocity) <= FLICK_STOP_VELOCITY
-          ) {
-            motion.velocity = 0;
-          }
-          syncStripModel();
-          updateTimeflowFromModel();
-        }
-      }
-
-      motion.railRendered = chasePosition(
-        motion.railRendered,
-        motion.railModel,
-        dt,
-      );
-      motion.spacesRendered = chasePosition(
-        motion.spacesRendered,
-        motion.spacesModel,
-        dt,
-      );
-      applyTrackTransforms(motion.railRendered, motion.spacesRendered);
-      if (
-        stepTargetRef.current != null &&
-        motion.railRendered === motion.railModel
-      ) {
-        stepTargetRef.current = null;
-        updateTimeflowFromModel();
-      }
-
-      const stillChasing =
-        Math.abs(motion.railModel - motion.railRendered) > 0 ||
-        Math.abs(motion.spacesModel - motion.spacesRendered) > 0;
-      if (motion.velocity || dragState.current?.pendingDelta || stillChasing) {
-        motion.raf = requestAnimationFrame((nextNow) =>
-          motionFrameRef.current(nextNow),
-        );
-      } else {
-        motion.raf = null;
-      }
-    },
-    [
-      applyTrackTransforms,
-      flushDragDelta,
-      snapBounds,
-      syncStripModel,
-      updateTimeflowFromModel,
-    ],
-  );
-
-  useLayoutEffect(() => {
-    motionFrameRef.current = runMotionFrame;
-  }, [runMotionFrame]);
-
-  const queueDragDelta = (
-    drag: NonNullable<typeof dragState.current>,
-    delta: number,
-  ) => {
-    drag.pendingDelta += delta;
-    requestMotionFrame();
-  };
 
   const centerMinute = useCallback(
     (minute: number) => {
@@ -987,23 +1017,147 @@ function TimeScheduleView() {
     ],
   );
 
-  const startInertia = (releaseVelocity: number) => {
+  const settleHighlightedStart = useCallback(() => {
+    const target = activeStartRef.current;
+    if (target == null) return;
+    stepTargetRef.current = target;
+    centerMinute(target);
+  }, [centerMinute]);
+
+  const settleDirectionalStart = useCallback(
+    (direction: TravelDirection) => {
+      const minute = railMinute(motionRef.current.railRendered);
+      if (minute == null || starts.length === 0) return;
+      const target = directionalTimeScheduleStart(minute, starts, direction);
+      stepTargetRef.current = target;
+      centerMinute(target);
+    },
+    [centerMinute, railMinute, starts],
+  );
+
+  const runMotionFrame = useCallback(
+    (now: number) => {
+      const motion = motionRef.current;
+      const dt = Math.min(Math.max(now - motion.lastAt, 0), 50);
+      motion.lastAt = now;
+
+      const drag = dragState.current;
+      if (drag?.pendingDelta) flushDragDelta(drag);
+
+      let inertiaEndedIn: TimeflowArea | null = null;
+      let inertiaEndedDirection: TravelDirection = 0;
+      if (motion.velocity) {
+        const bounds = snapBounds();
+        if (!bounds) {
+          motion.velocity = 0;
+          inertiaEndedIn = motion.inertiaArea;
+          inertiaEndedDirection = motion.inertiaDirection;
+          motion.inertiaArea = null;
+          motion.inertiaDirection = 0;
+        } else {
+          const decayTau =
+            motion.inertiaArea === "B"
+              ? B_FLICK_DECAY_TAU_MS
+              : A_FLICK_DECAY_TAU_MS;
+          const decay = Math.exp(-dt / decayTau);
+          const rawNext =
+            motion.railModel + motion.velocity * decayTau * (1 - decay);
+          const next = Math.max(bounds.lo, Math.min(rawNext, bounds.hi));
+          const hitBoundary = next !== rawNext;
+          motion.railModel = next;
+          motion.velocity *= decay;
+          if (
+            hitBoundary ||
+            Math.abs(motion.velocity) <= FLICK_STOP_VELOCITY
+          ) {
+            motion.velocity = 0;
+            inertiaEndedIn = motion.inertiaArea;
+            inertiaEndedDirection = motion.inertiaDirection;
+            motion.inertiaArea = null;
+            motion.inertiaDirection = 0;
+          }
+          syncStripModel();
+          updateTimeflowFromModel();
+        }
+      }
+      if (inertiaEndedIn === "B") {
+        settleDirectionalStart(inertiaEndedDirection);
+      }
+
+      motion.railRendered = chasePosition(
+        motion.railRendered,
+        motion.railModel,
+        dt,
+        RAIL_RENDER_CHASE_TAU_MS,
+      );
+      motion.spacesRendered = chasePosition(
+        motion.spacesRendered,
+        motion.spacesModel,
+        dt,
+        CONTENT_RENDER_CHASE_TAU_MS,
+      );
+      applyTrackTransforms(motion.railRendered, motion.spacesRendered);
+      if (
+        stepTargetRef.current != null &&
+        motion.railRendered === motion.railModel
+      ) {
+        stepTargetRef.current = null;
+        updateTimeflowFromModel();
+      }
+
+      const stillChasing =
+        Math.abs(motion.railModel - motion.railRendered) > 0 ||
+        Math.abs(motion.spacesModel - motion.spacesRendered) > 0;
+      if (motion.velocity || dragState.current?.pendingDelta || stillChasing) {
+        motion.raf = requestAnimationFrame((nextNow) =>
+          motionFrameRef.current(nextNow),
+        );
+      } else {
+        motion.raf = null;
+      }
+    },
+    [
+      applyTrackTransforms,
+      flushDragDelta,
+      snapBounds,
+      settleDirectionalStart,
+      syncStripModel,
+      updateTimeflowFromModel,
+    ],
+  );
+
+  useLayoutEffect(() => {
+    motionFrameRef.current = runMotionFrame;
+  }, [runMotionFrame]);
+
+  const queueDragDelta = (
+    drag: NonNullable<typeof dragState.current>,
+    delta: number,
+  ) => {
+    drag.pendingDelta += delta;
+    requestMotionFrame();
+  };
+
+  const startInertia = (releaseVelocity: number, area: TimeflowArea) => {
     const bounds = snapBounds();
-    if (!bounds) return;
+    if (!bounds) return false;
+    if (Math.abs(releaseVelocity) <= FLICK_MIN_VELOCITY) return false;
     const motion = motionRef.current;
     const velocity = Math.max(
       -FLICK_MAX_VELOCITY,
-      Math.min(releaseVelocity, FLICK_MAX_VELOCITY),
+      Math.min(releaseVelocity * DRAG_TRAVEL_GEAR, FLICK_MAX_VELOCITY),
     );
-    if (Math.abs(velocity) <= FLICK_MIN_VELOCITY) return;
     if (
       (velocity < 0 && motion.railModel <= bounds.lo) ||
       (velocity > 0 && motion.railModel >= bounds.hi)
     ) {
-      return;
+      return false;
     }
     motion.velocity = velocity;
+    motion.inertiaArea = area;
+    motion.inertiaDirection = velocity > 0 ? 1 : -1;
     requestMotionFrame();
+    return true;
   };
 
   useLayoutEffect(() => {
@@ -1076,22 +1230,31 @@ function TimeScheduleView() {
 
     if (event.pointerType === "mouse" && event.button !== 0) return;
 
-    const insideRail =
+    const area: TimeflowArea =
       event.target instanceof Element &&
-      !!event.target.closest(".sched-timeflow-list");
+      event.target.closest(".sched-timeflow-list")
+        ? "B"
+        : "A";
     // Re-grabbing freezes the model at the currently rendered position, so
     // neither inertia nor render chase can continue under the new pointer.
     stopInertia();
     const motion = motionRef.current;
     motion.railModel = motion.railRendered;
     motion.spacesModel = motion.spacesRendered;
+    const minute = railMinute(motion.railModel);
     stepTargetRef.current = null;
     suppressClick.current = false;
     dragState.current = {
       pointerId: event.pointerId,
+      area,
+      direction: 0,
+      sessionProgress:
+        area === "B" && minute != null
+          ? sessionProgressAtMinute(minute, starts)
+          : null,
+      sessionStep: area === "B" ? railItemStep() : null,
       startY: event.clientY,
       lastY: event.clientY,
-      fromRail: insideRail,
       moved: false,
       samples: [{ y: event.clientY, at: performance.now() }],
       pendingDelta: 0,
@@ -1128,9 +1291,9 @@ function TimeScheduleView() {
 
     // Input can arrive faster than paint. Accumulate exact pointer distance;
     // the rAF queue performs the only drag-position write once per frame.
-    const step = event.clientY - drag.lastY;
+    const delta = -(event.clientY - drag.lastY);
     drag.lastY = event.clientY;
-    queueDragDelta(drag, -step);
+    queueDragDelta(drag, delta);
   };
 
   const handleTimeflowPointerUp = (event: PointerEvent<HTMLDivElement>) => {
@@ -1151,7 +1314,8 @@ function TimeScheduleView() {
       drag.moved && elapsed > 0 ? -(last.y - first.y) / elapsed : 0;
 
     if (drag.moved) {
-      drag.pendingDelta -= event.clientY - drag.lastY;
+      const finalDelta = -(event.clientY - drag.lastY);
+      drag.pendingDelta += finalDelta;
       drag.lastY = event.clientY;
     }
     flushDragDelta(drag);
@@ -1161,11 +1325,21 @@ function TimeScheduleView() {
     if (event.currentTarget.hasPointerCapture(event.pointerId)) {
       event.currentTarget.releasePointerCapture(event.pointerId);
     }
-    startInertia(releaseVelocity);
+    if (
+      drag.moved &&
+      !startInertia(releaseVelocity, drag.area) &&
+      drag.area === "B"
+    ) {
+      settleHighlightedStart();
+    }
   };
 
   const handleTimeflowPointerCancel = (event: PointerEvent<HTMLDivElement>) => {
     const drag = dragState.current;
+    const shouldSettle =
+      drag?.pointerId === event.pointerId &&
+      drag.moved &&
+      drag.area === "B";
     if (drag?.pointerId === event.pointerId) {
       flushDragDelta(drag);
       requestMotionFrame();
@@ -1177,6 +1351,7 @@ function TimeScheduleView() {
     dragState.current = null;
     suppressClick.current = false;
     setIsDragging(false);
+    if (shouldSettle) settleHighlightedStart();
   };
 
   // static subtrees kept out of the per-scrub-label render: the strip only

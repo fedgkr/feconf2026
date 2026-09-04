@@ -21,7 +21,7 @@ export const metadata: Metadata = {
   title: "FEConf 2026",
   description,
   openGraph: { title: "FEConf 2026", description, type: "website" },
-  twitter: { card: "summary", title: "FEConf 2026", description },
+  twitter: { card: "summary_large_image", title: "FEConf 2026", description },
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
