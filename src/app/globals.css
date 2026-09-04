@@ -779,7 +779,7 @@ body {
 .sched-section-inner {
   --sched-stage-height: clamp(640px, 68svh, 760px);
   --sched-heading-gap: 64px;
-  --sched-download-gap: 48px;
+  --sched-download-gap: 38px;
   --sched-download-height: 129px;
 }
 
@@ -1627,6 +1627,12 @@ body {
   grid-template-columns: minmax(0, 1fr) 150px;
   gap: 42px;
   background: #fff;
+  cursor: grab;
+  /* Only a touch starting inside this box is pointer-driven; overflow beyond
+     the card → rail chain is forwarded to the page by the same gesture. */
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
 }
 
 .sched-timeflow-wrap {
@@ -1674,24 +1680,19 @@ body {
   position: relative;
   min-width: 0;
   max-height: 560px;
-  overflow-y: auto;
+  overflow-y: clip;
   padding: 0;
   background: transparent;
-  cursor: grab;
-  scroll-snap-type: y proximity;
-  scrollbar-width: none;
-  scroll-behavior: smooth;
-  touch-action: pan-y;
-  user-select: none;
 }
 
-.sched-timeflow-list.is-dragging {
+.sched-timeflow-list-track {
+  min-width: 0;
+  transform: translate3d(0, 0, 0);
+  will-change: transform;
+}
+
+.sched-timeflow.is-dragging {
   cursor: grabbing;
-  scroll-behavior: auto;
-}
-
-.sched-timeflow-list::-webkit-scrollbar {
-  display: none;
 }
 
 .sched-timeflow-ghost {
@@ -1764,7 +1765,6 @@ body {
   background: transparent;
   color: rgb(16 24 61 / 0.58);
   font-variant-numeric: tabular-nums;
-  scroll-snap-align: center;
   text-align: right;
   cursor: inherit;
   transition:
@@ -1998,7 +1998,10 @@ body {
   display: flex;
   align-items: stretch;
   background: #fff;
-  animation: sched-timeflow-spaces-in 260ms cubic-bezier(0.16, 1, 0.3, 1) both;
+  /* fill must not be both/forwards: a finished fill pins the keyframe's
+     transform over the inline translateY the notch nudge sets */
+  animation: sched-timeflow-spaces-in 260ms cubic-bezier(0.16, 1, 0.3, 1)
+    backwards;
 }
 
 @keyframes sched-timeflow-spaces-in {
@@ -2012,15 +2015,17 @@ body {
   }
 }
 
-.sched-timeflow-spaces > .sched-timeflow-space {
+/* entrance stagger only for the first (visible) slot of the strip — the
+   rest are offscreen at mount and animating them would be wasted work */
+.sched-timeflow-slot:first-child > .sched-timeflow-space {
   animation: sched-timeflow-space-in 320ms cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
-.sched-timeflow-spaces > .sched-timeflow-space:nth-child(2) {
+.sched-timeflow-slot:first-child > .sched-timeflow-space:nth-child(2) {
   animation-delay: 45ms;
 }
 
-.sched-timeflow-spaces > .sched-timeflow-space:nth-child(3) {
+.sched-timeflow-slot:first-child > .sched-timeflow-space:nth-child(3) {
   animation-delay: 90ms;
 }
 
@@ -2037,21 +2042,48 @@ body {
 
 @media (prefers-reduced-motion: reduce) {
   .sched-timeflow-spaces,
-  .sched-timeflow-spaces > .sched-timeflow-space {
+  .sched-timeflow-slot:first-child > .sched-timeflow-space {
     animation: none;
   }
 }
 
 .sched-timeflow-spaces.is-vertical {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr);
+  position: relative;
+  display: block;
   min-height: 0;
-  overflow-y: auto;
-  scrollbar-width: none;
+  overflow-y: clip;
 }
 
-.sched-timeflow-spaces.is-vertical::-webkit-scrollbar {
-  display: none;
+.sched-timeflow-spaces-track {
+  display: grid;
+  height: 100%;
+  min-height: 100%;
+  grid-template-columns: minmax(0, 1fr);
+  /* every slot fills at least one window, so a parked slot looks exactly
+     like the pre-strip single-slot layout (no next-slot peeking) */
+  grid-auto-rows: minmax(100%, max-content);
+  transform: translate3d(0, 0, 0);
+  will-change: transform;
+}
+
+.sched-timeflow-slot {
+  display: grid;
+  min-width: 0;
+  grid-template-columns: minmax(0, 1fr);
+  align-content: start;
+}
+
+/* seam between time slots — the same hairline the cards use */
+.sched-timeflow-slot + .sched-timeflow-slot {
+  border-top: 1px solid transparent;
+  border-image: linear-gradient(
+    90deg,
+    rgb(212 218 237 / 0) 0,
+    var(--color-hairline) 30px,
+    var(--color-hairline) calc(100% - 30px),
+    rgb(212 218 237 / 0) 100%
+  )
+  1;
 }
 
 .sched-timeflow-spaces.is-vertical .sched-timeflow-space {
@@ -2761,16 +2793,12 @@ body {
   .sched-timeflow-list {
     display: block;
     max-height: 520px;
-    overflow-x: hidden;
-    overflow-y: auto;
+    overflow-x: clip;
+    overflow-y: clip;
     padding: 0;
-    scrollbar-width: none;
   }
   .sched-timeflow-ghost {
     height: 252px;
-  }
-  .sched-timeflow-list::-webkit-scrollbar {
-    display: none;
   }
   .sched-timeflow-item {
     min-width: 0;

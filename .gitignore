@@ -45,3 +45,5 @@ next-env.d.ts
 
 # ai agent
 .pi
+artifacts
+HANDOFF.md

@@ -32,7 +32,7 @@ export default function BuddySection() {
     <section
       ref={coverRef}
       data-nav-bg="#fafafd"
-      className="relative z-31 flex flex-col overflow-hidden bg-surface py-24 [--fc-cover-min-h:77vh] [--heading-reveal-offset:48px] sm:py-36 sm:[--heading-reveal-offset:80px]"
+      className="relative z-31 flex flex-col overflow-hidden bg-surface pb-24 pt-16 [--fc-cover-min-h:77vh] [--heading-reveal-offset:48px] sm:pb-36 sm:pt-24 sm:[--heading-reveal-offset:80px]"
     >
       <div ref={layerRef} className="absolute inset-0 z-[1] overflow-hidden" />
       <div

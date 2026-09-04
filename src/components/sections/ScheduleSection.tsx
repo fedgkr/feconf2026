@@ -3,6 +3,7 @@
 import {
   useEffect,
   useCallback,
+  useLayoutEffect,
   useMemo,
   useRef,
   useState,
@@ -25,6 +26,25 @@ import {
 } from "@/data/site";
 
 const EASE = "cubic-bezier(0.16, 1, 0.3, 1)";
+
+/** the scrub clock advances in one-minute steps during drag and inertia */
+const SCRUB_QUANT_MIN = 1;
+const FLICK_SAMPLE_WINDOW_MS = 100;
+const FLICK_SAMPLE_LIMIT = 24;
+const FLICK_MIN_VELOCITY = 1; // px/ms
+const FLICK_DECAY_TAU_MS = 325;
+const FLICK_MAX_VELOCITY = 3; // px/ms
+const FLICK_STOP_VELOCITY = 0.02; // px/ms
+const RENDER_CHASE_TAU_MS: number = 90;
+const RENDER_CHASE_EPSILON_PX = 0.1;
+
+function chasePosition(rendered: number, model: number, dt: number) {
+  if (RENDER_CHASE_TAU_MS === 0) return model;
+  const next =
+    rendered +
+    (model - rendered) * (1 - Math.exp(-dt / RENDER_CHASE_TAU_MS));
+  return Math.abs(model - next) <= RENDER_CHASE_EPSILON_PX ? model : next;
+}
 
 /** per-row entrance delay: the header row settles first, then row by row */
 const rowDelay = (row: number) => 120 + row * 80;
@@ -511,6 +531,27 @@ function TimeflowGhostTicks({
 function TimeScheduleView() {
   const items = useMemo(() => timeScheduleItems(), []);
   const starts = useMemo(() => timeScheduleStartMinutes(), []);
+  // pre-rendered strip data: every slot's spaces in time order — scrubbing
+  // slides the visible window over this instead of swapping slot content
+  const slots = useMemo(
+    () =>
+      starts.map((minute) => {
+        const sessions = sessionsForTimeScheduleMinute(minute);
+
+        return {
+          minute,
+          spaces: TIME_SCHEDULE_SPACES.map((space) => ({
+            id: space.id,
+            title: space.title,
+            badge: space.badge,
+            sessions: sessions.filter((session) =>
+              space.halls.includes(session.hall),
+            ),
+          })),
+        };
+      }),
+    [starts],
+  );
   const ghostTicks = useMemo(() => {
     const firstMinute = items[0]?.minute ?? 0;
     const lastMinute = items[items.length - 1]?.minute ?? 0;
@@ -527,112 +568,536 @@ function TimeScheduleView() {
     };
   }, [items]);
   const listRef = useRef<HTMLDivElement>(null);
-  const scrollTimer = useRef<number | null>(null);
+  const railTrackRef = useRef<HTMLDivElement>(null);
+  const boxRef = useRef<HTMLDivElement>(null);
+  const spacesRef = useRef<HTMLDivElement>(null);
+  const spacesTrackRef = useRef<HTMLDivElement>(null);
+  // Hot-path geometry cache: input frames consult tick offsets and slot bounds;
+  // transforms do not invalidate these layout-space measurements.
+  const geomRef = useRef<{
+    stops: { minute: number; top: number }[] | null;
+    bounds: { lo: number; hi: number } | null;
+    slots: Map<number, { lo: number; hi: number }> | null;
+  }>({ stops: null, bounds: null, slots: null });
   const dragState = useRef<{
     pointerId: number;
     startY: number;
-    startScrollTop: number;
+    lastY: number;
+    fromRail: boolean;
     moved: boolean;
+    samples: { y: number; at: number }[];
+    pendingDelta: number;
   } | null>(null);
+  const motionRef = useRef({
+    raf: null as number | null,
+    railModel: 0,
+    railRendered: 0,
+    spacesModel: 0,
+    spacesRendered: 0,
+    velocity: 0,
+    lastAt: 0,
+    initialized: false,
+  });
+  const motionFrameRef = useRef<(now: number) => void>(() => {});
+  const requestMotionFrame = useCallback(() => {
+    const motion = motionRef.current;
+    if (motion.raf != null) return;
+    motion.lastAt = performance.now();
+    motion.raf = requestAnimationFrame((now) => motionFrameRef.current(now));
+  }, []);
   const suppressClick = useRef(false);
   const [activeId, setActiveId] = useState(starts[0] ? String(starts[0]) : "");
   const [isDragging, setIsDragging] = useState(false);
+  // the clock scrubs through in-between times (one-minute steps) while the
+  // copy below only follows whole slots — so the label is its own state
+  const [scrubLabel, setScrubLabel] = useState(() =>
+    starts[0] !== undefined ? formatMinute(starts[0]) : "",
+  );
   const activeMinute = Number(activeId || starts[0]);
+  // While tick-click centring is in flight, the render chase visually crosses
+  // other starts. The pin keeps the clicked slot active until it arrives.
+  const stepTargetRef = useRef<number | null>(null);
+
   const activeItem = starts.length
     ? {
         id: String(activeMinute),
         minute: activeMinute,
         label: formatMinute(activeMinute),
-        sessions: sessionsForTimeScheduleMinute(activeMinute),
       }
     : null;
 
-  const scrollMinuteToCenter = useCallback((
-    minute: number,
-    behavior: ScrollBehavior = "smooth",
-  ) => {
+  /** rail ticks as (minute, centred model position) stops, sorted by position —
+   * time and model position interpolate linearly between adjacent ticks */
+  const tickStops = useCallback(() => {
+    if (geomRef.current.stops) return geomRef.current.stops;
     const list = listRef.current;
-    const target = list?.querySelector<HTMLElement>(
-      `[data-minute="${minute}"]`,
+    if (!list) return [] as { minute: number; top: number }[];
+    const stops = [...list.querySelectorAll<HTMLElement>("[data-minute]")]
+      .map((el) => ({
+        minute: Number(el.dataset.minute),
+        top: el.offsetTop - list.clientHeight / 2 + el.offsetHeight / 2,
+      }))
+      .sort((a, b) => a.top - b.top);
+    geomRef.current.stops = stops;
+    return stops;
+  }, []);
+
+  const minuteAtTop = useCallback(
+    (top: number) => {
+      const stops = tickStops();
+      if (!stops.length) return null;
+      if (top <= stops[0].top) return stops[0].minute;
+      for (let i = 1; i < stops.length; i++) {
+        if (top <= stops[i].top) {
+          const a = stops[i - 1];
+          const b = stops[i];
+          const t = (top - a.top) / (b.top - a.top || 1);
+          return a.minute + t * (b.minute - a.minute);
+        }
+      }
+      return stops[stops.length - 1].minute;
+    },
+    [tickStops],
+  );
+
+  const topAtMinute = useCallback(
+    (minute: number) => {
+      const stops = tickStops();
+      if (!stops.length) return 0;
+      if (minute <= stops[0].minute) return stops[0].top;
+      for (let i = 1; i < stops.length; i++) {
+        if (minute <= stops[i].minute) {
+          const a = stops[i - 1];
+          const b = stops[i];
+          const t = (minute - a.minute) / (b.minute - a.minute || 1);
+          return a.top + t * (b.top - a.top);
+        }
+      }
+      return stops[stops.length - 1].top;
+    },
+    [tickStops],
+  );
+
+  /** The draggable rail range: the first and last session ticks are its
+   * physical handoff boundaries, regardless of extra ghost-tick overflow. */
+  const snapBounds = useCallback(() => {
+    if (geomRef.current.bounds) return geomRef.current.bounds;
+    const list = listRef.current;
+    const track = railTrackRef.current;
+    const first = track?.querySelector<HTMLElement>(
+      `[data-minute="${starts[0]}"]`,
+    );
+    const last = track?.querySelector<HTMLElement>(
+      `[data-minute="${starts[starts.length - 1]}"]`,
+    );
+    if (!list || !track || !first || !last) return null;
+    const center = (el: HTMLElement) =>
+      el.offsetTop - list.clientHeight / 2 + el.offsetHeight / 2;
+    const max = track.scrollHeight - list.clientHeight;
+    const bounds = {
+      lo: Math.max(0, Math.min(center(first), max)),
+      hi: Math.max(0, Math.min(center(last), max)),
+    };
+    geomRef.current.bounds = bounds;
+    return bounds;
+  }, [starts]);
+
+  /** The rail minute with its first/last draggable boundaries honoured. On
+   * short viewports the first centred tick is negative and clamps at zero;
+   * raw interpolation there would incorrectly report a mid-gap minute. */
+  const railMinute = useCallback(
+    (top = motionRef.current.railModel) => {
+      if (!listRef.current || starts.length === 0) return null;
+      const at = top;
+      const bounds = snapBounds();
+      if (bounds) {
+        if (at <= bounds.lo + 1) return starts[0];
+        if (at >= bounds.hi - 1) return starts[starts.length - 1];
+      }
+      return minuteAtTop(at);
+    },
+    [starts, snapBounds, minuteAtTop],
+  );
+
+  /** a slot's window range inside the strip: [its top, its top + overflow] —
+   * parked reading moves within this, travel interpolates between slots */
+  const slotBounds = useCallback((minute: number) => {
+    let map = geomRef.current.slots;
+    if (!map) {
+      const spaces = spacesRef.current;
+      if (!spaces) return null;
+      map = new Map();
+      for (const el of [
+        ...spaces.querySelectorAll<HTMLElement>("[data-slot-minute]"),
+      ]) {
+        const lo = el.offsetTop;
+        map.set(Number(el.dataset.slotMinute), {
+          lo,
+          hi: lo + Math.max(0, el.offsetHeight - spaces.clientHeight),
+        });
+      }
+      geomRef.current.slots = map;
+    }
+    return map.get(minute) ?? null;
+  }, []);
+
+  /** Single derivation of the strip model from the rail model: parked on a
+   * start, feedSpaces reads that slot; between starts it follows the rail. */
+  const syncStripModel = useCallback(() => {
+    if (!spacesRef.current || starts.length === 0) return;
+    const motion = motionRef.current;
+    const m = railMinute();
+    if (m == null) return;
+    const minute = Math.max(starts[0], Math.min(m, starts[starts.length - 1]));
+    let idx = 0;
+    for (let i = 0; i < starts.length; i++) {
+      if (starts[i] <= minute + 0.25) idx = i;
+      else break;
+    }
+    const from = starts[idx];
+    if (Math.abs(minute - from) < 0.25 || idx === starts.length - 1) {
+      const bounds = slotBounds(from);
+      if (!bounds) return;
+      motion.spacesModel = Math.max(
+        bounds.lo,
+        Math.min(motion.spacesModel, bounds.hi),
+      );
+      return;
+    }
+    const fromBounds = slotBounds(from);
+    const toBounds = slotBounds(starts[idx + 1]);
+    if (!fromBounds || !toBounds) return;
+    const progress = (minute - from) / (starts[idx + 1] - from);
+    motion.spacesModel =
+      fromBounds.hi + progress * (toBounds.lo - fromBounds.hi);
+  }, [starts, railMinute, slotBounds]);
+
+  const stopInertia = useCallback(() => {
+    motionRef.current.velocity = 0;
+  }, []);
+
+  useEffect(
+    () => () => {
+      const motion = motionRef.current;
+      if (motion.raf != null) cancelAnimationFrame(motion.raf);
+      motion.raf = null;
+      motion.velocity = 0;
+    },
+    [],
+  );
+
+  /** First link of the drag chain. While parked on a session start, move
+   * through that slot's overflow 1:1 and return every unconsumed pixel. */
+  const feedSpaces = useCallback(
+    (dy: number) => {
+      if (!spacesRef.current || !dy) return dy;
+      const motion = motionRef.current;
+      const minute = railMinute();
+      const parked =
+        minute != null
+          ? starts.find((start) => Math.abs(start - minute) < 0.25)
+          : undefined;
+      if (parked === undefined) return dy;
+      const bounds = slotBounds(parked);
+      if (!bounds) return dy;
+      const current = Math.max(
+        bounds.lo,
+        Math.min(motion.spacesModel, bounds.hi),
+      );
+      const next = Math.max(bounds.lo, Math.min(current + dy, bounds.hi));
+      motion.spacesModel = next;
+      return dy - (next - current);
+    },
+    [starts, railMinute, slotBounds],
+  );
+
+  /** Second link of the drag chain. Move the rail 1:1 inside its first/last
+   * session bounds and return every pixel beyond them to the page. */
+  const feedRail = useCallback(
+    (dy: number) => {
+      const bounds = snapBounds();
+      if (!bounds || !dy) return dy;
+      const motion = motionRef.current;
+      const current = motion.railModel;
+      const next = Math.max(bounds.lo, Math.min(current + dy, bounds.hi));
+      motion.railModel = next;
+      return dy - (next - current);
+    },
+    [snapBounds],
+  );
+
+  const updateTimeflowFromModel = useCallback(() => {
+    if (!listRef.current || starts.length === 0) return;
+    const minute = railMinute();
+    if (minute == null) return;
+
+    // The clock scrubs in one-minute steps, while every session start keeps
+    // its exact time (including starts outside the ten-minute display grid).
+    const whole = Math.round(minute);
+    const nextLabel = formatMinute(
+      Math.abs(minute - whole) < 0.5 && starts.includes(whole)
+        ? whole
+        : Math.round(minute / SCRUB_QUANT_MIN) * SCRUB_QUANT_MIN,
+    );
+    setScrubLabel((current) =>
+      current === nextLabel ? current : nextLabel,
     );
 
-    if (!list || !target) return;
-
-    list.scrollTo({
-      top: target.offsetTop - list.clientHeight / 2 + target.offsetHeight / 2,
-      behavior,
-    });
-  }, []);
-
-  useEffect(() => {
-    if (!starts[0]) return;
-
-    scrollMinuteToCenter(starts[0], "auto");
-  }, [starts, scrollMinuteToCenter]);
-
-  useEffect(() => {
-    return () => {
-      if (scrollTimer.current) {
-        window.clearTimeout(scrollTimer.current);
-      }
-    };
-  }, []);
-
-  const updateTimeflowFromScroll = (shouldSnap: boolean) => {
-    const list = listRef.current;
-    if (!list || starts.length === 0) return;
-
-    const center = list.scrollTop + list.clientHeight / 2;
-    const closest = items.reduce((nearest, item) => {
-      const target = list.querySelector<HTMLElement>(
-        `[data-minute="${item.minute}"]`,
-      );
-      if (!target) return nearest;
-
-      const distance = Math.abs(
-        target.offsetTop + target.offsetHeight / 2 - center,
-      );
-
-      return distance < nearest.distance ? { item, distance } : nearest;
-    }, {
-      item: items[0],
-      distance: Number.POSITIVE_INFINITY,
-    }).item;
-    const snapMinute = Number(closest.snapId);
-
-    setActiveId(String(snapMinute));
-
-    if (scrollTimer.current) {
-      window.clearTimeout(scrollTimer.current);
+    let slot = starts[0];
+    for (const start of starts) {
+      if (start <= minute + 0.25) slot = start;
+      else break;
     }
 
-    if (!shouldSnap) return;
+    const nextActiveId = String(stepTargetRef.current ?? slot);
+    setActiveId((current) =>
+      current === nextActiveId ? current : nextActiveId,
+    );
+  }, [starts, railMinute]);
 
-    scrollTimer.current = window.setTimeout(() => {
-      scrollMinuteToCenter(snapMinute);
-    }, 120);
+  const flushDragDelta = useCallback(
+    (drag: NonNullable<typeof dragState.current>) => {
+      const delta = drag.pendingDelta;
+      drag.pendingDelta = 0;
+      if (!delta) return;
+      const leftover = drag.fromRail
+        ? feedRail(delta)
+        : feedRail(feedSpaces(delta));
+      syncStripModel();
+      updateTimeflowFromModel();
+      if (leftover) window.scrollBy({ top: leftover, behavior: "instant" });
+    },
+    [feedRail, feedSpaces, syncStripModel, updateTimeflowFromModel],
+  );
+
+  const applyTrackTransforms = useCallback((rail: number, spaces: number) => {
+    if (railTrackRef.current) {
+      railTrackRef.current.style.transform = `translate3d(0, ${-rail}px, 0)`;
+    }
+    if (spacesTrackRef.current) {
+      spacesTrackRef.current.style.transform = `translate3d(0, ${-spaces}px, 0)`;
+    }
+  }, []);
+
+  const runMotionFrame = useCallback(
+    (now: number) => {
+      const motion = motionRef.current;
+      const dt = Math.min(Math.max(now - motion.lastAt, 0), 50);
+      motion.lastAt = now;
+
+      const drag = dragState.current;
+      if (drag?.pendingDelta) flushDragDelta(drag);
+
+      if (motion.velocity) {
+        const bounds = snapBounds();
+        if (!bounds) {
+          motion.velocity = 0;
+        } else {
+          const decay = Math.exp(-dt / FLICK_DECAY_TAU_MS);
+          const rawNext =
+            motion.railModel +
+            motion.velocity * FLICK_DECAY_TAU_MS * (1 - decay);
+          const next = Math.max(bounds.lo, Math.min(rawNext, bounds.hi));
+          const hitBoundary = next !== rawNext;
+          motion.railModel = next;
+          motion.velocity *= decay;
+          if (
+            hitBoundary ||
+            Math.abs(motion.velocity) <= FLICK_STOP_VELOCITY
+          ) {
+            motion.velocity = 0;
+          }
+          syncStripModel();
+          updateTimeflowFromModel();
+        }
+      }
+
+      motion.railRendered = chasePosition(
+        motion.railRendered,
+        motion.railModel,
+        dt,
+      );
+      motion.spacesRendered = chasePosition(
+        motion.spacesRendered,
+        motion.spacesModel,
+        dt,
+      );
+      applyTrackTransforms(motion.railRendered, motion.spacesRendered);
+      if (
+        stepTargetRef.current != null &&
+        motion.railRendered === motion.railModel
+      ) {
+        stepTargetRef.current = null;
+        updateTimeflowFromModel();
+      }
+
+      const stillChasing =
+        Math.abs(motion.railModel - motion.railRendered) > 0 ||
+        Math.abs(motion.spacesModel - motion.spacesRendered) > 0;
+      if (motion.velocity || dragState.current?.pendingDelta || stillChasing) {
+        motion.raf = requestAnimationFrame((nextNow) =>
+          motionFrameRef.current(nextNow),
+        );
+      } else {
+        motion.raf = null;
+      }
+    },
+    [
+      applyTrackTransforms,
+      flushDragDelta,
+      snapBounds,
+      syncStripModel,
+      updateTimeflowFromModel,
+    ],
+  );
+
+  useLayoutEffect(() => {
+    motionFrameRef.current = runMotionFrame;
+  }, [runMotionFrame]);
+
+  const queueDragDelta = (
+    drag: NonNullable<typeof dragState.current>,
+    delta: number,
+  ) => {
+    drag.pendingDelta += delta;
+    requestMotionFrame();
   };
 
-  const handleTimeflowScroll = () => {
-    updateTimeflowFromScroll(!dragState.current);
+  const centerMinute = useCallback(
+    (minute: number) => {
+      const bounds = snapBounds();
+      if (!bounds) return;
+      const motion = motionRef.current;
+      stopInertia();
+      motion.railModel = Math.max(
+        bounds.lo,
+        Math.min(topAtMinute(minute), bounds.hi),
+      );
+      syncStripModel();
+      updateTimeflowFromModel();
+      requestMotionFrame();
+    },
+    [
+      requestMotionFrame,
+      snapBounds,
+      stopInertia,
+      syncStripModel,
+      topAtMinute,
+      updateTimeflowFromModel,
+    ],
+  );
+
+  const startInertia = (releaseVelocity: number) => {
+    const bounds = snapBounds();
+    if (!bounds) return;
+    const motion = motionRef.current;
+    const velocity = Math.max(
+      -FLICK_MAX_VELOCITY,
+      Math.min(releaseVelocity, FLICK_MAX_VELOCITY),
+    );
+    if (Math.abs(velocity) <= FLICK_MIN_VELOCITY) return;
+    if (
+      (velocity < 0 && motion.railModel <= bounds.lo) ||
+      (velocity > 0 && motion.railModel >= bounds.hi)
+    ) {
+      return;
+    }
+    motion.velocity = velocity;
+    requestMotionFrame();
   };
+
+  useLayoutEffect(() => {
+    if (!starts[0] || !railTrackRef.current || !spacesTrackRef.current) return;
+    geomRef.current = { stops: null, bounds: null, slots: null };
+    const bounds = snapBounds();
+    if (!bounds) return;
+    const motion = motionRef.current;
+    motion.railModel = Math.max(
+      bounds.lo,
+      Math.min(topAtMinute(starts[0]), bounds.hi),
+    );
+    motion.spacesModel = 0;
+    syncStripModel();
+    motion.railRendered = motion.railModel;
+    motion.spacesRendered = motion.spacesModel;
+    motion.initialized = true;
+    applyTrackTransforms(motion.railRendered, motion.spacesRendered);
+    updateTimeflowFromModel();
+  }, [
+    applyTrackTransforms,
+    snapBounds,
+    starts,
+    syncStripModel,
+    topAtMinute,
+    updateTimeflowFromModel,
+  ]);
+
+  useEffect(() => {
+    const invalidate = () => {
+      const motion = motionRef.current;
+      const minute = motion.initialized ? railMinute() : starts[0];
+      geomRef.current = { stops: null, bounds: null, slots: null };
+      if (minute == null) return;
+      const bounds = snapBounds();
+      if (!bounds) return;
+      motion.railModel = Math.max(
+        bounds.lo,
+        Math.min(topAtMinute(minute), bounds.hi),
+      );
+      syncStripModel();
+      motion.railRendered = motion.railModel;
+      motion.spacesRendered = motion.spacesModel;
+      updateTimeflowFromModel();
+      requestMotionFrame();
+    };
+    const observer = new ResizeObserver(invalidate);
+    if (boxRef.current) observer.observe(boxRef.current);
+    if (railTrackRef.current) observer.observe(railTrackRef.current);
+    if (spacesTrackRef.current) observer.observe(spacesTrackRef.current);
+    window.addEventListener("resize", invalidate);
+    document.fonts?.ready.then(invalidate).catch(() => {});
+    return () => {
+      observer.disconnect();
+      window.removeEventListener("resize", invalidate);
+    };
+  }, [
+    railMinute,
+    requestMotionFrame,
+    snapBounds,
+    starts,
+    syncStripModel,
+    topAtMinute,
+    updateTimeflowFromModel,
+  ]);
 
   const handleTimeflowPointerDown = (event: PointerEvent<HTMLDivElement>) => {
     const list = listRef.current;
-    if (!list || (event.pointerType === "mouse" && event.button !== 0)) return;
+    if (!list) return;
 
-    if (scrollTimer.current) {
-      window.clearTimeout(scrollTimer.current);
-    }
+    if (event.pointerType === "mouse" && event.button !== 0) return;
 
+    const insideRail =
+      event.target instanceof Element &&
+      !!event.target.closest(".sched-timeflow-list");
+    // Re-grabbing freezes the model at the currently rendered position, so
+    // neither inertia nor render chase can continue under the new pointer.
+    stopInertia();
+    const motion = motionRef.current;
+    motion.railModel = motion.railRendered;
+    motion.spacesModel = motion.spacesRendered;
+    stepTargetRef.current = null;
+    suppressClick.current = false;
     dragState.current = {
       pointerId: event.pointerId,
       startY: event.clientY,
-      startScrollTop: list.scrollTop,
+      lastY: event.clientY,
+      fromRail: insideRail,
       moved: false,
+      samples: [{ y: event.clientY, at: performance.now() }],
+      pendingDelta: 0,
     };
     setIsDragging(true);
-    list.setPointerCapture(event.pointerId);
+    // Capture waits for real movement so a tick press can still become click.
   };
 
   const handleTimeflowPointerMove = (event: PointerEvent<HTMLDivElement>) => {
@@ -640,14 +1105,32 @@ function TimeScheduleView() {
     const drag = dragState.current;
     if (!list || !drag || drag.pointerId !== event.pointerId) return;
 
-    const deltaY = event.clientY - drag.startY;
+    const now = performance.now();
+    drag.samples.push({ y: event.clientY, at: now });
+    while (
+      drag.samples.length > 1 &&
+      drag.samples[0].at < now - FLICK_SAMPLE_WINDOW_MS
+    ) {
+      drag.samples.shift();
+    }
+    if (drag.samples.length > FLICK_SAMPLE_LIMIT) drag.samples.shift();
 
-    if (Math.abs(deltaY) > 3) {
+    if (!drag.moved) {
+      if (Math.abs(event.clientY - drag.startY) <= 3) return;
       drag.moved = true;
       suppressClick.current = true;
+      try {
+        event.currentTarget.setPointerCapture(event.pointerId);
+      } catch {
+        // Synthetic pointers have no active pointer to capture.
+      }
     }
 
-    list.scrollTop = drag.startScrollTop - deltaY;
+    // Input can arrive faster than paint. Accumulate exact pointer distance;
+    // the rAF queue performs the only drag-position write once per frame.
+    const step = event.clientY - drag.lastY;
+    drag.lastY = event.clientY;
+    queueDragDelta(drag, -step);
   };
 
   const handleTimeflowPointerUp = (event: PointerEvent<HTMLDivElement>) => {
@@ -655,109 +1138,154 @@ function TimeScheduleView() {
     const drag = dragState.current;
     if (!list || !drag || drag.pointerId !== event.pointerId) return;
 
+    const now = performance.now();
+    drag.samples.push({ y: event.clientY, at: now });
+    if (drag.samples.length > FLICK_SAMPLE_LIMIT) drag.samples.shift();
+    const recent = drag.samples.filter(
+      (sample) => sample.at >= now - FLICK_SAMPLE_WINDOW_MS,
+    );
+    const first = recent[0];
+    const last = recent[recent.length - 1];
+    const elapsed = first && last ? last.at - first.at : 0;
+    const releaseVelocity =
+      drag.moved && elapsed > 0 ? -(last.y - first.y) / elapsed : 0;
+
+    if (drag.moved) {
+      drag.pendingDelta -= event.clientY - drag.lastY;
+      drag.lastY = event.clientY;
+    }
+    flushDragDelta(drag);
+    requestMotionFrame();
     dragState.current = null;
     setIsDragging(false);
-    if (list.hasPointerCapture(event.pointerId)) {
-      list.releasePointerCapture(event.pointerId);
+    if (event.currentTarget.hasPointerCapture(event.pointerId)) {
+      event.currentTarget.releasePointerCapture(event.pointerId);
     }
-    updateTimeflowFromScroll(true);
+    startInertia(releaseVelocity);
   };
 
   const handleTimeflowPointerCancel = (event: PointerEvent<HTMLDivElement>) => {
-    const list = listRef.current;
-    if (list?.hasPointerCapture(event.pointerId)) {
-      list.releasePointerCapture(event.pointerId);
+    const drag = dragState.current;
+    if (drag?.pointerId === event.pointerId) {
+      flushDragDelta(drag);
+      requestMotionFrame();
+    }
+    if (event.currentTarget.hasPointerCapture(event.pointerId)) {
+      event.currentTarget.releasePointerCapture(event.pointerId);
     }
 
     dragState.current = null;
+    suppressClick.current = false;
     setIsDragging(false);
-    updateTimeflowFromScroll(true);
   };
+
+  // static subtrees kept out of the per-scrub-label render: the strip only
+  // depends on the schedule data, the rail ticks only on the active slot —
+  // otherwise every one-minute clock update re-renders ~60 ticks + all cards
+  const strip = useMemo(
+    () =>
+      slots.map((slot) => (
+        <div
+          key={slot.minute}
+          className="sched-timeflow-slot"
+          data-slot-minute={slot.minute}
+        >
+          {slot.spaces.map((space) => (
+            <TimeSpaceCard
+              key={space.id}
+              title={space.title}
+              badge={space.badge}
+              sessions={space.sessions}
+            />
+          ))}
+        </div>
+      )),
+    [slots],
+  );
+
+  const railItems = useMemo(
+    () =>
+      items.map((item) => {
+        const selected = item.minute === activeMinute;
+
+        return (
+          <button
+            key={item.id}
+            type="button"
+            className={`sched-timeflow-item ${
+              item.isHour ? "is-hour" : "is-minute"
+            } ${
+              item.isSessionStart ? "is-session-start" : ""
+            } ${
+              selected ? "is-active" : ""
+            }`}
+            aria-pressed={selected}
+            aria-label={`${formatMinute(item.minute)} 눈금`}
+            data-minute={item.minute}
+            onClick={() => {
+              if (suppressClick.current) {
+                suppressClick.current = false;
+                return;
+              }
+
+              stepTargetRef.current = Number(item.snapId);
+              setActiveId(item.snapId);
+              centerMinute(Number(item.snapId));
+            }}
+          >
+            {item.boundary && (
+              <em className={`sched-timeflow-boundary is-${item.boundary}`}>
+                {item.boundary === "start" ? "start" : "finish"}
+              </em>
+            )}
+            <span>{selected ? formatMinute(item.minute) : item.label}</span>
+          </button>
+        );
+      }),
+    [items, activeMinute, centerMinute],
+  );
 
   return (
     <Reveal delay={100} threshold={0.01} className="sched-wrap sched-timeflow-wrap">
       {!activeItem ? (
         <div className="sched-empty-message">아직 공개된 세션이 없습니다.</div>
       ) : (
-        <div className="sched-timeflow">
+        <div
+          ref={boxRef}
+          className={`sched-timeflow ${isDragging ? "is-dragging" : ""}`}
+          onPointerDown={handleTimeflowPointerDown}
+          onPointerMove={handleTimeflowPointerMove}
+          onPointerUp={handleTimeflowPointerUp}
+          onPointerCancel={handleTimeflowPointerCancel}
+        >
           <div className="sched-timeflow-detail">
             <div className="sched-timeflow-active">
               <div className="sched-timeflow-active-copy">
                 <span>Selected Time</span>
-                <p>{activeItem.label}</p>
+                <p>{scrubLabel || activeItem.label}</p>
               </div>
             </div>
-            <div
-              key={activeItem.id}
-              className="sched-timeflow-spaces is-vertical"
-            >
-              {TIME_SCHEDULE_SPACES.map((space) => {
-                const sessions = activeItem.sessions.filter((session) =>
-                  space.halls.includes(session.hall),
-                );
-
-                return (
-                  <TimeSpaceCard
-                    key={space.id}
-                    title={space.title}
-                    badge={space.badge}
-                    sessions={sessions}
-                  />
-                );
-              })}
+            {/* pre-rendered strip: every slot's content exists up front and
+                scrubbing slides the visible window over it (windowing) — no
+                remount and no in-place swap, so fast scrubs cannot blank or
+                flicker the copy */}
+            <div ref={spacesRef} className="sched-timeflow-spaces is-vertical">
+              <div ref={spacesTrackRef} className="sched-timeflow-spaces-track">
+                {strip}
+              </div>
             </div>
           </div>
           <div className="sched-timeflow-control">
             <div
               ref={listRef}
-              className={`sched-timeflow-list ${
-                isDragging ? "is-dragging" : ""
-              }`}
+              className="sched-timeflow-list"
               aria-label="시간대 선택"
-              onScroll={handleTimeflowScroll}
-              onPointerDown={handleTimeflowPointerDown}
-              onPointerMove={handleTimeflowPointerMove}
-              onPointerUp={handleTimeflowPointerUp}
-              onPointerCancel={handleTimeflowPointerCancel}
             >
-              <TimeflowGhostTicks minutes={ghostTicks.before} />
-              {items.map((item) => {
-                const selected = item.minute === activeMinute;
-
-                return (
-                  <button
-                    key={item.id}
-                    type="button"
-                    className={`sched-timeflow-item ${
-                      item.isHour ? "is-hour" : "is-minute"
-                    } ${
-                      item.isSessionStart ? "is-session-start" : ""
-                    } ${
-                      selected ? "is-active" : ""
-                    }`}
-                    aria-pressed={selected}
-                    aria-label={`${formatMinute(item.minute)} 눈금`}
-                    data-minute={item.minute}
-                    onClick={() => {
-                      if (suppressClick.current) {
-                        suppressClick.current = false;
-                        return;
-                      }
-
-                      setActiveId(item.snapId);
-                      scrollMinuteToCenter(Number(item.snapId));
-                    }}
-                >
-                  {item.boundary && (
-                    <em className={`sched-timeflow-boundary is-${item.boundary}`}>
-                      {item.boundary === "start" ? "start" : "finish"}
-                    </em>
-                  )}
-                  <span>{selected ? formatMinute(item.minute) : item.label}</span>
-                </button>
-              );
-            })}
-              <TimeflowGhostTicks minutes={ghostTicks.after} />
+              <div ref={railTrackRef} className="sched-timeflow-list-track">
+                <TimeflowGhostTicks minutes={ghostTicks.before} />
+                {railItems}
+                <TimeflowGhostTicks minutes={ghostTicks.after} />
+              </div>
             </div>
           </div>
         </div>
