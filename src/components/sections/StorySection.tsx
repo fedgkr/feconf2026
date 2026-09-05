@@ -200,12 +200,6 @@ export default function StorySection() {
     }
     return sv.height;
   }, []);
-  const isPinned = () => {
-    const el = sectionRef.current;
-    if (!el) return false;
-    const rect = el.getBoundingClientRect();
-    return rect.top <= 0 && rect.bottom >= window.innerHeight;
-  };
   const applyCap = useCallback(() => {
     const el = sectionRef.current;
     const wrap = document.getElementById("fc-scroll-cap");
@@ -218,10 +212,6 @@ export default function StorySection() {
       }
       return;
     }
-    // Only install a new document bound while Story owns the viewport. Keep
-    // an installed bound until unlock: a late compositor scroll outside the
-    // pin must not remove the physical barrier that prevents Story skipping.
-    if (!isPinned()) return;
     const { segment } = getScrollMetrics(el.offsetHeight, stableVh());
     const rect = el.getBoundingClientRect();
     const cap = Math.round(
@@ -283,11 +273,9 @@ export default function StorySection() {
         );
     }
 
-    const pinned = rect.top <= 0 && rect.bottom >= vh;
     if (unlockedSegmentCount.current < STORY_PHRASES.length) {
       const limit = segment * (unlockedSegmentCount.current + 1) - 1;
       if (
-        pinned &&
         along > limit &&
         scrollingDown &&
         performance.now() - lastInputAt.current < INPUT_GRACE_MS
@@ -413,7 +401,7 @@ export default function StorySection() {
     };
 
     const onWheel = (e: WheelEvent) => {
-      if (e.ctrlKey) return;
+      if (unlockedSegmentCount.current >= STORY_PHRASES.length || e.ctrlKey) return;
       const now = performance.now();
       const unit =
         e.deltaMode === 1 ? 16 : e.deltaMode === 2 ? window.innerHeight : 1;
@@ -433,7 +421,6 @@ export default function StorySection() {
         }
         return;
       }
-      if (unlockedSegmentCount.current >= STORY_PHRASES.length || !isPinned()) return;
       lastInputAt.current = now;
       const limit = lockLimit();
       // Chromium latches wheel gestures: unless a gesture's FIRST event is
@@ -478,7 +465,7 @@ export default function StorySection() {
         prev = now;
         if (v > 0) lastInputAt.current = now;
         const limit =
-          unlockedSegmentCount.current >= STORY_PHRASES.length || !isPinned()
+          unlockedSegmentCount.current >= STORY_PHRASES.length
             ? Infinity
             : lockLimit();
         const target = Math.max(0, Math.min(window.scrollY + v * dt, limit));
@@ -510,7 +497,6 @@ export default function StorySection() {
       touchVel.current =
         touchVel.current * (1 - FLING_VELOCITY_SMOOTHING) +
         (dy / dt) * FLING_VELOCITY_SMOOTHING;
-      if (!touchOwned.current && !isPinned()) return;
       // every downward move arms the rAF hold's input grace, owned or native:
       // the hold is what clamps native drags and their momentum at the
       // interior limits, so it must know the user is scrolling
@@ -550,7 +536,7 @@ export default function StorySection() {
       }
       if (e.cancelable) e.preventDefault();
       const limit =
-        unlockedSegmentCount.current >= STORY_PHRASES.length || !isPinned()
+        unlockedSegmentCount.current >= STORY_PHRASES.length
           ? Infinity
           : lockLimit();
       const target = Math.max(0, Math.min(window.scrollY + dy, limit));
@@ -597,14 +583,14 @@ export default function StorySection() {
       // bg-surface: with the stage at svh, hiding the mobile browser bars
       // leaves a strip below it — painted the same surface so nothing shows
       className="relative bg-surface"
-      style={{ height: "340vh" }}
+      style={{ height: "calc(var(--fc-vh, 100svh) * 3.4)" }}
       data-nav-bg="#fafafd"
     >
       <div
         ref={motionRef}
         // svh, not dvh: see HeroSection — a dvh stage re-centres its copy on
         // every iOS bar toggle mid-scroll
-        className={`sticky top-0 flex h-svh w-full items-center justify-center overflow-hidden bg-surface ${
+        className={`sticky top-0 flex h-[calc(var(--fc-vh,100svh))] w-full items-center justify-center overflow-hidden bg-surface ${
           run ? "fc-run" : ""
         } ${motionActive ? "fc-motion-active" : ""}`}
       >

@@ -227,7 +227,7 @@ body {
   top: 0;
   left: 0;
   width: 100%;
-  height: 100svh;
+  height: calc(var(--fc-vh, 100svh));
   overflow: hidden;
   background: #fff;
   --hero-swap-ease: cubic-bezier(0.22, 1, 0.36, 1);
@@ -854,7 +854,7 @@ body {
 .fc-cover {
   position: relative;
   isolation: isolate;
-  min-height: var(--fc-cover-min-h, 100vh);
+  min-height: var(--fc-cover-min-h, calc(var(--fc-vh, 100vh)));
   background-clip: padding-box;
   transform: translate3d(0, var(--fc-cover-y, 0), 0);
   transition: transform 0.18s cubic-bezier(0.22, 1, 0.36, 1);
@@ -872,7 +872,7 @@ body {
 }
 
 .sched-section-inner {
-  --sched-stage-height: clamp(640px, 68svh, 760px);
+  --sched-stage-height: clamp(640px, calc(var(--fc-vh, 100svh) * 0.68), 760px);
   --sched-stage-min-height: 960px;
   --sched-heading-gap: 64px;
   --sched-download-gap: 0px;
@@ -2713,7 +2713,7 @@ body {
     overflow: hidden;
   }
   .sched-section-inner {
-    --sched-stage-height: clamp(620px, 74svh, 760px);
+    --sched-stage-height: clamp(620px, calc(var(--fc-vh, 100svh) * 0.74), 760px);
     --sched-stage-min-height: 1180px;
     --sched-heading-gap: 56px;
     --sched-download-gap: 40px;
@@ -2983,7 +2983,7 @@ body {
 
 @media (max-width: 639px) {
   .sched-section-inner {
-    --sched-stage-height: clamp(560px, 76svh, 680px);
+    --sched-stage-height: clamp(560px, calc(var(--fc-vh, 100svh) * 0.76), 680px);
     --sched-stage-min-height: 960px;
     --sched-heading-gap: 40px;
     --sched-download-gap: 28px;
