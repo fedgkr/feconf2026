@@ -25,7 +25,7 @@ export default function ShareContactSection() {
     <section
       ref={coverRef}
       data-nav-bg="#fafafd"
-      className="z-33 bg-surface px-6 pb-16 pt-24 [--heading-reveal-offset:48px] max-sm:px-5 sm:pb-28 sm:pt-36 sm:[--heading-reveal-offset:80px]"
+      className="z-33 bg-surface px-6 pb-16 pt-24 [--fc-cover-min-h:0px] [--heading-reveal-offset:48px] max-sm:px-5 sm:pb-28 sm:pt-36 sm:[--heading-reveal-offset:80px]"
     >
       <div className="mx-auto max-w-[1366px]">
         <SectionHeading
