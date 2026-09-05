@@ -73,6 +73,8 @@ export function useSplitReveal<T extends HTMLElement = HTMLHeadingElement>(
       let observer: IntersectionObserver | undefined;
       let exitObserver: IntersectionObserver | undefined;
       let removeResizeListener: (() => void) | undefined;
+      // SplitText auto-split recreates the tween; keep the reveal gate intact.
+      let armed = true;
       el.classList.add("fe-split", "fe-hide");
       const split = SplitText.create(el, {
         type: p.type,
@@ -89,7 +91,6 @@ export function useSplitReveal<T extends HTMLElement = HTMLHeadingElement>(
           // the viewport: resetting or replaying right at the reveal line
           // would blink visible copy on every direction change near it, so
           // `armed` gates the replay on both trigger paths.
-          let armed = true;
           const tween = gsap.from(self[p.unit], {
             yPercent: 120,
             opacity: 0,
