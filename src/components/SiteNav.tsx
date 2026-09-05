@@ -6,16 +6,17 @@ import { useTicketDday } from "@/hooks/useTicketDday";
 import { NAV_MENU, TICKET_LINK } from "@/data/site";
 
 /**
- * How far into the page the bar finishes climbing, as a share of the viewport.
- * The reference reaches the top about 5vh into its 220vh hero sequence; this
- * hero is one screen tall, so the distance comes off the scroll position.
+ * Where the top edge of the section after the hero is drawn, in viewport px,
+ * or null on a page without a hero. The bar rides up on that edge: it sits at
+ * the bottom of the viewport over the hero and climbs to the top together with
+ * the story section as it scrolls up over the hero's tail. The drawn rect is
+ * used, not the layout slot, so a section still rising into place under a
+ * transform carries the bar where the eye sees it.
  */
-const RISE_VH = 0.05;
-
-const smoothstep = (x: number) => {
-  const t = Math.min(1, Math.max(0, x));
-  return t * t * (3 - 2 * t);
-};
+function followingSectionTop() {
+  const next = document.getElementById("home")?.nextElementSibling;
+  return next ? next.getBoundingClientRect().top : null;
+}
 
 /** The sections the menu highlights, in document order. */
 const TRACKED = NAV_MENU.filter(({ href }) => href !== "#");
@@ -65,8 +66,9 @@ function jumpTo(e: React.MouseEvent, href: string) {
 /**
  * Fixed top navigation.
  *
- * Over the top of the hero the bar sits at the bottom of the viewport, then
- * climbs to the top over the first 5vh of scroll — desktop only.
+ * Over the hero the bar sits at the bottom of the viewport, then rides up to
+ * the top on the leading edge of the story section as it scrolls up over the
+ * hero — desktop only.
  * Its background follows the section under it via `--fe-nav-bg`, measured
  * here from each section's `data-nav-bg`, and its text is drawn white over the
  * hero and over any dark surface, ink over the light ones. The menu item for
@@ -105,16 +107,19 @@ export default function SiteNav() {
     const docks =
       window.matchMedia("(min-width: 768px)").matches &&
       !window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    if (!docks) {
+    const edge = docks ? followingSectionTop() : null;
+    if (edge === null) {
       el.style.transform = "translate3d(0, 0, 0)";
       return;
     }
     const nav = el.querySelector("nav");
     const navHeight = nav?.offsetHeight || el.offsetHeight;
-    // scroll position alone drives the climb, so a reader who skips the logo
-    // intro still meets the bar at the top before the story section arrives
-    const rise = smoothstep(window.scrollY / (window.innerHeight * RISE_VH));
-    const drop = (1 - rise) * Math.max(0, window.innerHeight - navHeight);
+    // the bar's bottom edge sits on the story's top edge, clamped between
+    // the bottom of the viewport and the top of the page
+    const drop = Math.min(
+      Math.max(0, edge - navHeight),
+      Math.max(0, window.innerHeight - navHeight),
+    );
     el.style.transform = `translate3d(0, ${drop}px, 0)`;
   }, []);
 
@@ -159,22 +164,23 @@ export default function SiteNav() {
   const fg = whiteText ? "rgb(255, 255, 255)" : "rgb(21, 21, 21)";
   const dim = whiteText ? "rgba(255, 255, 255, 0.35)" : "rgba(21, 21, 21, 0.35)";
 
+  // solid white while the menu is open or closing: over the hero the row is
+  // otherwise transparent and the panel looked detached — translucency let
+  // the hero tint through, so no alpha here
+  const bgTransition =
+    menuPaint === "on"
+      ? "background-color 0s"
+      : menuPaint === "fade"
+        ? "background-color 0.3s ease" // the panel's opacity curve
+        : "background-color 0.4s ease";
   return (
     <header
       ref={header}
       className="site-nav fixed inset-x-0 top-0 z-50"
       style={{
-        // solid white while the menu is open or closing: over the hero the
-        // row is otherwise transparent and the panel looked detached —
-        // translucency let the hero tint through, so no alpha here
         backgroundColor:
           menuPaint === "on" ? "rgb(255, 255, 255)" : "var(--fe-nav-bg, transparent)",
-        transition:
-          menuPaint === "on"
-            ? "background-color 0s"
-            : menuPaint === "fade"
-              ? "background-color 0.3s ease" // the panel's opacity curve
-              : "background-color 0.4s ease",
+        transition: bgTransition,
       }}
       onTransitionEnd={(e) => {
         if (e.propertyName === "background-color" && menuPaint === "fade")
