@@ -435,6 +435,21 @@ function TopicRail({
   );
 }
 
+function TimeflowChevron() {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <path d="m6 9 6 6 6-6" />
+    </svg>
+  );
+}
+
 function TimeSpaceCard({
   title,
   badge,
@@ -445,41 +460,103 @@ function TimeSpaceCard({
   sessions: Session[];
 }) {
   const isBreak = sessions.length === 0;
+  const [expandedSessionIds, setExpandedSessionIds] = useState<string[]>([]);
+  const firstSession = sessions[0];
+  const firstSessionId = firstSession
+    ? `${firstSession.hall}-${firstSession.time}-${firstSession.title}`
+    : null;
+  const firstSessionExpanded = firstSessionId
+    ? expandedSessionIds.includes(firstSessionId)
+    : false;
+  const toggleSession = (sessionId: string) => {
+    setExpandedSessionIds((current) =>
+      current.includes(sessionId)
+        ? current.filter((id) => id !== sessionId)
+        : [...current, sessionId],
+    );
+  };
 
   return (
     <article className={`sched-timeflow-space ${isBreak ? "is-break" : ""}`}>
       <div className="sched-timeflow-space-head">
         <p>{title}</p>
         <span>{badge}</span>
+        {firstSessionId && (
+          <>
+            <span
+              className={`sched-timeflow-session-state ${
+                firstSessionExpanded ? "is-expanded" : ""
+              }`}
+              aria-hidden="true"
+            >
+              <TimeflowChevron />
+            </span>
+            <button
+              type="button"
+              className="sched-timeflow-space-head-toggle"
+              aria-expanded={firstSessionExpanded}
+              aria-label={`${firstSession.title} ${
+                firstSessionExpanded ? "설명 접기" : "설명 보기"
+              }`}
+              onClick={() => toggleSession(firstSessionId)}
+            />
+          </>
+        )}
       </div>
       {isBreak ? (
         <div className="sched-timeflow-empty">Break Time</div>
       ) : (
         <div className="sched-timeflow-space-stack">
-          {sessions.map((session) => (
-            <div
-              key={`timeflow-${session.hall}-${session.time}-${session.title}`}
-              className="sched-timeflow-session"
-              data-session-start-minute={parseRange(session.time).start}
-            >
-              <span className="sched-timeflow-session-time">
-                {formatRange(session.time)}
-              </span>
-              <h4>{session.title}</h4>
-              <p className="sched-timeflow-speaker">
-                {session.speaker}
-                {session.affiliation ? ` · ${session.affiliation}` : ""}
-              </p>
-              {session.audience && (
-                <p className="sched-timeflow-audience">
-                  이런 분께 추천: {session.audience}
+          {sessions.map((session, index) => {
+            const sessionId = `${session.hall}-${session.time}-${session.title}`;
+            const expanded = expandedSessionIds.includes(sessionId);
+
+            return (
+              <div
+                key={`timeflow-${sessionId}`}
+                className={`sched-timeflow-session ${
+                  expanded ? "is-expanded" : ""
+                }`}
+                data-session-start-minute={parseRange(session.time).start}
+              >
+                <span className="sched-timeflow-session-time">
+                  {formatRange(session.time)}
+                </span>
+                <div className="sched-timeflow-session-summary">
+                  <h4>{session.title}</h4>
+                </div>
+                <p className="sched-timeflow-speaker">
+                  {session.speaker}
+                  {session.affiliation ? ` · ${session.affiliation}` : ""}
                 </p>
-              )}
-              {session.description && (
-                <p className="sched-timeflow-desc">{session.description}</p>
-              )}
-            </div>
-          ))}
+                <div className="sched-timeflow-session-details">
+                  {session.audience && (
+                    <p className="sched-timeflow-audience">
+                      이런 분께 추천: {session.audience}
+                    </p>
+                  )}
+                  {session.description && (
+                    <p className="sched-timeflow-desc">{session.description}</p>
+                  )}
+                </div>
+                {index > 0 && (
+                  <span
+                    className="sched-timeflow-session-state"
+                    aria-hidden="true"
+                  >
+                    <TimeflowChevron />
+                  </span>
+                )}
+                <button
+                  type="button"
+                  className="sched-timeflow-session-toggle"
+                  aria-expanded={expanded}
+                  aria-label={`${session.title} ${expanded ? "설명 접기" : "설명 보기"}`}
+                  onClick={() => toggleSession(sessionId)}
+                />
+              </div>
+            );
+          })}
         </div>
       )}
     </article>
