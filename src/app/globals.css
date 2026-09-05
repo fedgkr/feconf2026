@@ -215,6 +215,31 @@ body {
 /* Hero intro logo                                                    */
 /* ---------------------------------------------------------------- */
 
+/* The section is a two-screen scroll track; this stage is what is drawn,
+ * pinned to the viewport while any of the section is on screen. Once the
+ * section has scrolled past, the component parks the stage at the section's
+ * foot so it can never sit over the sections that follow. data-phase flips
+ * from "logo" to "tagline" once one screen of scroll has passed; the
+ * transitions below play the wordmark out and the tagline in on that flip.
+ * The component then counts the tagline's years up over the next screens. */
+.hero-stage {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100svh;
+  overflow: hidden;
+  background: #fff;
+  --hero-swap-ease: cubic-bezier(0.22, 1, 0.36, 1);
+  --hero-swap-time: 0.8s;
+}
+
+.hero-stage[data-pin="past"] {
+  position: absolute;
+  top: auto;
+  bottom: 0;
+}
+
 /* the flat backdrop the letter intro plays on, fading out to the stripes */
 
 .hero-intro-canvas canvas {
@@ -251,10 +276,25 @@ body {
 
 
 /* the compressed-mark frame shown while the clusters are gathered;
- * background-image comes from the component (assetPath) */
+ * background-image comes from the component (assetPath). The frame's own
+ * transform is owned by its keyframes, so the scroll lift sits on a wrapper. */
+.hero-letter-frame-layer {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  pointer-events: none;
+  transition:
+    opacity var(--hero-swap-time) var(--hero-swap-ease),
+    transform var(--hero-swap-time) var(--hero-swap-ease);
+}
+
+.hero-stage[data-phase="tagline"] .hero-letter-frame-layer {
+  opacity: 0;
+  transform: translate3d(0, -14vh, 0);
+}
+
 .hero-letter-frame {
   position: absolute;
-  z-index: 2;
   left: 50%;
   top: 50%;
   width: 8%;
@@ -272,6 +312,59 @@ body {
   aspect-ratio: 973.369 / 87.0588;
   transform: translate(-50%, -50%);
   pointer-events: none;
+  transition:
+    opacity var(--hero-swap-time) var(--hero-swap-ease),
+    transform var(--hero-swap-time) var(--hero-swap-ease);
+}
+
+/* on the handover the wordmark rises 14vh and fades out */
+.hero-stage[data-phase="tagline"] .hero-mark-anchor {
+  opacity: 0;
+  transform: translate(-50%, calc(-50% - 14vh));
+}
+
+/* "FORWARD EVER 10 YEARS": waits 14vh below, invisible, and rises into
+ * place fading in on the handover — a beat after the wordmark starts out */
+.hero-tagline {
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  margin: 0;
+  padding: 0 16px;
+  text-align: center;
+  color: #fff;
+  font-family: var(--font-archivo), Archivo, Arial, sans-serif;
+  font-size: clamp(72px, 10.3275vw, 198.288px);
+  font-weight: 800;
+  font-variation-settings: "wdth" 100;
+  line-height: 0.84233;
+  letter-spacing: -0.06em;
+  text-transform: uppercase;
+  opacity: 0;
+  transform: translate3d(0, 14vh, 0);
+  pointer-events: none;
+  transition:
+    opacity var(--hero-swap-time) var(--hero-swap-ease),
+    transform var(--hero-swap-time) var(--hero-swap-ease);
+}
+
+.hero-stage[data-phase="tagline"] .hero-tagline {
+  opacity: 1;
+  transform: translate3d(0, 0, 0);
+  transition-delay: 0.15s;
+}
+
+.hero-tagline > span {
+  display: block;
+}
+
+/* the counting digits: tabular so the glyphs hold still between steps */
+.hero-years {
+  font-variant-numeric: tabular-nums;
 }
 
 .hero-letter-stack {

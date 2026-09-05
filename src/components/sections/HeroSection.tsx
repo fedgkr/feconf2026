@@ -4,7 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import * as THREE from "three";
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import { useHeroMedia } from "@/hooks/useMedia";
-import { useInView } from "@/hooks/useAnimation";
+import { useInView, useScrollEffect } from "@/hooks/useAnimation";
 import { HERO, HERO_LETTERS } from "@/data/site";
 import { assetPath } from "@/lib/assetPath";
 
@@ -22,6 +22,13 @@ import { assetPath } from "@/lib/assetPath";
  * Over it, the intro logo plays once on a clock (pure CSS keyframes): the
  * FECONF clusters gather as the compressed mark, scatter into the full
  * wordmark and invert to white while the flat backdrop fades to the stripes.
+ *
+ * The section is a four-screen scroll track and its stage is pinned
+ * (position: fixed) for the whole of it. Once one screen of scroll has passed,
+ * the wordmark lifts and fades out while the "FORWARD EVER 10 YEARS" line
+ * rises in from below; over the next two screens the years count up from 1 to
+ * 10; the line then holds for the last screen while the story section slides
+ * up over it.
  */
 
 const FRAME_W = 1601.134;
@@ -285,6 +292,21 @@ export function StripeField(props: {
   );
 }
 
+/**
+ * The scroll track, in screens: the wordmark holds for the first, hands over
+ * to the tagline exactly one screen in, the years count up over the next
+ * COUNT_SCREENS, and the last screen holds the finished line while the story
+ * section scrolls up over it, carrying the nav bar up on its top edge.
+ */
+const HANDOVER_SCREENS = 1;
+const COUNT_SCREENS = 2;
+const HOLD_SCREENS = 1;
+export const HERO_SCREENS = HANDOVER_SCREENS + COUNT_SCREENS + HOLD_SCREENS;
+const YEARS_FROM = 1;
+const YEARS_TO = 10;
+
+const clamp01 = (v: number) => Math.min(1, Math.max(0, v));
+
 export default function HeroSection() {
   // the letter fill reads the accent of the page-wide media pick
   const media = useHeroMedia();
@@ -294,50 +316,107 @@ export default function HeroSection() {
     threshold: 0.01,
     once: false,
   });
+  const stageRef = useRef<HTMLDivElement>(null);
+  const yearsRef = useRef<HTMLSpanElement>(null);
+
+  // Scroll drives three things, written straight to the DOM: the stage's pin
+  // (fixed while any of the section is still on screen, parked at the
+  // section's foot once it has scrolled past, so it can never sit over the
+  // sections after it), the wordmark → tagline handover, and the year count.
+  // The handover is a switch, not a scrub: the moment one screen of scroll
+  // has passed, the stage flips to data-phase="tagline" and the stylesheet's
+  // transitions play the wordmark out (up, fading) and the tagline in (up
+  // from below); scrolling back above the line plays it in reverse. The
+  // count is a scrub: from the handover line, the years step from 1 to 10
+  // evenly across the next two screens. Distances are measured against the
+  // section's own height rather than innerHeight, so mobile toolbar toggles
+  // cannot move any of the lines.
+  useScrollEffect(() => {
+    const section = sectionRef.current;
+    const stage = stageRef.current;
+    if (!section || !stage) return;
+    const rect = section.getBoundingClientRect();
+    const screen = section.offsetHeight / HERO_SCREENS;
+    const along = -rect.top / screen;
+    const phase = along >= HANDOVER_SCREENS ? "tagline" : "logo";
+    if (stage.dataset.phase !== phase) stage.dataset.phase = phase;
+    const pin = rect.bottom <= 0 ? "past" : "fixed";
+    if (stage.dataset.pin !== pin) stage.dataset.pin = pin;
+
+    const years = yearsRef.current;
+    if (years) {
+      const progress = clamp01((along - HANDOVER_SCREENS) / COUNT_SCREENS);
+      const n = String(Math.round(YEARS_FROM + (YEARS_TO - YEARS_FROM) * progress));
+      if (years.textContent !== n) years.textContent = n;
+    }
+  });
 
   return (
     <section
       ref={sectionRef}
       id="home"
       aria-label="FEConf 2026 intro"
-      // svh, not dvh: iOS Safari resizes the dynamic viewport every time its
-      // bars collapse or expand mid-scroll, and a dvh hero re-centres its logo
-      // and rescales its canvas on each toggle — the visible shaking. The
-      // small viewport height fits the bars-visible screen and never moves.
-      className="relative h-svh overflow-hidden bg-white"
+      // the scroll track; the stage inside is what is drawn
+      className="hero-sequence relative bg-white"
+      style={{ height: `${HERO_SCREENS * 100}svh` }}
     >
-      <Canvas orthographic dpr={dpr} frameloop={inView ? "always" : "never"} aria-hidden="true" className="hero-intro-canvas">
-        <color attach="background" args={["#ffffff"]} />
-        {media && <StripeField ramp={media.ramp}/>}
-      </Canvas>
-      <div className="hero-intro-backdrop" aria-hidden="true" />
+      <div
+        ref={stageRef}
+        // svh, not dvh: iOS Safari resizes the dynamic viewport every time its
+        // bars collapse or expand mid-scroll, and a dvh stage re-centres its
+        // logo and rescales its canvas on each toggle — the visible shaking.
+        // The small viewport height fits the bars-visible screen and never
+        // moves.
+        className="hero-stage"
+        data-pin="fixed"
+        data-phase="logo"
+      >
+        <Canvas orthographic dpr={dpr} frameloop={inView ? "always" : "never"} aria-hidden="true" className="hero-intro-canvas">
+          <color attach="background" args={["#ffffff"]} />
+          {media && <StripeField ramp={media.ramp}/>}
+        </Canvas>
+        <div className="hero-intro-backdrop" aria-hidden="true" />
 
-      <span className="hero-letter-frame">
-        <img src={assetPath("/images/fe-white.svg")} />
-      </span>
-      <div className="hero-mark-anchor" aria-hidden="true">
-        <div
-          className="hero-letter-stack"
-          style={{ "--hero-logo-color": media?.accent } as React.CSSProperties}
-        >
-          {HERO_LETTERS.map(({ shiftX, shiftY, d }, i) => (
-            <svg
-              key={i}
-              className="hero-letter"
-              viewBox="0 0 973.369 87.0588"
-              preserveAspectRatio="none"
-              aria-hidden="true"
-              style={
-                {
-                  "--cluster-x": `${shiftX}%`,
-                  "--cluster-y": `${shiftY}%`,
-                } as React.CSSProperties
-              }
-            >
-              <path d={d} />
-            </svg>
-          ))}
+        <div className="hero-letter-frame-layer" aria-hidden="true">
+          <span className="hero-letter-frame">
+            <img src={assetPath("/images/fe-white.svg")} alt="" />
+          </span>
         </div>
+        <div className="hero-mark-anchor" aria-hidden="true">
+          <div
+            className="hero-letter-stack"
+            style={{ "--hero-logo-color": media?.accent } as React.CSSProperties}
+          >
+            {HERO_LETTERS.map(({ shiftX, shiftY, d }, i) => (
+              <svg
+                key={i}
+                className="hero-letter"
+                viewBox="0 0 973.369 87.0588"
+                preserveAspectRatio="none"
+                aria-hidden="true"
+                style={
+                  {
+                    "--cluster-x": `${shiftX}%`,
+                    "--cluster-y": `${shiftY}%`,
+                  } as React.CSSProperties
+                }
+              >
+                <path d={d} />
+              </svg>
+            ))}
+          </div>
+        </div>
+
+        <p className="hero-tagline">
+          <span>Forward</span>
+          <span>Ever</span>
+          <span>
+            <span ref={yearsRef} className="hero-years">
+              {YEARS_TO}
+            </span>
+            years
+          </span>
+        </p>
       </div>
     </section>
   );
