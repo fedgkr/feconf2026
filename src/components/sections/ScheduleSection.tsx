@@ -41,6 +41,12 @@ type TimeScheduleItem = {
   isSessionStart: boolean;
   boundary?: "start" | "finish";
 };
+type TimeScheduleSelection = {
+  id: string;
+  minute: number;
+  label: string;
+  sessions: Session[];
+};
 type SessionListItem = {
   id: string;
   time: string;
@@ -99,6 +105,7 @@ const TIMETABLE_END = 17 * 60;
 const TIMETABLE_STEP = 5;
 const TIMETABLE_SLOTS = (TIMETABLE_END - TIMETABLE_START) / TIMETABLE_STEP;
 const TIMEFLOW_TICK_STEP = 12;
+const TIMEFLOW_GHOST_TICK_COUNT = 24;
 
 function fadeIn(inView: boolean, delay: number): CSSProperties {
   return {
@@ -257,6 +264,15 @@ function sessionsStartingAtTimeScheduleMinute(minute: number) {
       .filter((session): session is Session => Boolean(session))
       .filter((session) => parseRange(session.time).start === minute);
   });
+}
+
+function timeScheduleSelection(minute: number): TimeScheduleSelection {
+  return {
+    id: String(minute),
+    minute,
+    label: formatMinute(minute),
+    sessions: sessionsStartingAtTimeScheduleMinute(minute),
+  };
 }
 
 function timeScheduleItems(): TimeScheduleItem[] {
@@ -563,17 +579,53 @@ function TimeSpaceCard({
   );
 }
 
+function TimeflowDetailContent({ item }: { item: TimeScheduleSelection }) {
+  return (
+    <>
+      <div className="sched-timeflow-active">
+        <div className="sched-timeflow-active-copy">
+          <span>Selected Time</span>
+          <p>{item.label}</p>
+        </div>
+      </div>
+      <div key={item.id} className="sched-timeflow-spaces is-vertical">
+        {TIME_SCHEDULE_SPACES.map((space) => {
+          const sessions = item.sessions.filter((session) =>
+            space.halls.includes(session.hall),
+          );
+
+          return (
+            <TimeSpaceCard
+              key={space.id}
+              title={space.title}
+              badge={space.badge}
+              sessions={sessions}
+            />
+          );
+        })}
+      </div>
+    </>
+  );
+}
+
 function TimeflowGhostTicks({
   minutes,
+  direction,
 }: {
   minutes: number[];
+  direction: "before" | "after";
 }) {
   return (
-    <div className="sched-timeflow-ghost" aria-hidden="true">
+    <div
+      className={`sched-timeflow-ghost is-${direction}`}
+      aria-hidden="true"
+    >
       {minutes.map((minute) => (
         <span
           key={`ghost-tick-${minute}`}
-          className={minute % 60 === 0 ? "is-hour" : ""}
+          className={`${minute % 60 === 0 ? "is-hour" : ""} ${
+            minute < 10 * 60 ? "is-before-mobile-start" : ""
+          }`}
         >
           {minute % 60 === 0 ? formatMinute(minute) : ""}
         </span>
@@ -591,16 +643,33 @@ function TimeScheduleView() {
 
     return {
       before: Array.from(
-        { length: 7 },
-        (_, index) => firstMinute - (7 - index) * TIMEFLOW_TICK_STEP,
+        { length: TIMEFLOW_GHOST_TICK_COUNT },
+        (_, index) =>
+          firstMinute -
+          (TIMEFLOW_GHOST_TICK_COUNT - index) * TIMEFLOW_TICK_STEP,
       ),
       after: Array.from(
-        { length: 7 },
+        { length: TIMEFLOW_GHOST_TICK_COUNT },
         (_, index) => lastMinute + (index + 1) * TIMEFLOW_TICK_STEP,
       ),
     };
   }, [items]);
+  const sizingItem = useMemo(
+    () =>
+      starts
+        .map(timeScheduleSelection)
+        .reduce<TimeScheduleSelection | null>(
+          (largest, item) =>
+            !largest || item.sessions.length > largest.sessions.length
+              ? item
+              : largest,
+          null,
+        ),
+    [starts],
+  );
   const listRef = useRef<HTMLDivElement>(null);
+  const measureRef = useRef<HTMLDivElement>(null);
+  const timeflowRef = useRef<HTMLDivElement>(null);
   const scrollTimer = useRef<number | null>(null);
   const dragState = useRef<{
     pointerId: number;
@@ -612,14 +681,7 @@ function TimeScheduleView() {
   const [activeId, setActiveId] = useState(starts[0] ? String(starts[0]) : "");
   const [isDragging, setIsDragging] = useState(false);
   const activeMinute = Number(activeId || starts[0]);
-  const activeItem = starts.length
-    ? {
-        id: String(activeMinute),
-        minute: activeMinute,
-        label: formatMinute(activeMinute),
-        sessions: sessionsStartingAtTimeScheduleMinute(activeMinute),
-      }
-    : null;
+  const activeItem = starts.length ? timeScheduleSelection(activeMinute) : null;
 
   const scrollMinuteToCenter = useCallback((
     minute: number,
@@ -639,9 +701,58 @@ function TimeScheduleView() {
   }, []);
 
   useEffect(() => {
-    if (!starts[0]) return;
+    const measure = measureRef.current;
+    const timeflow = timeflowRef.current;
+    if (!measure || !timeflow || !sizingItem) return;
 
+    const syncMobileContentHeight = () => {
+      if (measure.offsetWidth === 0) return;
+
+      timeflow.style.setProperty(
+        "--sched-mobile-content-height",
+        `${measure.scrollHeight}px`,
+      );
+    };
+
+    syncMobileContentHeight();
+
+    const resizeObserver = new ResizeObserver(syncMobileContentHeight);
+    resizeObserver.observe(measure);
+
+    return () => resizeObserver.disconnect();
+  }, [sizingItem]);
+
+  useEffect(() => {
+    const list = listRef.current;
+    const firstItem = list?.querySelector<HTMLElement>(".sched-timeflow-item");
+    if (!list || !firstItem || !starts[0]) return;
+
+    const syncGhostHeight = (preservePosition: boolean) => {
+      const previousHeight = Number.parseFloat(
+        list.style.getPropertyValue("--sched-timeflow-ghost-height"),
+      );
+      const nextHeight = Math.max(
+        0,
+        list.clientHeight / 2 - firstItem.offsetHeight / 2,
+      );
+
+      list.style.setProperty(
+        "--sched-timeflow-ghost-height",
+        `${nextHeight}px`,
+      );
+
+      if (preservePosition && Number.isFinite(previousHeight)) {
+        list.scrollTop += nextHeight - previousHeight;
+      }
+    };
+
+    syncGhostHeight(false);
     scrollMinuteToCenter(starts[0], "auto");
+
+    const resizeObserver = new ResizeObserver(() => syncGhostHeight(true));
+    resizeObserver.observe(list);
+
+    return () => resizeObserver.disconnect();
   }, [starts, scrollMinuteToCenter]);
 
   useEffect(() => {
@@ -753,33 +864,18 @@ function TimeScheduleView() {
       {!activeItem ? (
         <div className="sched-empty-message">아직 공개된 세션이 없습니다.</div>
       ) : (
-        <div className="sched-timeflow">
+        <div ref={timeflowRef} className="sched-timeflow">
           <div className="sched-timeflow-detail">
-            <div className="sched-timeflow-active">
-              <div className="sched-timeflow-active-copy">
-                <span>Selected Time</span>
-                <p>{activeItem.label}</p>
+            <TimeflowDetailContent item={activeItem} />
+            {sizingItem && (
+              <div
+                ref={measureRef}
+                className="sched-timeflow-mobile-measure"
+                aria-hidden="true"
+              >
+                <TimeflowDetailContent item={sizingItem} />
               </div>
-            </div>
-            <div
-              key={activeItem.id}
-              className="sched-timeflow-spaces is-vertical"
-            >
-              {TIME_SCHEDULE_SPACES.map((space) => {
-                const sessions = activeItem.sessions.filter((session) =>
-                  space.halls.includes(session.hall),
-                );
-
-                return (
-                  <TimeSpaceCard
-                    key={space.id}
-                    title={space.title}
-                    badge={space.badge}
-                    sessions={sessions}
-                  />
-                );
-              })}
-            </div>
+            )}
           </div>
           <div className="sched-timeflow-control">
             <div
@@ -794,7 +890,10 @@ function TimeScheduleView() {
               onPointerUp={handleTimeflowPointerUp}
               onPointerCancel={handleTimeflowPointerCancel}
             >
-              <TimeflowGhostTicks minutes={ghostTicks.before} />
+              <TimeflowGhostTicks
+                minutes={ghostTicks.before}
+                direction="before"
+              />
               {items.map((item) => {
                 const selected = item.minute === activeMinute;
 
@@ -831,7 +930,10 @@ function TimeScheduleView() {
                 </button>
               );
             })}
-              <TimeflowGhostTicks minutes={ghostTicks.after} />
+              <TimeflowGhostTicks
+                minutes={ghostTicks.after}
+                direction="after"
+              />
             </div>
           </div>
         </div>

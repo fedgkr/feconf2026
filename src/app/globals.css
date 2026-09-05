@@ -1798,10 +1798,11 @@ body {
 
 .sched-timeflow-ghost {
   display: flex;
-  height: 263px;
+  height: var(--sched-timeflow-ghost-height, 263px);
   flex-direction: column;
   align-items: flex-end;
   justify-content: flex-end;
+  overflow: hidden;
   pointer-events: none;
   mask-image: linear-gradient(
     180deg,
@@ -1810,6 +1811,10 @@ body {
     #000 80%,
     rgb(0 0 0 / 0) 100%
   );
+}
+
+.sched-timeflow-ghost.is-after {
+  justify-content: flex-start;
 }
 
 .sched-timeflow-ghost span {
@@ -1999,6 +2004,7 @@ body {
 }
 
 .sched-timeflow-detail {
+  position: relative;
   display: grid;
   grid-template-rows: auto minmax(0, 1fr);
   min-width: 0;
@@ -2006,6 +2012,10 @@ body {
   overflow: hidden;
   padding: 0;
   background: #fff;
+}
+
+.sched-timeflow-mobile-measure {
+  display: none;
 }
 
 .sched-timeflow-active {
@@ -2882,9 +2892,6 @@ body {
     padding: 0;
     scrollbar-width: none;
   }
-  .sched-timeflow-ghost {
-    height: 252px;
-  }
   .sched-timeflow-list::-webkit-scrollbar {
     display: none;
   }
@@ -2980,6 +2987,20 @@ body {
     --sched-stage-min-height: 960px;
     --sched-heading-gap: 40px;
     --sched-download-gap: 28px;
+  }
+  .sched-section-stage {
+    height: auto;
+    min-height: 0;
+  }
+  .sched-section-stage > .sched-wrap {
+    height: auto;
+  }
+  .sched-section-stage .sched-timeflow {
+    height: var(
+      --sched-mobile-content-height,
+      var(--sched-stage-min-height)
+    );
+    min-height: 0;
   }
   .sched-wrap {
     --sched-oh: 20px;
@@ -3109,6 +3130,9 @@ body {
     padding-right: 24px;
     font-size: 13px;
   }
+  .sched-timeflow-ghost span.is-before-mobile-start {
+    color: transparent;
+  }
   .sched-timeflow-ghost span::before {
     width: 12px;
   }
@@ -3124,15 +3148,24 @@ body {
   .sched-timeflow-control::after {
     height: 40px;
   }
+  .sched-timeflow-spaces.is-vertical {
+    align-content: start;
+  }
+  .sched-timeflow-mobile-measure {
+    position: absolute;
+    top: 0;
+    left: 0;
+    display: grid;
+    width: 100%;
+    grid-template-rows: auto max-content;
+    visibility: hidden;
+    pointer-events: none;
+  }
+  .sched-timeflow-mobile-measure .sched-timeflow-spaces.is-vertical {
+    overflow: visible;
+  }
   .sched-timeflow-space {
     padding: 18px 0;
-  }
-  .sched-timeflow-space:not(.is-break) {
-    grid-template-rows: auto minmax(0, 1fr);
-  }
-  .sched-timeflow-space-stack {
-    height: 100%;
-    grid-auto-rows: minmax(min-content, 1fr);
   }
   .sched-timeflow-space-head {
     position: relative;
