@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Archivo, JetBrains_Mono } from "next/font/google";
 import Script from "next/script";
+import ScrollDebugOverlay from "@/components/ScrollDebugOverlay";
 import "./globals.css";
 
 const stableViewportHeightScript = `
@@ -76,6 +77,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
             overflow set on body propagates to the viewport on some engines
             and froze page scrolling entirely */}
         <div id="fc-scroll-cap">{children}</div>
+        <ScrollDebugOverlay />
       </body>
     </html>
   );
