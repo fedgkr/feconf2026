@@ -54,6 +54,8 @@ interface Snail {
   h: number;
   x: number;
   y: number;
+  drawnX: number | null;
+  drawnY: number | null;
   speed: number;
   boost: number;
   boostUntil: number;
@@ -75,7 +77,8 @@ export function mountBuddySnails(
   let H = 0;
   let raf = 0;
   let last = 0;
-  let active = true;
+  // Placement stays eager; walking waits for the first visibility report.
+  let active = false;
   let disposed = false;
 
   /* ---------- tint: dye the SVG bodies to the hero accent ---------- */
@@ -151,7 +154,12 @@ export function mountBuddySnails(
   /* ---------- placement ---------- */
 
   function draw(s: Snail) {
-    s.el.style.transform = `translate3d(${Math.round(s.x)}px, ${Math.round(s.y)}px, 0)`;
+    const x = Math.round(s.x);
+    const y = Math.round(s.y);
+    if (s.drawnX === x && s.drawnY === y) return;
+    s.el.style.transform = `translate3d(${x}px, ${y}px, 0)`;
+    s.drawnX = x;
+    s.drawnY = y;
   }
 
   function place() {
@@ -229,6 +237,8 @@ export function mountBuddySnails(
         // seat so nobody wraps around immediately or paints on a neighbour
         x: ((seat + 0.15 + Math.random() * 0.7) / laneShare) * (W + w) - w,
         y: clamp(lane, 0, Math.max(0, H - h - 6)) + Math.round(Math.random() * 6),
+        drawnX: null,
+        drawnY: null,
         speed: SPEED[0] + Math.random() * (SPEED[1] - SPEED[0]),
         boost: 1,
         boostUntil: 0,

@@ -227,7 +227,7 @@ body {
   top: 0;
   left: 0;
   width: 100%;
-  height: 100svh;
+  height: calc(var(--fc-vh, 100svh));
   overflow: hidden;
   background: #fff;
   --hero-swap-ease: cubic-bezier(0.22, 1, 0.36, 1);
@@ -854,7 +854,7 @@ body {
 .fc-cover {
   position: relative;
   isolation: isolate;
-  min-height: var(--fc-cover-min-h, 100vh);
+  min-height: var(--fc-cover-min-h, calc(var(--fc-vh, 100vh)));
   background-clip: padding-box;
   transform: translate3d(0, var(--fc-cover-y, 0), 0);
   transition: transform 0.18s cubic-bezier(0.22, 1, 0.36, 1);
@@ -872,7 +872,8 @@ body {
 }
 
 .sched-section-inner {
-  --sched-stage-height: clamp(640px, 68svh, 760px);
+  --sched-stage-height: clamp(640px, calc(var(--fc-vh, 100svh) * 0.68), 760px);
+  --sched-stage-min-height: 960px;
   --sched-heading-gap: 64px;
   --sched-download-gap: 0px;
   --sched-download-height: 129px;
@@ -885,7 +886,7 @@ body {
 .sched-section-stage {
   width: 100%;
   height: var(--sched-stage-height);
-  min-height: 0;
+  min-height: var(--sched-stage-min-height);
 }
 
 .sched-section-stage > .sched-wrap {
@@ -1722,11 +1723,6 @@ body {
   grid-template-columns: minmax(0, 1fr) 150px;
   gap: 42px;
   background: #fff;
-  /* Touch input is pointer-driven so A scroll and B drag keep one model;
-     overflow beyond the first/last session is forwarded to the page. */
-  touch-action: none;
-  user-select: none;
-  -webkit-user-select: none;
 }
 
 .sched-timeflow-wrap {
@@ -1780,28 +1776,33 @@ body {
   position: relative;
   min-width: 0;
   max-height: 560px;
-  overflow-y: clip;
+  overflow-y: auto;
   padding: 0;
   background: transparent;
   cursor: grab;
+  scroll-snap-type: y proximity;
+  scrollbar-width: none;
+  scroll-behavior: smooth;
+  touch-action: pan-y;
+  user-select: none;
 }
 
-.sched-timeflow.is-rail-dragging .sched-timeflow-list {
+.sched-timeflow-list.is-dragging {
   cursor: grabbing;
+  scroll-behavior: auto;
 }
 
-.sched-timeflow-list-track {
-  min-width: 0;
-  transform: translate3d(0, 0, 0);
-  will-change: transform;
+.sched-timeflow-list::-webkit-scrollbar {
+  display: none;
 }
 
 .sched-timeflow-ghost {
   display: flex;
-  height: 263px;
+  height: var(--sched-timeflow-ghost-height, 263px);
   flex-direction: column;
   align-items: flex-end;
   justify-content: flex-end;
+  overflow: hidden;
   pointer-events: none;
   mask-image: linear-gradient(
     180deg,
@@ -1810,6 +1811,10 @@ body {
     #000 80%,
     rgb(0 0 0 / 0) 100%
   );
+}
+
+.sched-timeflow-ghost.is-after {
+  justify-content: flex-start;
 }
 
 .sched-timeflow-ghost span {
@@ -1866,6 +1871,7 @@ body {
   background: transparent;
   color: rgb(16 24 61 / 0.58);
   font-variant-numeric: tabular-nums;
+  scroll-snap-align: center;
   text-align: right;
   cursor: inherit;
   transition:
@@ -1998,6 +2004,7 @@ body {
 }
 
 .sched-timeflow-detail {
+  position: relative;
   display: grid;
   grid-template-rows: auto minmax(0, 1fr);
   min-width: 0;
@@ -2005,6 +2012,10 @@ body {
   overflow: hidden;
   padding: 0;
   background: #fff;
+}
+
+.sched-timeflow-mobile-measure {
+  display: none;
 }
 
 .sched-timeflow-active {
@@ -2099,10 +2110,7 @@ body {
   display: flex;
   align-items: stretch;
   background: #fff;
-  /* fill must not be both/forwards: a finished fill pins the keyframe's
-     transform over the inline translateY the notch nudge sets */
-  animation: sched-timeflow-spaces-in 260ms cubic-bezier(0.16, 1, 0.3, 1)
-    backwards;
+  animation: sched-timeflow-spaces-in 260ms cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
 @keyframes sched-timeflow-spaces-in {
@@ -2116,17 +2124,15 @@ body {
   }
 }
 
-/* entrance stagger only for the first (visible) slot of the strip — the
-   rest are offscreen at mount and animating them would be wasted work */
-.sched-timeflow-slot:first-child > .sched-timeflow-space {
+.sched-timeflow-spaces > .sched-timeflow-space {
   animation: sched-timeflow-space-in 320ms cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
-.sched-timeflow-slot:first-child > .sched-timeflow-space:nth-child(2) {
+.sched-timeflow-spaces > .sched-timeflow-space:nth-child(2) {
   animation-delay: 45ms;
 }
 
-.sched-timeflow-slot:first-child > .sched-timeflow-space:nth-child(3) {
+.sched-timeflow-spaces > .sched-timeflow-space:nth-child(3) {
   animation-delay: 90ms;
 }
 
@@ -2143,47 +2149,21 @@ body {
 
 @media (prefers-reduced-motion: reduce) {
   .sched-timeflow-spaces,
-  .sched-timeflow-slot:first-child > .sched-timeflow-space {
+  .sched-timeflow-spaces > .sched-timeflow-space {
     animation: none;
   }
 }
 
 .sched-timeflow-spaces.is-vertical {
-  position: relative;
-  display: block;
-  min-height: 0;
-  overflow-y: clip;
-}
-
-.sched-timeflow-spaces-track {
-  display: flex;
-  height: 100%;
-  min-height: 100%;
-  flex-direction: column;
-  transform: translate3d(0, 0, 0);
-  will-change: transform;
-}
-
-.sched-timeflow-slot {
   display: grid;
-  flex: 0 0 auto;
-  min-width: 0;
-  min-height: 100%;
   grid-template-columns: minmax(0, 1fr);
-  align-content: start;
+  min-height: 0;
+  overflow-y: auto;
+  scrollbar-width: none;
 }
 
-/* seam between time slots — the same hairline the cards use */
-.sched-timeflow-slot + .sched-timeflow-slot {
-  border-top: 1px solid transparent;
-  border-image: linear-gradient(
-    90deg,
-    rgb(212 218 237 / 0) 0,
-    var(--color-hairline) 30px,
-    var(--color-hairline) calc(100% - 30px),
-    rgb(212 218 237 / 0) 100%
-  )
-  1;
+.sched-timeflow-spaces.is-vertical::-webkit-scrollbar {
+  display: none;
 }
 
 .sched-timeflow-spaces.is-vertical .sched-timeflow-space {
@@ -2222,7 +2202,7 @@ body {
   flex: 1 1 0;
   min-width: 0;
   grid-template-columns: minmax(0, 1fr);
-  align-content: start;
+  /* align-content: start; */
   gap: 22px;
   padding: 24px 22px 28px;
   background: #fff;
@@ -2272,6 +2252,10 @@ body {
   text-transform: uppercase;
 }
 
+.sched-timeflow-session-state {
+  display: none;
+}
+
 .sched-timeflow-space.is-break {
   flex: 0 0 178px;
   width: 178px;
@@ -2301,6 +2285,15 @@ body {
   font-size: 13px;
   font-weight: 800;
   line-height: 1.1;
+}
+
+.sched-timeflow-session {
+  position: relative;
+}
+
+.sched-timeflow-space-head-toggle,
+.sched-timeflow-session-toggle {
+  display: none;
 }
 
 .sched-timeflow-session h4 {
@@ -2720,7 +2713,8 @@ body {
     overflow: hidden;
   }
   .sched-section-inner {
-    --sched-stage-height: clamp(620px, 74svh, 760px);
+    --sched-stage-height: clamp(620px, calc(var(--fc-vh, 100svh) * 0.74), 760px);
+    --sched-stage-min-height: 1180px;
     --sched-heading-gap: 56px;
     --sched-download-gap: 40px;
   }
@@ -2893,12 +2887,13 @@ body {
   .sched-timeflow-list {
     display: block;
     max-height: 520px;
-    overflow-x: clip;
-    overflow-y: clip;
+    overflow-x: hidden;
+    overflow-y: auto;
     padding: 0;
+    scrollbar-width: none;
   }
-  .sched-timeflow-ghost {
-    height: 252px;
+  .sched-timeflow-list::-webkit-scrollbar {
+    display: none;
   }
   .sched-timeflow-item {
     min-width: 0;
@@ -2988,9 +2983,24 @@ body {
 
 @media (max-width: 639px) {
   .sched-section-inner {
-    --sched-stage-height: clamp(560px, 76svh, 680px);
+    --sched-stage-height: clamp(560px, calc(var(--fc-vh, 100svh) * 0.76), 680px);
+    --sched-stage-min-height: 960px;
     --sched-heading-gap: 40px;
     --sched-download-gap: 28px;
+  }
+  .sched-section-stage {
+    height: auto;
+    min-height: 0;
+  }
+  .sched-section-stage > .sched-wrap {
+    height: auto;
+  }
+  .sched-section-stage .sched-timeflow {
+    height: var(
+      --sched-mobile-content-height,
+      var(--sched-stage-min-height)
+    );
+    min-height: 0;
   }
   .sched-wrap {
     --sched-oh: 20px;
@@ -3120,6 +3130,9 @@ body {
     padding-right: 24px;
     font-size: 13px;
   }
+  .sched-timeflow-ghost span.is-before-mobile-start {
+    color: transparent;
+  }
   .sched-timeflow-ghost span::before {
     width: 12px;
   }
@@ -3135,17 +3148,81 @@ body {
   .sched-timeflow-control::after {
     height: 40px;
   }
+  .sched-timeflow-spaces.is-vertical {
+    align-content: start;
+  }
+  .sched-timeflow-mobile-measure {
+    position: absolute;
+    top: 0;
+    left: 0;
+    display: grid;
+    width: 100%;
+    grid-template-rows: auto max-content;
+    visibility: hidden;
+    pointer-events: none;
+  }
+  .sched-timeflow-mobile-measure .sched-timeflow-spaces.is-vertical {
+    overflow: visible;
+  }
   .sched-timeflow-space {
     padding: 18px 0;
   }
   .sched-timeflow-space-head {
+    position: relative;
     gap: 5px;
+    padding-right: 24px;
   }
   .sched-timeflow-space-head p {
     font-size: 16px;
   }
+  .sched-timeflow-session-state {
+    position: absolute;
+    top: 0;
+    right: 0;
+    display: block;
+    width: 18px;
+    height: 18px;
+    margin-right: 10px;
+    color: rgb(16 24 61 / 0.32);
+  }
+  .sched-timeflow-session > .sched-timeflow-session-state {
+    top: 18px;
+  }
+  .sched-timeflow-session-state svg {
+    display: block;
+    width: 100%;
+    height: 100%;
+    transition: transform 160ms ease;
+  }
+  .sched-timeflow-session-state.is-expanded svg,
+  .sched-timeflow-session.is-expanded .sched-timeflow-session-state svg {
+    transform: rotate(180deg);
+  }
   .sched-timeflow-session h4 {
     font-size: 18px;
+  }
+  .sched-timeflow-session-details {
+    display: none;
+  }
+  .sched-timeflow-session.is-expanded .sched-timeflow-session-details {
+    display: block;
+  }
+  .sched-timeflow-space-head-toggle,
+  .sched-timeflow-session-toggle {
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    display: block;
+    width: 100%;
+    border: 0;
+    padding: 0;
+    background: transparent;
+    cursor: pointer;
+  }
+  .sched-timeflow-space-head-toggle:focus-visible,
+  .sched-timeflow-session-toggle:focus-visible {
+    outline: 2px solid var(--color-navy);
+    outline-offset: 4px;
   }
   .sched-list-toggle {
     gap: 16px;

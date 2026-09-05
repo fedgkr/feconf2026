@@ -358,7 +358,7 @@ export default function HeroSection() {
       aria-label="FEConf 2026 intro"
       // the scroll track; the stage inside is what is drawn
       className="hero-sequence relative bg-white"
-      style={{ height: `${HERO_SCREENS * 100}svh` }}
+      style={{ height: `calc(var(--fc-vh, 100svh) * ${HERO_SCREENS})` }}
     >
       <div
         ref={stageRef}

@@ -1,6 +1,21 @@
 import type { Metadata } from "next";
 import { Archivo, JetBrains_Mono } from "next/font/google";
+import Script from "next/script";
 import "./globals.css";
+
+const stableViewportHeightScript = `
+  (() => {
+    let width = window.innerWidth;
+    const setViewportHeight = () =>
+      document.documentElement.style.setProperty("--fc-vh", window.innerHeight + "px");
+    setViewportHeight();
+    window.addEventListener("resize", () => {
+      if (window.innerWidth === width) return;
+      width = window.innerWidth;
+      setViewportHeight();
+    });
+  })();
+`;
 
 const archivo = Archivo({
   subsets: ["latin"],
@@ -32,8 +47,12 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
     <html
       lang="ko"
       className={`${archivo.variable} ${jetbrainsMono.variable} antialiased`}
+      suppressHydrationWarning
     >
       <head>
+        <Script id="fc-stable-viewport-height" strategy="beforeInteractive">
+          {stableViewportHeightScript}
+        </Script>
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link
           rel="preconnect"

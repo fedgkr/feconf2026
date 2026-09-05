@@ -73,6 +73,8 @@ export function useSplitReveal<T extends HTMLElement = HTMLHeadingElement>(
       let observer: IntersectionObserver | undefined;
       let exitObserver: IntersectionObserver | undefined;
       let removeResizeListener: (() => void) | undefined;
+      // SplitText auto-split recreates the tween; keep the reveal gate intact.
+      let armed = true;
       el.classList.add("fe-split", "fe-hide");
       const split = SplitText.create(el, {
         type: p.type,
@@ -89,7 +91,6 @@ export function useSplitReveal<T extends HTMLElement = HTMLHeadingElement>(
           // the viewport: resetting or replaying right at the reveal line
           // would blink visible copy on every direction change near it, so
           // `armed` gates the replay on both trigger paths.
-          let armed = true;
           const tween = gsap.from(self[p.unit], {
             yPercent: 120,
             opacity: 0,
@@ -135,6 +136,8 @@ export function useSplitReveal<T extends HTMLElement = HTMLHeadingElement>(
 
           // A section-specific lead-in observes painted bounds so its CSS
           // offset changes only the trigger without moving the content.
+          let viewportWidth = window.innerWidth;
+          let viewportHeight = window.innerHeight;
           const observeAtSharedLine = () => {
             observer?.disconnect();
             const revealOffset =
@@ -145,7 +148,7 @@ export function useSplitReveal<T extends HTMLElement = HTMLHeadingElement>(
               ) || 0;
             const bottomRootMargin =
               revealOffset -
-              window.innerHeight * (1 - HEADING_REVEAL_PERCENT / 100);
+              viewportHeight * (1 - HEADING_REVEAL_PERCENT / 100);
             observer = new IntersectionObserver(
               ([entry]) => {
                 if (entry.isIntersecting && armed) {
@@ -166,7 +169,12 @@ export function useSplitReveal<T extends HTMLElement = HTMLHeadingElement>(
             }
           });
           exitObserver.observe(el);
-          const onResize = () => observeAtSharedLine();
+          const onResize = () => {
+            if (window.innerWidth === viewportWidth) return;
+            viewportWidth = window.innerWidth;
+            viewportHeight = window.innerHeight;
+            observeAtSharedLine();
+          };
           window.addEventListener("resize", onResize);
           removeResizeListener = () =>
             window.removeEventListener("resize", onResize);

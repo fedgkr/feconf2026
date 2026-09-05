@@ -748,7 +748,7 @@ export const SHARE_CONTACT = {
         "프론트엔드 개발자에 의한, 프론트엔드 개발자를 위한 FEConf의 발전을 위해",
         "도움을 주실 분도 언제든 환영합니다.",
       ],
-      mail: "@feconf@googlegroups.com",
+      mail: "feconf@googlegroups.com",
       button: {
         label: "Mail",
         icon: "arrow" as const,

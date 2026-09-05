@@ -27,14 +27,17 @@ export default function FooterSection() {
       id="site-footer"
       className="relative isolate h-[377px] overflow-hidden bg-white max-[900px]:h-[300px]"
     >
-      {inView && (
-        <div className="pointer-events-none absolute inset-0 z-0">
-          <Canvas orthographic dpr={dpr} aria-hidden="true">
-            <color attach="background" args={["#ffffff"]} />
-            {media && <StripeField ramp={media.ramp} />}
-          </Canvas>
-        </div>
-      )}
+      <div className="pointer-events-none absolute inset-0 z-0">
+        <Canvas
+          orthographic
+          dpr={dpr}
+          frameloop={inView ? "always" : "demand"}
+          aria-hidden="true"
+        >
+          <color attach="background" args={["#ffffff"]} />
+          {media && <StripeField ramp={media.ramp} />}
+        </Canvas>
+      </div>
       <div className="relative z-[2] mx-auto h-full w-full max-w-[1366px] px-16 max-[900px]:px-7">
         <p className="font-jbmono absolute left-16 right-[424px] top-1/2 -translate-y-1/2 text-[18px] font-bold leading-[1.25] text-white max-[900px]:inset-x-7 max-[900px]:top-[42%] max-[900px]:text-center max-[900px]:text-[13px] max-[900px]:leading-[1.35]">
         {FOOTER.note}

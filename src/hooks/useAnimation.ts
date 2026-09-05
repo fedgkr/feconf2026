@@ -146,7 +146,10 @@ export function useCoverRise<T extends HTMLElement = HTMLElement>(
     const matrix = new DOMMatrixReadOnly(getComputedStyle(el).transform);
     const layoutTop = rect.top - (matrix.m42 || 0);
     const progress = smoothstep(clamp01((vh - layoutTop) / (vh * 0.82)));
-    el.style.setProperty("--fc-cover-y", `${(1 - progress) * distanceVh}vh`);
+    const coverY = `calc(var(--fc-vh, 100vh) * ${((1 - progress) * distanceVh) / 100})`;
+    if (el.style.getPropertyValue("--fc-cover-y") !== coverY) {
+      el.style.setProperty("--fc-cover-y", coverY);
+    }
   });
 
   return ref;

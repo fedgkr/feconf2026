@@ -76,6 +76,7 @@ function jumpTo(e: React.MouseEvent, href: string) {
  */
 export default function SiteNav() {
   const header = useRef<HTMLElement>(null);
+  const lastDockDrop = useRef<number | null>(null);
   const [open, setOpen] = useState(false);
   // The bar row paints white the instant the menu opens (a fading row
   // visibly split from the already-white panel). On close the row fades on
@@ -108,19 +109,21 @@ export default function SiteNav() {
       window.matchMedia("(min-width: 768px)").matches &&
       !window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     const edge = docks ? followingSectionTop() : null;
-    if (edge === null) {
-      el.style.transform = "translate3d(0, 0, 0)";
-      return;
+    let drop = 0;
+    if (edge !== null) {
+      const nav = el.querySelector("nav");
+      const navHeight = nav?.offsetHeight || el.offsetHeight;
+      // the bar's bottom edge sits on the story's top edge, clamped between
+      // the bottom of the viewport and the top of the page
+      drop = Math.min(
+        Math.max(0, edge - navHeight),
+        Math.max(0, window.innerHeight - navHeight),
+      );
     }
-    const nav = el.querySelector("nav");
-    const navHeight = nav?.offsetHeight || el.offsetHeight;
-    // the bar's bottom edge sits on the story's top edge, clamped between
-    // the bottom of the viewport and the top of the page
-    const drop = Math.min(
-      Math.max(0, edge - navHeight),
-      Math.max(0, window.innerHeight - navHeight),
-    );
-    el.style.transform = `translate3d(0, ${drop}px, 0)`;
+    if (lastDockDrop.current !== drop) {
+      el.style.transform = `translate3d(0, ${drop}px, 0)`;
+      lastDockDrop.current = drop;
+    }
   }, []);
 
   useScrollEffect(() => {
@@ -136,7 +139,10 @@ export default function SiteNav() {
     for (const el of document.querySelectorAll<HTMLElement>("[data-nav-bg]")) {
       if (spans(el, probe)) bg = el.dataset.navBg!;
     }
-    document.documentElement.style.setProperty("--fe-nav-bg", bg);
+    const rootStyle = document.documentElement.style;
+    if (rootStyle.getPropertyValue("--fe-nav-bg") !== bg) {
+      rootStyle.setProperty("--fe-nav-bg", bg);
+    }
 
     // No annotated section under the bar means nothing has been drawn over the
     // hero yet, and the hero is the one surface the reference keeps white.
