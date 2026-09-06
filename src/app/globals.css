@@ -532,6 +532,12 @@ body {
     animation: none;
     opacity: 0;
   }
+  /* the stripes fill the stage from the first frame: no zoom-out, so the
+   * white wordmark never sits invisible on the white stage */
+  .hero-intro-canvas canvas {
+    animation: none;
+    transform: none;
+  }
   .hero-letter-stack {
     animation: none;
     color: #fff;
@@ -541,6 +547,21 @@ body {
   }
   .hero-letter {
     animation: none;
+    transform: none;
+  }
+  /* the wordmark → tagline handover is a hard cut: no lift, no fade */
+  .hero-letter-frame-layer,
+  .hero-mark-anchor,
+  .hero-tagline {
+    transition: none;
+  }
+  .hero-stage[data-phase="tagline"] .hero-letter-frame-layer {
+    transform: none;
+  }
+  .hero-stage[data-phase="tagline"] .hero-mark-anchor {
+    transform: translate(-50%, -50%);
+  }
+  .hero-tagline {
     transform: none;
   }
 }
