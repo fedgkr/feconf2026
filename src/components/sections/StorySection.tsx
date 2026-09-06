@@ -611,7 +611,6 @@ export default function StorySection() {
           className="fc-car-loop absolute"
           style={{ bottom: "15%", display: carOn ? "block" : "none" }}
         >
-          {/* the still is only a fallback until the WEBM fill mounts */}
           <img
             src={STORY_ASSETS.carSrc}
             alt=""
