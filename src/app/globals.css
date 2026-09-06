@@ -243,7 +243,10 @@ body {
 /* the flat backdrop the letter intro plays on, fading out to the stripes */
 
 .hero-intro-canvas canvas {
-  transform: scale(calc(1vw / 6vw), calc(1vw / 5vw));
+  --scale-y: 10vw / 100vh;
+
+  
+  transform: scale(calc(1vw / 6vw), calc(--scale-y));
   animation: fcLogoScaleOut 3.1s 0.65s cubic-bezier(0.65, 0, 0.35, 1) both;
 }
 .hero-intro-backdrop {
@@ -458,7 +461,7 @@ body {
 @keyframes fcLogoScaleOut {
   0%,
   24% {
-    transform: scale(calc(1vw / 6vw), calc(1vw / 5vw));
+    transform: scale(calc(1vw / 6vw), calc(--scale-y));
   }
   25%, 100% {
     transform: scale(1);

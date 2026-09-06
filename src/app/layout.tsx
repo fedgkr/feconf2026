@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Archivo, JetBrains_Mono } from "next/font/google";
 import Script from "next/script";
+import { introScrollResetScript } from "@/components/IntroScrollReset";
 import "./globals.css";
 
 const stableViewportHeightScript = `
@@ -56,6 +57,9 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       <head>
         <Script id="fc-stable-viewport-height" strategy="beforeInteractive">
           {stableViewportHeightScript}
+        </Script>
+        <Script id="fc-intro-scroll-reset" strategy="beforeInteractive">
+          {introScrollResetScript}
         </Script>
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link
