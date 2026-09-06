@@ -6,11 +6,15 @@ import "./globals.css";
 const stableViewportHeightScript = `
   (() => {
     let width = window.innerWidth;
+    const allowsHeightResize = () =>
+      navigator.maxTouchPoints === 0 &&
+      window.matchMedia("(hover: hover) and (pointer: fine)").matches;
     const setViewportHeight = () =>
       document.documentElement.style.setProperty("--fc-vh", window.innerHeight + "px");
     setViewportHeight();
     window.addEventListener("resize", () => {
-      if (window.innerWidth === width) return;
+      const widthChanged = window.innerWidth !== width;
+      if (!widthChanged && !allowsHeightResize()) return;
       width = window.innerWidth;
       setViewportHeight();
     });
