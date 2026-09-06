@@ -31,6 +31,9 @@ const HEADING_REVEAL_OFFSET_PROPERTY = "--heading-reveal-offset";
 
 const reducedMotion = () =>
   window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+const allowsHeightResize = () =>
+  navigator.maxTouchPoints === 0 &&
+  window.matchMedia("(hover: hover) and (pointer: fine)").matches;
 
 /**
  * Splitting before the webfont settles bakes the fallback font's line breaks
@@ -170,7 +173,8 @@ export function useSplitReveal<T extends HTMLElement = HTMLHeadingElement>(
           });
           exitObserver.observe(el);
           const onResize = () => {
-            if (window.innerWidth === viewportWidth) return;
+            const widthChanged = window.innerWidth !== viewportWidth;
+            if (!widthChanged && !allowsHeightResize()) return;
             viewportWidth = window.innerWidth;
             viewportHeight = window.innerHeight;
             observeAtSharedLine();

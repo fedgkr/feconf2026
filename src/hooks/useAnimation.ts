@@ -42,23 +42,30 @@ export function useInView<T extends HTMLElement = HTMLDivElement>({
  * One window listener pair and one animation frame for the whole page: every
  * subscriber runs together, once per frame, so a frame reads layout only once.
  */
-const scrollSubscribers = new Set<() => void>();
+const scrollSubscribers = new Set<(resized: boolean) => void>();
 let scrollFrame = 0;
+let resizeQueued = false;
 
 const runScrollSubscribers = () => {
   scrollFrame = 0;
-  for (const run of scrollSubscribers) run();
+  const resized = resizeQueued;
+  resizeQueued = false;
+  for (const run of scrollSubscribers) run(resized);
 };
 
-const scheduleScrollRun = () => {
+const scheduleScrollRun = (resized = false) => {
+  resizeQueued ||= resized;
   if (scrollFrame) return;
   scrollFrame = requestAnimationFrame(runScrollSubscribers);
 };
 
-function subscribeToScroll(run: () => void) {
+const onScroll = () => scheduleScrollRun();
+const onResize = () => scheduleScrollRun(true);
+
+function subscribeToScroll(run: (resized: boolean) => void) {
   if (scrollSubscribers.size === 0) {
-    window.addEventListener("scroll", scheduleScrollRun, { passive: true });
-    window.addEventListener("resize", scheduleScrollRun);
+    window.addEventListener("scroll", onScroll, { passive: true });
+    window.addEventListener("resize", onResize);
   }
   scrollSubscribers.add(run);
   scheduleScrollRun();
@@ -66,12 +73,13 @@ function subscribeToScroll(run: () => void) {
   return () => {
     scrollSubscribers.delete(run);
     if (scrollSubscribers.size > 0) return;
-    window.removeEventListener("scroll", scheduleScrollRun);
-    window.removeEventListener("resize", scheduleScrollRun);
+    window.removeEventListener("scroll", onScroll);
+    window.removeEventListener("resize", onResize);
     if (scrollFrame) {
       cancelAnimationFrame(scrollFrame);
       scrollFrame = 0;
     }
+    resizeQueued = false;
   };
 }
 
@@ -80,14 +88,14 @@ function subscribeToScroll(run: () => void) {
  * into a single frame. The callback is read through a ref so re-renders never
  * re-subscribe.
  */
-export function useScrollEffect(update: () => void) {
+export function useScrollEffect(update: (resized: boolean) => void) {
   const latest = useRef(update);
 
   useEffect(() => {
     latest.current = update;
   });
 
-  useEffect(() => subscribeToScroll(() => latest.current()), []);
+  useEffect(() => subscribeToScroll((resized) => latest.current(resized)), []);
 }
 
 /** Per-child styles for a staggered fade-up entrance. */
@@ -105,6 +113,9 @@ export function useStaggerChildren(
 
 const clamp01 = (v: number) => Math.min(1, Math.max(0, v));
 const smoothstep = (t: number) => t * t * (3 - 2 * t);
+const allowsHeightResize = () =>
+  navigator.maxTouchPoints === 0 &&
+  window.matchMedia("(hover: hover) and (pointer: fine)").matches;
 
 /**
  * The section rises from `distanceVh` below (default 80vh) into its place
@@ -120,10 +131,8 @@ export function useCoverRise<T extends HTMLElement = HTMLElement>(
   // Mobile Safari steps innerHeight up and down as its toolbar hides and
   // shows mid-scroll; feeding that into the progress would jolt a mid-rise
   // section by tens of px on every toggle (the boundary shake on slow
-  // scrolls). Use the largest height seen at the current width — the "large
-  // viewport", which also matches the CSS vh the offset is written in — so
-  // toolbar steps leave the target alone. A width change (rotation, a real
-  // window resize) resets the cache.
+  // scrolls). Outside the fine-pointer desktop gate, keep the largest height
+  // seen at the current width so toolbar steps leave the target alone.
   const stableViewport = useRef({ width: 0, height: 0 });
 
   useEffect(() => {
@@ -137,7 +146,7 @@ export function useCoverRise<T extends HTMLElement = HTMLElement>(
     if (window.innerWidth !== sv.width) {
       sv.width = window.innerWidth;
       sv.height = window.innerHeight;
-    } else if (window.innerHeight > sv.height) {
+    } else if (allowsHeightResize() || window.innerHeight > sv.height) {
       sv.height = window.innerHeight;
     }
     const vh = sv.height;

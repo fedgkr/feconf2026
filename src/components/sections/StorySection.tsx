@@ -36,6 +36,10 @@ function getScrollMetrics(sectionHeight: number, viewportHeight: number) {
   return { travel, segment: travel / STORY_PHRASES.length };
 }
 
+const allowsHeightResize = () =>
+  navigator.maxTouchPoints === 0 &&
+  window.matchMedia("(hover: hover) and (pointer: fine)").matches;
+
 function StoryCopy({
   lines,
   leaving,
@@ -179,9 +183,8 @@ export default function StorySection() {
   const lastScrollY = useRef(Infinity);
   // Android's URL bar animates window.innerHeight mid-scroll; lock limits
   // computed from the live value wobble by tens of px while the hold is
-  // clamping, which twitched the phrase timings. Pin the metrics to the
-  // largest height seen at the current width (the useCoverRise pattern) —
-  // it also matches the CSS vh the section's 340vh height is written in.
+  // clamping, which twitched the phrase timings. Outside the fine-pointer
+  // desktop gate, pin the metrics to the largest height seen at this width.
   // Compositor-enforced bound: every main-thread defence (ownership, rAF
   // hold, per-event clamps) can stall on a busy main thread while Android's
   // compositor keeps flinging — on long 120Hz screens one such stall let a
@@ -190,12 +193,13 @@ export default function StorySection() {
   // compositor clamps at its own scroll bounds. -1 means "no cap applied".
   const appliedCap = useRef(-1);
   const stableViewport = useRef({ width: 0, height: 0 });
+  const scrollMetrics = useRef<{ along: number; travel: number } | null>(null);
   const stableVh = useCallback(() => {
     const sv = stableViewport.current;
     if (window.innerWidth !== sv.width) {
       sv.width = window.innerWidth;
       sv.height = window.innerHeight;
-    } else if (window.innerHeight > sv.height) {
+    } else if (allowsHeightResize() || window.innerHeight > sv.height) {
       sv.height = window.innerHeight;
     }
     return sv.height;
@@ -251,14 +255,35 @@ export default function StorySection() {
     [],
   );
 
-  useScrollEffect(() => {
+  useScrollEffect((resized) => {
     const el = sectionRef.current;
     if (!el) return;
     const rect = el.getBoundingClientRect();
     const vh = window.innerHeight;
     const { travel, segment } = getScrollMetrics(el.offsetHeight, stableVh());
     let along = -rect.top;
-    const scrollingDown = window.scrollY > lastScrollY.current;
+    const desktopResize = resized && allowsHeightResize();
+    const previousMetrics = scrollMetrics.current;
+    const preservesProgress =
+      desktopResize &&
+      previousMetrics !== null &&
+      previousMetrics.along >= 0 &&
+      previousMetrics.along < previousMetrics.travel;
+    if (preservesProgress) {
+      const progress = Math.min(1, Math.max(0, previousMetrics.along / previousMetrics.travel));
+      const target = window.scrollY + rect.top + travel * progress;
+      const wrap = document.getElementById("fc-scroll-cap");
+      if (wrap && unlockedSegmentCount.current < STORY_PHRASES.length) {
+        wrap.style.maxHeight = "";
+        wrap.style.overflow = "";
+        appliedCap.current = -1;
+      }
+      if (Math.abs(target - window.scrollY) > 0.5)
+        window.scrollTo({ top: target, behavior: "instant" });
+      along = travel * progress;
+      lastScrollY.current = target;
+    }
+    const scrollingDown = !preservesProgress && window.scrollY > lastScrollY.current;
     lastScrollY.current = window.scrollY;
 
     // a load restored mid-story credits the phrases already scrolled past
@@ -293,7 +318,7 @@ export default function StorySection() {
         // long fling cannot simply outlive it and sail through the lock
         // (menu jumps stay exempt — onNavClick clears the grace first)
         lastInputAt.current = performance.now();
-      } else if (along >= travel) {
+      } else if (!preservesProgress && along >= travel) {
         // got past without user input (menu jump, scrollbar drag): stand down
         unlockedSegmentCount.current = STORY_PHRASES.length;
       }
@@ -306,12 +331,15 @@ export default function StorySection() {
       STORY_PHRASES.length - 1,
       Math.floor(progress * STORY_PHRASES.length),
     );
-    setPhase(next);
-    const onStage = rect.top < vh * 0.72 && rect.bottom > vh * 0.2;
-    if (onStage && !runAt.current) runAt.current = performance.now();
-    if (onStage) setRun(true);
-    // the copy only counts from the pin, so every phrase gets an equal third
-    setActive(rect.top <= 0 && rect.bottom > vh * 0.2);
+    if (!preservesProgress) {
+      setPhase(next);
+      const onStage = rect.top < vh * 0.72 && rect.bottom > vh * 0.2;
+      if (onStage && !runAt.current) runAt.current = performance.now();
+      if (onStage) setRun(true);
+      // the copy only counts from the pin, so every phrase gets an equal third
+      setActive(rect.top <= 0 && rect.bottom > vh * 0.2);
+    }
+    scrollMetrics.current = { along, travel };
   });
 
   // The first line still waits out the frame drawing (which starts on the
