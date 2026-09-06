@@ -683,7 +683,7 @@ export const BUDDY = {
   button: {
     label: "View on npm",
     icon: "external" as const,
-    href: "https://www.npmjs.com/package/feconf-26-mascot",
+    href: "https://www.npmjs.com/package/feconf2026-buddy",
   },
 };
 

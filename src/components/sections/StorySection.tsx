@@ -122,13 +122,70 @@ function MediaMask({
   wanted: boolean;
 }) {
   const videoRef = useManagedVideo(wanted);
+  const [readyKey, setReadyKey] = useState<string | null>(null);
+  const [failedKey, setFailedKey] = useState<string | null>(null);
+  const [reducedMotion, setReducedMotion] = useState(false);
+  const allowed = wanted && !reducedMotion;
+  const sessionInput = `${src ?? ""}:${allowed}`;
+  const [previousSessionInput, setPreviousSessionInput] = useState(sessionInput);
+  const [session, setSession] = useState(0);
+  if (sessionInput !== previousSessionInput) {
+    setPreviousSessionInput(sessionInput);
+    setSession((current) => current + 1);
+  }
+  const playbackKey = `${src ?? ""}:${session}`;
+  const displayVideo = allowed && readyKey === playbackKey && failedKey !== playbackKey;
+
+  useEffect(() => {
+    const query = window.matchMedia("(prefers-reduced-motion: reduce)");
+    const update = () => setReducedMotion(query.matches);
+    update();
+    query.addEventListener("change", update);
+    return () => query.removeEventListener("change", update);
+  }, []);
+
+  const onPlaying = () => {
+    const video = videoRef.current;
+    if (!video || !allowed) return;
+    const markReady = () => setReadyKey(playbackKey);
+    const requestVideoFrame = (
+      video as HTMLVideoElement & {
+        requestVideoFrameCallback?: HTMLVideoElement["requestVideoFrameCallback"];
+      }
+    ).requestVideoFrameCallback;
+    if (requestVideoFrame) {
+      requestVideoFrame.call(video, markReady);
+      return;
+    }
+    requestAnimationFrame(() => {
+      if (!video.paused && video.readyState >= HTMLMediaElement.HAVE_CURRENT_DATA) markReady();
+    });
+  };
+
   return (
-    <div
-      className={`fc-story-media-mask ${layerClass}`}
-      style={{ maskImage: `url(${maskSrc})` }}
-    >
-      <video ref={videoRef} src={src} loop muted playsInline preload="auto" aria-hidden="true" />
-    </div>
+    <>
+      <img
+        src={maskSrc}
+        alt=""
+        style={{ imageRendering: "pixelated", opacity: displayVideo ? 0 : 1 }}
+      />
+      <div
+        className={`fc-story-media-mask ${layerClass}`}
+        style={{ maskImage: `url(${maskSrc})`, opacity: displayVideo ? 1 : 0 }}
+      >
+        <video
+          ref={videoRef}
+          src={src}
+          loop
+          muted
+          playsInline
+          preload="auto"
+          aria-hidden="true"
+          onPlaying={onPlaying}
+          onError={() => setFailedKey(playbackKey)}
+        />
+      </div>
+    </>
   );
 }
 
@@ -611,12 +668,7 @@ export default function StorySection() {
           className="fc-car-loop absolute"
           style={{ bottom: "15%", display: carOn ? "block" : "none" }}
         >
-          {/* the still is only a fallback until the WEBM fill mounts */}
-          <img
-            src={STORY_ASSETS.carSrc}
-            alt=""
-            style={{ imageRendering: "pixelated", opacity: media ? 0 : 1 }}
-          />
+          {/* the still remains until the WEBM has presented its first frame */}
           <MediaMask
             layerClass="fc-car-media-mask"
             maskSrc={STORY_ASSETS.carSrc}
@@ -627,11 +679,6 @@ export default function StorySection() {
         <SnailStage key={snailEpoch} shown={shownPhase >= 1}>
           {(["fc-snail-a", "fc-snail-b"] as const).map((variant) => (
             <div key={variant} className={`fc-snail-autoplay ${variant}`} aria-hidden="true">
-              <img
-                src={STORY_ASSETS.snailSrc}
-                alt=""
-                style={{ imageRendering: "pixelated", opacity: media ? 0 : 1 }}
-              />
               <MediaMask
                 layerClass="fc-snail-media-mask"
                 maskSrc={STORY_ASSETS.snailSrc}

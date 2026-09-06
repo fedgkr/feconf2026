@@ -3,7 +3,7 @@ name: Deploy Next.js site to Pages
 on:
   push:
     # Remove feature/github-pages after verifying the first deployment.
-    branches: [main, feature/github-pages]
+    branches: [main, feature/github-pages, feature/fix-design]
   workflow_dispatch:
 
 permissions:
