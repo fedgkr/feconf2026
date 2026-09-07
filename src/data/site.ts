@@ -762,5 +762,5 @@ export const SHARE_CONTACT = {
 
 export const FOOTER = {
   bgSrc: assetPath("/images/footer-gradient-bg.png"),
-  note: "FEConf BY FEDG. 2026.10.24 THU. LOTTE TOWER 35F SEOUL, KOREA",
+  note: "FEConf BY FEDG. 2026.10.24 SAT. 10:00 OPEN. LOTTE TOWER 35F SEOUL, KOREA",
 };

@@ -1,22 +1,9 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useScrollEffect } from "@/hooks/useAnimation";
 import { useTicketDday } from "@/hooks/useTicketDday";
 import { NAV_MENU, TICKET_LINK } from "@/data/site";
-
-/**
- * Where the top edge of the section after the hero is drawn, in viewport px,
- * or null on a page without a hero. The bar rides up on that edge: it sits at
- * the bottom of the viewport over the hero and climbs to the top together with
- * the story section as it scrolls up over the hero's tail. The drawn rect is
- * used, not the layout slot, so a section still rising into place under a
- * transform carries the bar where the eye sees it.
- */
-function followingSectionTop() {
-  const next = document.getElementById("home")?.nextElementSibling;
-  return next ? next.getBoundingClientRect().top : null;
-}
 
 /** The sections the menu highlights, in document order. */
 const TRACKED = NAV_MENU.filter(({ href }) => href !== "#");
@@ -64,11 +51,8 @@ function jumpTo(e: React.MouseEvent, href: string) {
 }
 
 /**
- * Fixed top navigation.
- *
- * Over the hero the bar sits at the bottom of the viewport, then rides up to
- * the top on the leading edge of the story section as it scrolls up over the
- * hero — desktop only.
+ * Fixed top navigation, pinned to the top of the viewport at every scroll
+ * position.
  * Its background follows the section under it via `--fe-nav-bg`, measured
  * here from each section's `data-nav-bg`, and its text is drawn white over the
  * hero and over any dark surface, ink over the light ones. The menu item for
@@ -76,7 +60,6 @@ function jumpTo(e: React.MouseEvent, href: string) {
  */
 export default function SiteNav() {
   const header = useRef<HTMLElement>(null);
-  const lastDockDrop = useRef<number | null>(null);
   const [open, setOpen] = useState(false);
   // The bar row paints white the instant the menu opens (a fading row
   // visibly split from the already-white panel). On close the row fades on
@@ -97,38 +80,7 @@ export default function SiteNav() {
   const [active, setActive] = useState<string>(NAV_MENU[0].id);
   const dday = useTicketDday();
 
-  /**
-   * Written straight to the element rather than through state: this runs on
-   * every frame of the climb, and the bar's own transform is all it changes.
-   */
-  const applyDock = useCallback(() => {
-    const el = header.current;
-    if (!el) return;
-    // below md, and with reduced motion, the bar never leaves the top
-    const docks =
-      window.matchMedia("(min-width: 768px)").matches &&
-      !window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    const edge = docks ? followingSectionTop() : null;
-    let drop = 0;
-    if (edge !== null) {
-      const nav = el.querySelector("nav");
-      const navHeight = nav?.offsetHeight || el.offsetHeight;
-      // the bar's bottom edge sits on the story's top edge, clamped between
-      // the bottom of the viewport and the top of the page
-      drop = Math.min(
-        Math.max(0, edge - navHeight),
-        Math.max(0, window.innerHeight - navHeight),
-      );
-    }
-    if (lastDockDrop.current !== drop) {
-      el.style.transform = `translate3d(0, ${drop}px, 0)`;
-      lastDockDrop.current = drop;
-    }
-  }, []);
-
   useScrollEffect(() => {
-    applyDock();
-
     // one pixel under the bar's own bottom edge, so the surface it reports is
     // the one it actually sits on at any header height
     const probe = Math.min(
