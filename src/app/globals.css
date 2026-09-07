@@ -370,6 +370,33 @@ body {
   font-variant-numeric: tabular-nums;
 }
 
+/* venue line along the foot of the stage, set like the footer's note; it
+ * fades in with the rest of the chrome once the intro has inverted */
+.hero-note {
+  position: absolute;
+  inset-inline: 0;
+  bottom: 40px;
+  z-index: 5;
+  margin: 0;
+  padding: 0 40px;
+  text-align: center;
+  color: #fff;
+  font-size: 18px;
+  font-weight: 700;
+  line-height: 1.25;
+  pointer-events: none;
+  animation: fcIntroChromeReveal 3.1s 0.65s cubic-bezier(0.65, 0, 0.35, 1) both;
+}
+
+@media (max-width: 900px) {
+  .hero-note {
+    bottom: 28px;
+    padding: 0 28px;
+    font-size: 13px;
+    line-height: 1.35;
+  }
+}
+
 .hero-letter-stack {
   position: absolute;
   inset: 0;
@@ -524,12 +551,15 @@ body {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  /* no reveal and no dock: the bar is simply at the top from the first frame */
+  /* no reveal: the bar is simply at the top from the first frame */
   .site-nav {
     will-change: auto;
     animation: none;
     opacity: 1;
-    transform: none !important;
+  }
+  .hero-note {
+    animation: none;
+    opacity: 1;
   }
   .hero-intro-backdrop {
     animation: none;

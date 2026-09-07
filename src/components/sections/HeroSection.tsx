@@ -5,7 +5,7 @@ import * as THREE from "three";
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import { useHeroMedia } from "@/hooks/useMedia";
 import { useInView, useScrollEffect } from "@/hooks/useAnimation";
-import { HERO, HERO_LETTERS } from "@/data/site";
+import { FOOTER, HERO, HERO_LETTERS } from "@/data/site";
 import { assetPath } from "@/lib/assetPath";
 
 /**
@@ -296,7 +296,7 @@ export function StripeField(props: {
  * The scroll track, in screens: the wordmark holds for the first, hands over
  * to the tagline exactly one screen in, the years count up over the next
  * COUNT_SCREENS, and the last screen holds the finished line while the story
- * section scrolls up over it, carrying the nav bar up on its top edge.
+ * section scrolls up over it.
  */
 const HANDOVER_SCREENS = 1;
 const COUNT_SCREENS = 2;
@@ -417,6 +417,8 @@ export default function HeroSection() {
             years
           </span>
         </p>
+
+        <p className="hero-note font-jbmono">{FOOTER.note}</p>
       </div>
     </section>
   );
