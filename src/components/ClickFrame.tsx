@@ -7,9 +7,11 @@ const ICONS = {
   arrow: assetPath("/images/link-arrow.svg"),
 } as const;
 
+export type ClickFrameIcon = keyof typeof ICONS;
+
 interface ClickFrameProps {
   label: string;
-  icon: keyof typeof ICONS;
+  icon: ClickFrameIcon;
   href?: string;
   target?: "_self" | "_blank";
   /** save the href as a file with this name instead of navigating */

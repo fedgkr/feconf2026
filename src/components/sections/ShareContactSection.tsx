@@ -1,6 +1,6 @@
 "use client";
 
-import ClickFrame from "../ClickFrame";
+import ClickFrame, { type ClickFrameIcon } from "../ClickFrame";
 import MultiLine from "../MultiLine";
 import Reveal from "../Reveal";
 import SectionHeading from "../SectionHeading";
@@ -12,18 +12,20 @@ import { SHARE_CONTACT } from "@/data/site";
 const SHARE_CONTACT_COVER_RISE_DISTANCE_VH = 40;
 
 /**
- * Copies `href` instead of opening it, and answers with the lucide-style
- * confetti burst around the label.
+ * Copies `copyText` instead of opening `href`, and answers with the
+ * lucide-style confetti burst around the label.
  */
-function CopyLinkButton({
+function CopyButton({
   label,
   icon,
   href,
+  copyText,
   copiedText,
 }: {
   label: string;
-  icon: "link";
+  icon: ClickFrameIcon;
   href: string;
+  copyText: string;
   copiedText: string;
 }) {
   const { animate, confetti } = useConfetti();
@@ -37,7 +39,7 @@ function CopyLinkButton({
       animate={animate}
       onClick={(e) => {
         e.preventDefault();
-        navigator.clipboard?.writeText(href).then(confetti, () => {});
+        navigator.clipboard?.writeText(copyText).then(confetti, () => {});
       }}
     />
   );
@@ -86,10 +88,12 @@ export default function ShareContactSection() {
               )}
             </div>
             {button.copy ? (
-              <CopyLinkButton
+              <CopyButton
                 label={button.label}
                 icon={button.icon}
                 href={button.href}
+                // the share row copies the href it points at
+                copyText={button.copyText ?? button.href}
                 copiedText={button.copiedText}
               />
             ) : (
