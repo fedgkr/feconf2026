@@ -2,7 +2,10 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useScrollEffect } from "@/hooks/useAnimation";
-import { useTicketDday, useTicketOpen } from "@/hooks/useTicketDday";
+import {
+  useTicketBookingOpen,
+  useTicketLabel,
+} from "@/hooks/useTicketStatus";
 import { NAV_MENU, TICKET_LINK } from "@/data/site";
 
 /** The sections the menu highlights, in document order. */
@@ -78,11 +81,10 @@ export default function SiteNav() {
   // the bar starts over the hero, where the reference holds it white
   const [whiteInk, setWhiteInk] = useState(true);
   const [active, setActive] = useState<string>(NAV_MENU[0].id);
-  const dday = useTicketDday();
-  const ticketOpen = useTicketOpen();
-  // before the opening it counts down in place; after it, it becomes the
-  // external booking link
-  const ticket = ticketOpen ? TICKET_LINK.open : TICKET_LINK;
+  const ticketLabel = useTicketLabel();
+  // the counter keeps counting either way; only the destination changes
+  const booking = useTicketBookingOpen();
+  const ticketHref = booking ? TICKET_LINK.open.href : TICKET_LINK.href;
 
   useScrollEffect(() => {
     // one pixel under the bar's own bottom edge, so the surface it reports is
@@ -167,21 +169,15 @@ export default function SiteNav() {
           ))}
         </div>
         <a
-          href={ticket.href}
-          target={ticketOpen ? "_blank" : undefined}
-          rel={ticketOpen ? "noopener noreferrer" : undefined}
+          href={ticketHref}
+          target={booking ? "_blank" : undefined}
+          rel={booking ? "noopener noreferrer" : undefined}
           className={`font-display hidden text-[24px] font-semibold uppercase leading-[1.5] tracking-tight md:block ${
-            ticketOpen ? "cursor-pointer" : "cursor-default"
+            booking ? "cursor-pointer" : "cursor-default"
           }`}
           style={{ color: fg, transition: "color 0.4s ease" }}
         >
-          {ticket.label}
-          {!ticketOpen && (
-            <>
-              &nbsp;&nbsp;
-              <span suppressHydrationWarning>{dday}</span>
-            </>
-          )}
+          <span suppressHydrationWarning>{ticketLabel}</span>
         </a>
         <button
           className="ml-auto md:hidden"
@@ -224,21 +220,15 @@ export default function SiteNav() {
           </a>
         ))}
         <a
-          href={ticket.href}
-          target={ticketOpen ? "_blank" : undefined}
-          rel={ticketOpen ? "noopener noreferrer" : undefined}
+          href={ticketHref}
+          target={booking ? "_blank" : undefined}
+          rel={booking ? "noopener noreferrer" : undefined}
           onClick={() => setOpen(false)}
           className={`mt-2 block rounded-full bg-ink px-4 py-2 text-center text-sm font-semibold text-white ${
-            ticketOpen ? "cursor-pointer" : "cursor-default"
+            booking ? "cursor-pointer" : "cursor-default"
           }`}
         >
-          {ticket.label}
-          {!ticketOpen && (
-            <>
-              &nbsp;&nbsp;
-              <span suppressHydrationWarning>{dday}</span>
-            </>
-          )}
+          <span suppressHydrationWarning>{ticketLabel}</span>
         </a>
       </div>
     </header>

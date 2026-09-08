@@ -18,11 +18,25 @@ export const NAV_MENU = [
 /** Ticket opening moment the D-day counters count down to. */
 export const TICKET_OPEN_AT = "2026-10-01T10:00:00+09:00";
 
+/** Conference start; the counter switches to it once the ticket day passes. */
+export const CONFERENCE_AT = "2026-10-24T10:00:00+09:00";
+
 export const TICKET_LINK = {
-  label: "TICKET OPEN",
   href: "#tickets",
-  /** swapped in once TICKET_OPEN_AT has passed; opens in a new tab */
-  open: { label: "Ticket", href: "https://ticketa.co/event/t12vlmil" },
+  /** booking, live from TICKET_OPEN_AT until the conference day arrives */
+  open: { href: "https://ticketa.co/event/t12vlmil" },
+};
+
+/**
+ * Ticket counter copy. `useTicketStatus` appends the day number and both the
+ * nav and the footer uppercase it in CSS.
+ */
+export const TICKET_STATUS_LABEL = {
+  beforeOpen: "TICKET OPEN",
+  ticketDay: "TICKET OPEN D-DAY",
+  afterOpen: "OPEN",
+  conferenceDay: "D-DAY",
+  ended: "See you next year!",
 };
 
 /* ------------------------------- hero --------------------------------- */
