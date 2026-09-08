@@ -735,9 +735,12 @@ export const SHARE_CONTACT = {
         "기회를 공유하여 함께 배우고, 함께 성장해보세요.",
       ],
       button: {
-        label: "Share",
+        label: "Copy link",
         icon: "link" as const,
         href: "https://www.linkedin.com/groups/14618353/",
+        /** clicking copies `href` instead of opening it */
+        copy: true,
+        copiedText: "Copied!",
       },
     },
     {
