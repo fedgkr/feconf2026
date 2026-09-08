@@ -3348,6 +3348,11 @@ body {
 .fe-exp-grid {
   display: flex;
   overflow-x: auto;
+  /* `overflow-x: auto` alone blockifies overflow-y to auto, which makes this
+     row a vertical scroll container the wheel can latch onto — the page then
+     sits still while the pointer is over the cards. Same lock as
+     `.sched-overview-scroll`. */
+  overflow-y: hidden;
   scroll-snap-type: x mandatory;
   scroll-behavior: smooth;
   scrollbar-width: none;
