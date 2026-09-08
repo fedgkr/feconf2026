@@ -779,7 +779,7 @@ export const SHARE_CONTACT = {
       mail: "feconf@googlegroups.com",
       button: {
         label: "Copy mail",
-        icon: "arrow" as const,
+        icon: "copy" as const,
         href: "mailto:feconf@googlegroups.com",
         copy: true,
         /** the address itself, not the `mailto:` href */

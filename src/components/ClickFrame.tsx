@@ -1,6 +1,7 @@
 import { assetPath } from "@/lib/assetPath";
 
 const ICONS = {
+  copy: assetPath("/images/copy-icon.svg"),
   download: assetPath("/images/download-icon.svg"),
   external: assetPath("/images/external-link-icon.svg"),
   link: assetPath("/images/link-icon.svg"),
