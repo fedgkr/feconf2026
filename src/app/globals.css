@@ -3366,7 +3366,7 @@ body {
   scroll-snap-align: start;
   background: #0b0e1e;
   color: #fff;
-  cursor: pointer;
+  cursor: default;
 }
 
 .fe-exp-card img {
