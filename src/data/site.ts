@@ -699,12 +699,16 @@ export const BUDDY = {
     title: ["FORWARD EVER", "Forever Buddy"],
     subtitle: ["FEConf의 마스코트를 직접 키워보세요."],
   },
-  button: {
-    /** doubles as the copied command */
-    label: "npx feconf2026-buddy",
-    icon: "external" as const,
+  command: {
+    /** the prompt is decoration; only `text` reaches the clipboard */
+    prompt: "$",
+    text: "npx feconf2026-buddy",
+    copy: "COPY",
+    copied: "COPIED",
+  },
+  link: {
+    label: "View on npm",
     href: "https://www.npmjs.com/package/feconf2026-buddy",
-    copiedText: "Copied!",
   },
 };
 
