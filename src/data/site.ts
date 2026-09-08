@@ -621,8 +621,8 @@ export const SPONSORS_SECTION = {
         {
           name: "토스",
           src: assetPath("/images/sponsor-toss.png"),
-          width: 200,
-          height: 80,
+          width: 450,
+          height: 137,
         },
       ],
     },

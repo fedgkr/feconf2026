@@ -3684,8 +3684,8 @@ body {
   }
 
   .sponsor-logo.is-diamond {
-    width: min(150px, 40vw);
-    max-width: min(150px, 40vw);
+    width: min(130px, 40vw);
+    max-width: min(130px, 40vw);
     max-height: 56px;
   }
 
