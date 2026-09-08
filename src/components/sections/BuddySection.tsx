@@ -106,10 +106,10 @@ export default function BuddySection() {
               href={BUDDY.link.href}
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center gap-2 text-lg font-semibold tracking-[-0.08px] text-pink"
+              className="inline-flex items-center gap-2 text-lg font-semibold tracking-[-0.08px] text-navy"
             >
               {BUDDY.link.label}
-              {/* inline so the stroke follows the pink text colour */}
+              {/* inline so the stroke follows the text colour */}
               <svg
                 width="18"
                 height="18"
