@@ -681,9 +681,11 @@ export const BUDDY = {
     subtitle: ["FEConf의 마스코트를 직접 키워보고, 10주년 굿즈도 받아보세요."],
   },
   button: {
-    label: "View on npm",
+    /** doubles as the copied command */
+    label: "npx feconf2026-buddy",
     icon: "external" as const,
     href: "https://www.npmjs.com/package/feconf2026-buddy",
+    copiedText: "Copied!",
   },
 };
 

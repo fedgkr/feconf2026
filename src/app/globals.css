@@ -3832,6 +3832,8 @@ body {
   /* how far above the label the burst (and its text) starts; lucide's own
      value is -85%, which reads right on a label that stands alone */
   --confetti-burst-top: -85%;
+  /* shifts only the burst text sideways, leaving the dots where they are */
+  --confetti-label-indent: 0px;
 }
 
 .confetti-button:before,
@@ -3857,6 +3859,7 @@ body {
   color: rgb(var(--confetti-text-color) / 1);
   display: none;
   top: var(--confetti-burst-top);
+  text-indent: var(--confetti-label-indent);
   background-image:
     radial-gradient(circle, var(--confetti-color) 20%, transparent 20%),
     radial-gradient(
@@ -3927,9 +3930,10 @@ body {
 
 @keyframes topBubbles {
   0% {
-    /* lucide ramps the label in over the first 30%; here it is up at once so
-       it lands with the burst rather than after it */
-    color: rgb(var(--confetti-text-color) / 1);
+    /* the label runs shorter than the dots so it never outlives the burst,
+       with matching 150ms ramps: in by 15%, solid to 50%, gone by 65%
+       (lucide ramped in over 300ms and held the label to the very end) */
+    color: rgb(var(--confetti-text-color) / 0);
     background-position:
       5% 90%,
       10% 90%,
@@ -3941,10 +3945,11 @@ body {
       55% 90%,
       70% 90%;
   }
-  70% {
+  15% {
     color: rgb(var(--confetti-text-color) / 1);
   }
   50% {
+    color: rgb(var(--confetti-text-color) / 1);
     background-position:
       0% 80%,
       0% 20%,
@@ -3955,6 +3960,9 @@ body {
       50% 50%,
       65% 20%,
       90% 30%;
+  }
+  65% {
+    color: rgb(var(--confetti-text-color) / 0);
   }
   100% {
     background-position:
@@ -3982,6 +3990,12 @@ body {
    offset would print "Copied!" across the frame's top hairline */
 .click-btn-wrap .confetti-button {
   --confetti-burst-top: -150%;
+}
+
+/* the npm button's label is the long `npx ...` command, so its burst text
+   reads better nudged in from the left edge */
+.fc-buddy-copy .confetti-button {
+  --confetti-label-indent: 10px;
 }
 
 @keyframes bottomBubbles {
