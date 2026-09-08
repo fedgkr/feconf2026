@@ -3,10 +3,18 @@
 import { useSyncExternalStore } from "react";
 import { TICKET_OPEN_AT } from "@/data/site";
 
+function remainingMs() {
+  return new Date(TICKET_OPEN_AT).getTime() - Date.now();
+}
+
 function dday() {
-  const ms = new Date(TICKET_OPEN_AT).getTime() - Date.now();
+  const ms = remainingMs();
   if (ms <= 0) return "D-DAY";
   return `D-${Math.floor(ms / 86_400_000)}`;
+}
+
+function ticketOpen() {
+  return remainingMs() <= 0;
 }
 
 function subscribe(onChange: () => void) {
@@ -21,4 +29,14 @@ function subscribe(onChange: () => void) {
  */
 export function useTicketDday() {
   return useSyncExternalStore(subscribe, dday, dday);
+}
+
+/**
+ * Whether `TICKET_OPEN_AT` has passed, read on the same 60s tick as the
+ * D-day label, so a page left open flips within a minute of the opening.
+ * Hydration deliberately starts from `false`: the static export is built
+ * before the opening, and the store re-reads right after mount.
+ */
+export function useTicketOpen() {
+  return useSyncExternalStore(subscribe, ticketOpen, () => false);
 }

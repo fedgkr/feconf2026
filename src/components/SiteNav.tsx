@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useScrollEffect } from "@/hooks/useAnimation";
-import { useTicketDday } from "@/hooks/useTicketDday";
+import { useTicketDday, useTicketOpen } from "@/hooks/useTicketDday";
 import { NAV_MENU, TICKET_LINK } from "@/data/site";
 
 /** The sections the menu highlights, in document order. */
@@ -79,6 +79,10 @@ export default function SiteNav() {
   const [whiteInk, setWhiteInk] = useState(true);
   const [active, setActive] = useState<string>(NAV_MENU[0].id);
   const dday = useTicketDday();
+  const ticketOpen = useTicketOpen();
+  // before the opening it counts down in place; after it, it becomes the
+  // external booking link
+  const ticket = ticketOpen ? TICKET_LINK.open : TICKET_LINK;
 
   useScrollEffect(() => {
     // one pixel under the bar's own bottom edge, so the surface it reports is
@@ -163,12 +167,21 @@ export default function SiteNav() {
           ))}
         </div>
         <a
-          href={TICKET_LINK.href}
-          className="font-display hidden text-[24px] font-semibold uppercase leading-[1.5] tracking-tight md:block"
+          href={ticket.href}
+          target={ticketOpen ? "_blank" : undefined}
+          rel={ticketOpen ? "noopener noreferrer" : undefined}
+          className={`font-display hidden text-[24px] font-semibold uppercase leading-[1.5] tracking-tight md:block ${
+            ticketOpen ? "cursor-pointer" : "cursor-default"
+          }`}
           style={{ color: fg, transition: "color 0.4s ease" }}
         >
-          {TICKET_LINK.label}&nbsp;&nbsp;
-          <span suppressHydrationWarning>{dday}</span>
+          {ticket.label}
+          {!ticketOpen && (
+            <>
+              &nbsp;&nbsp;
+              <span suppressHydrationWarning>{dday}</span>
+            </>
+          )}
         </a>
         <button
           className="ml-auto md:hidden"
@@ -211,12 +224,21 @@ export default function SiteNav() {
           </a>
         ))}
         <a
-          href={TICKET_LINK.href}
+          href={ticket.href}
+          target={ticketOpen ? "_blank" : undefined}
+          rel={ticketOpen ? "noopener noreferrer" : undefined}
           onClick={() => setOpen(false)}
-          className="mt-2 block rounded-full bg-ink px-4 py-2 text-center text-sm font-semibold text-white"
+          className={`mt-2 block rounded-full bg-ink px-4 py-2 text-center text-sm font-semibold text-white ${
+            ticketOpen ? "cursor-pointer" : "cursor-default"
+          }`}
         >
-          {TICKET_LINK.label}&nbsp;&nbsp;
-          <span suppressHydrationWarning>{dday}</span>
+          {ticket.label}
+          {!ticketOpen && (
+            <>
+              &nbsp;&nbsp;
+              <span suppressHydrationWarning>{dday}</span>
+            </>
+          )}
         </a>
       </div>
     </header>
