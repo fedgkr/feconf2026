@@ -7,14 +7,20 @@ const ICONS = {
   arrow: assetPath("/images/link-arrow.svg"),
 } as const;
 
+export type ClickFrameIcon = keyof typeof ICONS;
+
 interface ClickFrameProps {
   label: string;
-  icon: keyof typeof ICONS;
+  icon: ClickFrameIcon;
   href?: string;
   target?: "_self" | "_blank";
   /** save the href as a file with this name instead of navigating */
   download?: string;
   onClick?: (e: React.MouseEvent<HTMLAnchorElement>) => void;
+  /** wraps the label as a `.confetti-button` carrying this burst label */
+  confettiText?: string;
+  /** plays the burst while true — see hooks/useConfetti */
+  animate?: boolean;
 }
 
 /**
@@ -30,6 +36,8 @@ export default function ClickFrame({
   target,
   download,
   onClick,
+  confettiText,
+  animate = false,
 }: ClickFrameProps) {
   // external destinations (npm, socials) open in a new tab unless the
   // caller pins a target explicitly
@@ -55,7 +63,18 @@ export default function ClickFrame({
           onClick={onClick}
           className="absolute left-[38px] right-[38px] top-[39px] z-40 flex h-[51px] items-center justify-center gap-2.5 text-lg font-semibold tracking-[-0.08px] text-navy"
         >
-          {label}
+          {confettiText ? (
+            <span
+              // inline-flex so the burst's percentage offsets resolve against
+              // a real box instead of the inline text's font metrics
+              className={`confetti-button inline-flex ${animate ? "animate" : ""}`}
+              data-confetti-text={confettiText}
+            >
+              {label}
+            </span>
+          ) : (
+            label
+          )}
           <img src={ICONS[icon]} alt="" loading="lazy" className="size-[18px]" />
         </a>
       </div>

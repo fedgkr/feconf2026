@@ -3,8 +3,8 @@
 import { Canvas } from "@react-three/fiber";
 import { useHeroMedia } from "@/hooks/useMedia";
 import { useInView } from "@/hooks/useAnimation";
-import { useTicketDday } from "@/hooks/useTicketDday";
-import { FOOTER, TICKET_LINK } from "@/data/site";
+import { useTicketLabel } from "@/hooks/useTicketStatus";
+import { FOOTER } from "@/data/site";
 import { StripeField, useStripeDpr } from "./HeroSection";
 
 /**
@@ -13,7 +13,7 @@ import { StripeField, useStripeDpr } from "./HeroSection";
  */
 export default function FooterSection() {
   const media = useHeroMedia();
-  const dday = useTicketDday();
+  const ticketLabel = useTicketLabel();
   const dpr = useStripeDpr();
   const { ref: footerRef, inView } = useInView<HTMLElement>({
     threshold: 0.01,
@@ -42,15 +42,9 @@ export default function FooterSection() {
         <p className="font-jbmono absolute left-16 right-[424px] top-1/2 -translate-y-1/2 text-[18px] font-bold leading-[1.25] text-white max-[900px]:inset-x-7 max-[900px]:top-[42%] max-[900px]:text-center max-[900px]:text-[13px] max-[900px]:leading-[1.35]">
         {FOOTER.note}
         </p>
-        <a
-          href={TICKET_LINK.href}
-          className="absolute right-16 top-1/2 -translate-y-1/2 whitespace-nowrap text-[24px] font-semibold uppercase leading-[1.1] text-white transition-opacity duration-200 hover:opacity-70 max-[900px]:inset-x-7 max-[900px]:top-[62%] max-[900px]:text-center max-[900px]:text-[20px]"
-        >
-          {TICKET_LINK.label}{" "}
-          <span className="font-extrabold" suppressHydrationWarning>
-            {dday}
-          </span>
-        </a>
+        <p className="absolute right-16 top-1/2 -translate-y-1/2 whitespace-nowrap text-[24px] font-semibold uppercase leading-[1.1] text-white max-[900px]:inset-x-7 max-[900px]:top-[62%] max-[900px]:text-center max-[900px]:text-[20px]">
+          <span suppressHydrationWarning>{ticketLabel}</span>
+        </p>
       </div>
     </footer>
   );

@@ -1,14 +1,49 @@
 "use client";
 
-import ClickFrame from "../ClickFrame";
+import ClickFrame, { type ClickFrameIcon } from "../ClickFrame";
 import MultiLine from "../MultiLine";
 import Reveal from "../Reveal";
 import SectionHeading from "../SectionHeading";
 import { useCoverRise } from "@/hooks/useAnimation";
+import { useConfetti } from "@/hooks/useConfetti";
 import { SHARE_CONTACT } from "@/data/site";
 
 /** Halves the default 80vh so the gap after buddy reads shorter. */
 const SHARE_CONTACT_COVER_RISE_DISTANCE_VH = 40;
+
+/**
+ * Copies `copyText` instead of opening `href`, and answers with the
+ * lucide-style confetti burst around the label.
+ */
+function CopyButton({
+  label,
+  icon,
+  href,
+  copyText,
+  copiedText,
+}: {
+  label: string;
+  icon: ClickFrameIcon;
+  href: string;
+  copyText: string;
+  copiedText: string;
+}) {
+  const { animate, confetti } = useConfetti();
+
+  return (
+    <ClickFrame
+      label={label}
+      icon={icon}
+      href={href}
+      confettiText={copiedText}
+      animate={animate}
+      onClick={(e) => {
+        e.preventDefault();
+        navigator.clipboard?.writeText(copyText).then(confetti, () => {});
+      }}
+    />
+  );
+}
 
 function RowBody({ lines }: { lines: readonly string[] }) {
   return (
@@ -52,7 +87,22 @@ export default function ShareContactSection() {
                 </p>
               )}
             </div>
-            <ClickFrame label={button.label} icon={button.icon} href={button.href} />
+            {button.copy ? (
+              <CopyButton
+                label={button.label}
+                icon={button.icon}
+                href={button.href}
+                // the share row copies the href it points at
+                copyText={button.copyText ?? button.href}
+                copiedText={button.copiedText}
+              />
+            ) : (
+              <ClickFrame
+                label={button.label}
+                icon={button.icon}
+                href={button.href}
+              />
+            )}
           </Reveal>
         ))}
       </div>

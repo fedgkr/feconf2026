@@ -16,9 +16,28 @@ export const NAV_MENU = [
 ] as const;
 
 /** Ticket opening moment the D-day counters count down to. */
-export const TICKET_OPEN_AT = "2026-10-01T00:00:00+09:00";
+export const TICKET_OPEN_AT = "2026-10-01T10:00:00+09:00";
 
-export const TICKET_LINK = { label: "TICKET OPEN", href: "#tickets" };
+/** Conference start; the counter switches to it once the ticket day passes. */
+export const CONFERENCE_AT = "2026-10-24T10:00:00+09:00";
+
+export const TICKET_LINK = {
+  href: "#tickets",
+  /** booking, live from TICKET_OPEN_AT until the conference day arrives */
+  open: { href: "https://ticketa.co/event/t12vlmil" },
+};
+
+/**
+ * Ticket counter copy. `useTicketStatus` appends the day number and both the
+ * nav and the footer uppercase it in CSS.
+ */
+export const TICKET_STATUS_LABEL = {
+  beforeOpen: "TICKET OPEN",
+  ticketDay: "TICKET OPEN D-DAY",
+  afterOpen: "OPEN",
+  conferenceDay: "D-DAY",
+  ended: "See you next year!",
+};
 
 /* ------------------------------- hero --------------------------------- */
 
@@ -621,8 +640,8 @@ export const SPONSORS_SECTION = {
         {
           name: "토스",
           src: assetPath("/images/sponsor-toss.png"),
-          width: 200,
-          height: 80,
+          width: 450,
+          height: 137,
         },
       ],
     },
@@ -678,11 +697,17 @@ export const SPONSORS_SECTION = {
 export const BUDDY = {
   heading: {
     title: ["FORWARD EVER", "Forever Buddy"],
-    subtitle: ["FEConf의 마스코트를 직접 키워보고, 10주년 굿즈도 받아보세요."],
+    subtitle: ["FEConf의 마스코트를 직접 키워보세요."],
   },
-  button: {
+  command: {
+    /** the prompt is decoration; only `text` reaches the clipboard */
+    prompt: "$",
+    text: "npx feconf2026-buddy",
+    copy: "COPY",
+    copied: "COPIED",
+  },
+  link: {
     label: "View on npm",
-    icon: "external" as const,
     href: "https://www.npmjs.com/package/feconf2026-buddy",
   },
 };
@@ -735,9 +760,12 @@ export const SHARE_CONTACT = {
         "기회를 공유하여 함께 배우고, 함께 성장해보세요.",
       ],
       button: {
-        label: "Share",
+        label: "Copy link",
         icon: "link" as const,
         href: "https://www.linkedin.com/groups/14618353/",
+        /** clicking copies `href` instead of opening it */
+        copy: true,
+        copiedText: "Copied!",
       },
     },
     {
@@ -750,9 +778,13 @@ export const SHARE_CONTACT = {
       ],
       mail: "feconf@googlegroups.com",
       button: {
-        label: "Mail",
+        label: "Copy mail",
         icon: "arrow" as const,
         href: "mailto:feconf@googlegroups.com",
+        copy: true,
+        /** the address itself, not the `mailto:` href */
+        copyText: "feconf@googlegroups.com",
+        copiedText: "Copied!",
       },
     },
   ],

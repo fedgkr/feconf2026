@@ -212,6 +212,67 @@ body {
 }
 
 /* ---------------------------------------------------------------- */
+/* Command box: the same crosshair frame, its interior split into the */
+/* filled command cell and the COPY cell                              */
+/* ---------------------------------------------------------------- */
+
+.fc-cmd {
+  --cmd-inset: 38px;
+  --cmd-copy-w: 100px;
+  position: relative;
+  width: 590px;
+  max-width: 92vw;
+  height: 129px;
+}
+
+/* both cells sit between the frame's hairlines, like the action button */
+.fc-cmd-fill,
+.fc-cmd-copy {
+  position: absolute;
+  top: 39px;
+  z-index: 40;
+  display: flex;
+  height: 51px;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  color: var(--color-navy);
+  white-space: nowrap;
+}
+
+.fc-cmd-fill {
+  left: var(--cmd-inset);
+  right: calc(var(--cmd-inset) + var(--cmd-copy-w));
+  gap: 10px;
+  background: rgb(16 24 61 / 0.05);
+}
+
+.fc-cmd-copy {
+  right: var(--cmd-inset);
+  width: var(--cmd-copy-w);
+  cursor: pointer;
+  letter-spacing: 0.4px;
+}
+
+@media (max-width: 639px) {
+  .fc-cmd {
+    --cmd-inset: 16px;
+    --cmd-copy-w: 76px;
+    width: 100%;
+    max-width: none;
+  }
+
+  .fc-cmd-fill,
+  .fc-cmd-copy {
+    font-size: 13px;
+  }
+
+  .fc-cmd-fill {
+    gap: 8px;
+  }
+}
+
+/* ---------------------------------------------------------------- */
 /* Hero intro logo                                                    */
 /* ---------------------------------------------------------------- */
 
@@ -3348,6 +3409,11 @@ body {
 .fe-exp-grid {
   display: flex;
   overflow-x: auto;
+  /* `overflow-x: auto` alone blockifies overflow-y to auto, which makes this
+     row a vertical scroll container the wheel can latch onto — the page then
+     sits still while the pointer is over the cards. Same lock as
+     `.sched-overview-scroll`. */
+  overflow-y: hidden;
   scroll-snap-type: x mandatory;
   scroll-behavior: smooth;
   scrollbar-width: none;
@@ -3366,7 +3432,7 @@ body {
   scroll-snap-align: start;
   background: #0b0e1e;
   color: #fff;
-  cursor: pointer;
+  cursor: default;
 }
 
 .fe-exp-card img {
@@ -3684,8 +3750,8 @@ body {
   }
 
   .sponsor-logo.is-diamond {
-    width: min(150px, 40vw);
-    max-width: min(150px, 40vw);
+    width: min(130px, 40vw);
+    max-width: min(130px, 40vw);
     max-height: 56px;
   }
 
@@ -3800,4 +3866,225 @@ body {
   cursor: grabbing;
   z-index: 5;
   filter: drop-shadow(0 14px 18px rgb(16 24 61 / 0.18));
+}
+
+/* ---------------------------------------------------------------- */
+/* Copy confetti (port of lucide.dev's confetti.css)                  */
+/* ---------------------------------------------------------------- */
+
+/*
+ * Ported 1:1 from lucide-icons/lucide,
+ * docs/.vitepress/theme/components/icons/confetti.css — the particles are
+ * radial-gradient background layers whose positions travel outward and whose
+ * sizes collapse to 0 at the end, and `::before` doubles as the label taken
+ * from `data-confetti-text`. Two knobs replace lucide's theme vars:
+ * `--confetti-color` (particles) and `--confetti-text-color` (an rgb triplet,
+ * because the keyframes animate its alpha).
+ *
+ * Caveat when applying it: the pseudo-elements sit at `z-index: -1000`, so an
+ * ancestor that paints its own background above them (a stacking context with
+ * a filled background) hides the burst.
+ */
+.confetti-button {
+  cursor: pointer;
+  position: relative;
+  --confetti-color: var(--color-pink);
+  --confetti-text-color: 16 24 61;
+  /* how far above the label the burst (and its text) starts; lucide's own
+     value is -85%, which reads right on a label that stands alone */
+  --confetti-burst-top: -85%;
+}
+
+.confetti-button:before,
+.confetti-button:after {
+  position: absolute;
+  content: "";
+  display: block;
+  width: 140%;
+  max-width: 160px;
+  height: 100%;
+  left: -20%;
+  z-index: -1000;
+  transition: all ease-in-out 0.5s;
+  background-repeat: no-repeat;
+  font-size: 14px;
+}
+
+.confetti-button:before {
+  content: attr(data-confetti-text);
+  letter-spacing: 1px;
+  font-weight: bold;
+  transform: rotate(-8deg);
+  color: rgb(var(--confetti-text-color) / 1);
+  display: none;
+  top: var(--confetti-burst-top);
+  background-image:
+    radial-gradient(circle, var(--confetti-color) 20%, transparent 20%),
+    radial-gradient(
+      circle,
+      transparent 20%,
+      var(--confetti-color) 20%,
+      transparent 30%
+    ),
+    radial-gradient(circle, var(--confetti-color) 20%, transparent 20%),
+    radial-gradient(circle, var(--confetti-color) 20%, transparent 20%),
+    radial-gradient(
+      circle,
+      transparent 10%,
+      var(--confetti-color) 15%,
+      transparent 20%
+    ),
+    radial-gradient(circle, var(--confetti-color) 20%, transparent 20%),
+    radial-gradient(circle, var(--confetti-color) 20%, transparent 20%),
+    radial-gradient(circle, var(--confetti-color) 20%, transparent 20%),
+    radial-gradient(circle, var(--confetti-color) 20%, transparent 20%);
+  background-size:
+    10% 10%,
+    20% 20%,
+    15% 15%,
+    20% 20%,
+    18% 18%,
+    10% 10%,
+    15% 15%,
+    10% 10%,
+    18% 18%;
+}
+
+.confetti-button:after {
+  display: none;
+  bottom: -75%;
+  background-image:
+    radial-gradient(circle, var(--confetti-color) 20%, transparent 20%),
+    radial-gradient(circle, var(--confetti-color) 20%, transparent 20%),
+    radial-gradient(
+      circle,
+      transparent 10%,
+      var(--confetti-color) 15%,
+      transparent 20%
+    ),
+    radial-gradient(circle, var(--confetti-color) 20%, transparent 20%),
+    radial-gradient(circle, var(--confetti-color) 20%, transparent 20%),
+    radial-gradient(circle, var(--confetti-color) 20%, transparent 20%),
+    radial-gradient(circle, var(--confetti-color) 20%, transparent 20%);
+  background-size:
+    15% 15%,
+    20% 20%,
+    18% 18%,
+    20% 20%,
+    15% 15%,
+    10% 10%,
+    20% 20%;
+}
+
+.confetti-button.animate:before {
+  display: block;
+  animation: topBubbles ease-in-out 1s forwards;
+}
+
+.confetti-button.animate:after {
+  display: block;
+  animation: bottomBubbles ease-in-out 1s forwards;
+}
+
+@keyframes topBubbles {
+  0% {
+    /* the label runs shorter than the dots so it never outlives the burst,
+       with matching 150ms ramps: in by 15%, solid to 50%, gone by 65%
+       (lucide ramped in over 300ms and held the label to the very end) */
+    color: rgb(var(--confetti-text-color) / 0);
+    background-position:
+      5% 90%,
+      10% 90%,
+      10% 90%,
+      15% 90%,
+      25% 90%,
+      25% 90%,
+      40% 90%,
+      55% 90%,
+      70% 90%;
+  }
+  15% {
+    color: rgb(var(--confetti-text-color) / 1);
+  }
+  50% {
+    color: rgb(var(--confetti-text-color) / 1);
+    background-position:
+      0% 80%,
+      0% 20%,
+      10% 40%,
+      20% 0%,
+      30% 30%,
+      22% 50%,
+      50% 50%,
+      65% 20%,
+      90% 30%;
+  }
+  65% {
+    color: rgb(var(--confetti-text-color) / 0);
+  }
+  100% {
+    background-position:
+      0% 70%,
+      0% 10%,
+      10% 30%,
+      20% -10%,
+      30% 20%,
+      22% 40%,
+      50% 40%,
+      65% 10%,
+      90% 20%;
+    background-size:
+      0% 0%,
+      0% 0%,
+      0% 0%,
+      0% 0%,
+      0% 0%,
+      0% 0%;
+    color: rgb(var(--confetti-text-color) / 0);
+  }
+}
+
+/* the crosshair button centres its label inside a 51px box, so the default
+   offset would print "Copied!" across the frame's top hairline */
+.click-btn-wrap .confetti-button {
+  --confetti-burst-top: -150%;
+}
+
+@keyframes bottomBubbles {
+  0% {
+    background-position:
+      10% -10%,
+      30% 10%,
+      55% -10%,
+      70% -10%,
+      85% -10%,
+      70% -10%,
+      70% 0%;
+  }
+  50% {
+    background-position:
+      0% 80%,
+      20% 80%,
+      45% 60%,
+      60% 100%,
+      75% 70%,
+      95% 60%,
+      105% 0%;
+  }
+  100% {
+    background-position:
+      0% 90%,
+      20% 90%,
+      45% 70%,
+      60% 110%,
+      75% 80%,
+      95% 70%,
+      110% 10%;
+    background-size:
+      0% 0%,
+      0% 0%,
+      0% 0%,
+      0% 0%,
+      0% 0%;
+  }
 }
