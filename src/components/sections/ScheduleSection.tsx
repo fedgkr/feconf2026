@@ -1428,12 +1428,15 @@ export default function ScheduleSection() {
           <TimeScheduleView />
         </div>
         <Reveal delay={200} className="sched-download-cta flex justify-center">
-          <ClickFrame
-            label={SCHEDULE.download.label}
-            href={SCHEDULE.download.href}
-            icon="external"
-            target="_blank"
-          />
+          <div className="sched-download-stack">
+            <ClickFrame
+              label={SCHEDULE.download.label}
+              href={SCHEDULE.download.href}
+              icon="external"
+              target="_blank"
+            />
+            <p className="sched-download-note">*스케줄은 추후 변경될 수 있습니다</p>
+          </div>
         </Reveal>
       </div>
     </section>

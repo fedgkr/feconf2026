@@ -404,6 +404,28 @@ body {
 
 /* The bar joins the page on the hero's own intro clock: hidden while the logo
  * clusters gather, in by the time the flat backdrop has faded off the stripes. */
+.hero-event-note {
+  position: absolute;
+  inset-inline: 16px;
+  bottom: max(32px, env(safe-area-inset-bottom));
+  z-index: 5;
+  margin: 0;
+  color: #fff;
+  font-size: clamp(7px, 2.1vw, 18px);
+  font-weight: 700;
+  line-height: 1.25;
+  text-align: center;
+  white-space: nowrap;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.3s ease, visibility 0.3s;
+}
+
+.site-nav[data-at-top="true"] ~ main .hero-event-note {
+  opacity: 1;
+  visibility: visible;
+}
+
 .site-nav {
   will-change: transform, opacity;
   animation: fcIntroChromeReveal 3.1s 0.65s cubic-bezier(0.65, 0, 0.35, 1) both;
@@ -426,6 +448,9 @@ body {
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .hero-event-note {
+    transition: none;
+  }
   /* no reveal and no dock: the bar is simply at the top from the first frame */
   .site-nav {
     will-change: auto;
@@ -816,6 +841,20 @@ body {
   margin-top: var(--sched-download-gap);
 }
 
+.sched-download-stack {
+  display: flex;
+  align-items: center;
+  flex-direction: column;
+}
+
+.sched-download-note {
+  margin: 12px 0 0;
+  color: rgb(16 24 61 / 0.44);
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.4;
+}
+
 .sched-overview-wrap {
   width: min(1366px, calc(100vw - 48px));
   margin-right: calc((100% - min(1366px, calc(100vw - 48px))) / 2);
@@ -982,6 +1021,7 @@ body {
   font-size: 14px;
   font-weight: 800;
   line-height: 1.42;
+  white-space: pre-line;
   word-break: keep-all;
   transition: color 260ms ease;
 }
@@ -2544,6 +2584,7 @@ body {
 .sched-list-detail-audience {
   color: rgb(16 24 61 / 0.72);
   font-weight: 800;
+  white-space: pre-line;
 }
 
 .sched-list-detail-tags {
