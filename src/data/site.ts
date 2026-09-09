@@ -550,6 +550,7 @@ export const SCHEDULE = {
     // regenerate the PNG whenever the SVG is regenerated
     label: "FullSchedule.png",
     href: assetPath("/images/generated/full-schedule-overview.png"),
+    notice: "*스케줄은 추후 변경될 수 있습니다",
   },
 };
 
@@ -656,6 +657,18 @@ export const SPONSORS_SECTION = {
           height: 157,
         },
         { name: "당근", src: assetPath("/images/sponsor-2.svg") },
+        {
+          name: "피그마",
+          src: assetPath("/images/sponsor-figma.svg"),
+          width: 624,
+          height: 247,
+        },
+        {
+          name: "와이스",
+          src: assetPath("/images/sponsor-wyyyes.svg"),
+          width: 1000,
+          height: 219,
+        },
       ],
     },
     {

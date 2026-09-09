@@ -1023,8 +1023,18 @@ body {
 
 .sched-download-cta {
   min-height: var(--sched-download-height);
-  align-items: flex-start;
+  flex-direction: column;
+  align-items: center;
   margin-top: var(--sched-download-gap);
+}
+
+.sched-download-note {
+  width: min(433px, 100%);
+  margin-top: 32px;
+  color: rgb(16 24 61 / 0.42);
+  font-size: 16px;
+  line-height: 1.5;
+  text-align: center;
 }
 
 .sched-overview-wrap {
@@ -3609,8 +3619,13 @@ body {
   grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
-.sponsor-tier-row.is-platinum .sponsor-tier-logos.is-count-2 {
-  column-gap: clamp(18px, 2.8vw, 48px);
+.sponsor-tier-logos.is-count-4 {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, max-content));
+}
+
+.sponsor-tier-row.is-platinum .sponsor-tier-logos.is-count-4 {
+  column-gap: clamp(18px, 2.8vw, 28px);
 }
 
 .sponsor-tier-row.is-special .sponsor-tier-logos.is-count-2 {
@@ -3666,7 +3681,7 @@ body {
   text-align: center;
 }
 
-@media (max-width: 639px) {
+@media (max-width: 965px) {
   .sponsor-section-heading {
     padding-left: 0;
     padding-right: 0;
@@ -3680,8 +3695,9 @@ body {
   }
 
   .sponsor-tier-row {
-    grid-template-columns: max-content minmax(12px, 1fr) minmax(0, max-content);
+    grid-template-columns: max-content minmax(12px, 1fr);
     column-gap: 10px;
+    row-gap: 18px;
   }
 
   .sponsor-tier-row + .sponsor-tier-row {
@@ -3710,17 +3726,25 @@ body {
   }
 
   .sponsor-tier-logos {
+    grid-column: 1 / -1;
+    display: grid;
+    width: 100%;
     gap: 10px;
-    justify-self: end;
+    justify-self: stretch;
     border-top: 0;
   }
 
-  .sponsor-tier-logos.is-count-2 {
+  .sponsor-tier-logos.is-count-1 {
     grid-template-columns: minmax(0, 1fr);
   }
 
-  .sponsor-tier-row.is-platinum .sponsor-tier-logos.is-count-2 {
-    column-gap: 8px;
+  .sponsor-tier-logos.is-count-2,
+  .sponsor-tier-logos.is-count-4 {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .sponsor-tier-row.is-platinum .sponsor-tier-logos.is-count-4 {
+    gap: 12px 8px;
   }
 
   .sponsor-tier-row.is-special .sponsor-tier-logos.is-count-2 {
