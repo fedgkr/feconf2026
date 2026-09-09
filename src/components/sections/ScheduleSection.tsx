@@ -97,21 +97,15 @@ const TIME_SCHEDULE_SPACES: Array<{
   {
     id: "lightning",
     title: "Conference A",
-    badge: "Talk 1 · Talk 2",
-    halls: ["Talk 1", "Talk 2"],
-  },
-  {
-    id: "networking",
-    title: "Networking",
-    badge: "Networking",
-    halls: ["Networking"],
+    badge: "TALK 1 · TALK 2 · NETWORKING",
+    halls: ["Talk 1", "Talk 2", "Networking"],
   },
 ];
 const TIMETABLE_START = 11 * 60;
 const TIMETABLE_END = 17 * 60;
 const TIMETABLE_STEP = 5;
 const TIMETABLE_SLOTS = (TIMETABLE_END - TIMETABLE_START) / TIMETABLE_STEP;
-const TIMEFLOW_TICK_STEP = 5;
+const TIMEFLOW_TICK_STEP = 12;
 const TIMEFLOW_GHOST_TICK_COUNT = 24;
 
 function fadeIn(inView: boolean, delay: number): CSSProperties {
