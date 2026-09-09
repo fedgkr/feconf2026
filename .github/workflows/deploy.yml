@@ -2,8 +2,7 @@ name: Deploy Next.js site to Pages
 
 on:
   push:
-    # Remove feature/github-pages after verifying the first deployment.
-    branches: [main, feature/github-pages, feature/fix-design]
+    branches: [main]
   workflow_dispatch:
 
 permissions:
@@ -17,6 +16,7 @@ concurrency:
 
 jobs:
   build:
+    if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -39,6 +39,7 @@ jobs:
           path: ./out
 
   deploy:
+    if: github.ref == 'refs/heads/main'
     needs: build
     runs-on: ubuntu-latest
     environment:
