@@ -550,6 +550,7 @@ export const SCHEDULE = {
     // regenerate the PNG whenever the SVG is regenerated
     label: "FullSchedule.png",
     href: assetPath("/images/generated/full-schedule-overview.png"),
+    notice: "*스케줄은 추후 변경될 수 있습니다",
   },
 };
 
@@ -639,9 +640,9 @@ export const SPONSORS_SECTION = {
       sponsors: [
         {
           name: "토스",
-          src: assetPath("/images/sponsor-toss.png"),
-          width: 450,
-          height: 137,
+          src: assetPath("/images/sponsor-toss.svg"),
+          width: 659,
+          height: 200,
         },
       ],
     },
@@ -656,6 +657,18 @@ export const SPONSORS_SECTION = {
           height: 157,
         },
         { name: "당근", src: assetPath("/images/sponsor-2.svg") },
+        {
+          name: "피그마",
+          src: assetPath("/images/sponsor-figma.svg"),
+          width: 624,
+          height: 247,
+        },
+        {
+          name: "와이스",
+          src: assetPath("/images/sponsor-wyyyes.svg"),
+          width: 1000,
+          height: 219,
+        },
       ],
     },
     {
@@ -664,9 +677,9 @@ export const SPONSORS_SECTION = {
       sponsors: [
         {
           name: "티켓타코",
-          src: assetPath("/images/sponsor-ticketaco.png"),
-          width: 520,
-          height: 208,
+          src: assetPath("/images/sponsor-ticketaco.svg"),
+          width: 1251,
+          height: 415,
         },
         {
           name: "제이펍",

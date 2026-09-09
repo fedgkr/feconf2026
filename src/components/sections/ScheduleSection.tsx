@@ -1611,6 +1611,7 @@ export default function ScheduleSection() {
             icon="download"
             download="FullSchedule.png"
           />
+          <p className="sched-download-note">{SCHEDULE.download.notice}</p>
         </Reveal>
       </div>
     </section>
