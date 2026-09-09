@@ -165,6 +165,9 @@ export default function StorySection() {
   const [carOn, setCarOn] = useState(false);
   // when the centre frame started drawing; the first phrase waits it out
   const runAt = useRef(0);
+  const hasEnteredStage = useRef(false);
+  const heroExitHandled = useRef(false);
+  const restartActorsOnReentry = useRef(false);
   // fully unlocked segments; the full length also represents lock stand-down
   const unlockedSegmentCount = useRef(0);
   // the segment the raw scroll offset points at, before the lock gate below
@@ -275,6 +278,16 @@ export default function StorySection() {
     if (!el) return;
     const rect = el.getBoundingClientRect();
     const vh = window.innerHeight;
+    const fullyInHero = rect.top >= vh;
+    if (rect.top <= 0) hasEnteredStage.current = true;
+    if (hasEnteredStage.current && fullyInHero && !heroExitHandled.current) {
+      heroExitHandled.current = true;
+      restartActorsOnReentry.current = true;
+      setShownPhase(-1);
+      setCarOn(false);
+    } else if (!fullyInHero) {
+      heroExitHandled.current = false;
+    }
     const { travel, segment } = getScrollMetrics(el.offsetHeight, stableVh());
     let along = -rect.top;
     const desktopResize = resized && allowsHeightResize();
@@ -376,7 +389,9 @@ export default function StorySection() {
           snailsHiddenAt.current === 0
             ? Infinity
             : performance.now() - snailsHiddenAt.current;
-        if (hiddenFor > SNAIL_CLEARED_MS) setSnailEpoch((e) => e + 1);
+        if (restartActorsOnReentry.current || hiddenFor > SNAIL_CLEARED_MS)
+          setSnailEpoch((e) => e + 1);
+        restartActorsOnReentry.current = false;
       }
       setShownPhase(phase);
     }, delay);
@@ -389,8 +404,11 @@ export default function StorySection() {
   useEffect(() => {
     const timer = setTimeout(
       () => setCarOn(shownPhase === 0),
-      // the wait applies only to returns; the first entrance is with the text
-      shownPhase === 0 && snailsHiddenAt.current !== 0 ? CAR_RETURN_MS : 0,
+      shownPhase === 0 &&
+        snailsHiddenAt.current !== 0 &&
+        !restartActorsOnReentry.current
+        ? CAR_RETURN_MS
+        : 0,
     );
     return () => clearTimeout(timer);
   }, [shownPhase]);
