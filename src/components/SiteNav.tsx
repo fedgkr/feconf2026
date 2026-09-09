@@ -37,10 +37,15 @@ function spans(el: Element | null, y: number) {
  */
 function jumpTo(e: React.MouseEvent, href: string) {
   if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
-  if (!href.startsWith("#") || href === "#") return;
-  const el = document.querySelector<HTMLElement>(href);
+  if (!href.startsWith("#")) return;
+  const el = document.querySelector<HTMLElement>(href === "#" ? "#home" : href);
   if (!el) return;
   e.preventDefault();
+  const focusTarget = el.querySelector<HTMLElement>("h1, h2") ?? el;
+  if (focusTarget.offsetHeight > 1) {
+    if (!focusTarget.hasAttribute("tabindex")) focusTarget.tabIndex = -1;
+    focusTarget.focus({ preventScroll: true });
+  }
   const style = getComputedStyle(el);
   const matrix = new DOMMatrixReadOnly(style.transform);
   // manual scrolls skip CSS scroll-margin, so honour it here: targets whose
@@ -63,6 +68,7 @@ function jumpTo(e: React.MouseEvent, href: string) {
  */
 export default function SiteNav() {
   const header = useRef<HTMLElement>(null);
+  const menuToggle = useRef<HTMLButtonElement>(null);
   const [open, setOpen] = useState(false);
   // The bar row paints white the instant the menu opens (a fading row
   // visibly split from the already-white panel). On close the row fades on
@@ -127,6 +133,10 @@ export default function SiteNav() {
   const whiteText = whiteInk && menuPaint === "off";
   const fg = whiteText ? "rgb(255, 255, 255)" : "rgb(21, 21, 21)";
   const dim = whiteText ? "rgba(255, 255, 255, 0.35)" : "rgba(21, 21, 21, 0.35)";
+  const closeMenu = () => {
+    setOpen(false);
+    menuToggle.current?.focus({ preventScroll: true });
+  };
 
   // solid white while the menu is open or closing: over the hero the row is
   // otherwise transparent and the panel looked detached — translucency let
@@ -146,6 +156,12 @@ export default function SiteNav() {
           menuPaint === "on" ? "rgb(255, 255, 255)" : "var(--fe-nav-bg, transparent)",
         transition: bgTransition,
       }}
+      onKeyDown={(e) => {
+        if (open && e.key === "Escape") {
+          e.preventDefault();
+          closeMenu();
+        }
+      }}
       onTransitionEnd={(e) => {
         if (e.propertyName === "background-color" && menuPaint === "fade")
           setMenuPaint("off");
@@ -161,6 +177,7 @@ export default function SiteNav() {
               key={id}
               href={href}
               onClick={(e) => jumpTo(e, href)}
+              aria-current={id === active ? "location" : undefined}
               className="font-display text-[24px] font-medium uppercase leading-[1.03] tracking-tight transition-colors duration-300"
               style={{ color: id === active ? fg : dim }}
             >
@@ -180,6 +197,8 @@ export default function SiteNav() {
           <span suppressHydrationWarning>{ticketLabel}</span>
         </a>
         <button
+          ref={menuToggle}
+          type="button"
           className="ml-auto md:hidden"
           onClick={() => {
             const next = !open;
@@ -187,6 +206,8 @@ export default function SiteNav() {
             setMenuPaint(next ? "on" : "fade");
           }}
           aria-label={open ? "메뉴 닫기" : "메뉴 열기"}
+          aria-expanded={open}
+          aria-controls="site-nav-menu"
           style={{ color: dim, transition: "color 0.4s ease" }}
         >
           <svg width="28" height="28" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
@@ -197,6 +218,9 @@ export default function SiteNav() {
       <div
         // solid white like the bar row above it — 5% translucency drew a
         // faint seam between the two boxes over vivid hero colours
+        id="site-nav-menu"
+        inert={!open}
+        aria-hidden={!open}
         className="overflow-hidden bg-white md:hidden"
         style={{
           maxHeight: open ? "300px" : "0",
@@ -211,9 +235,10 @@ export default function SiteNav() {
             key={id}
             href={href}
             onClick={(e) => {
-              setOpen(false);
+              closeMenu();
               jumpTo(e, href);
             }}
+            aria-current={id === active ? "location" : undefined}
             className="block py-3 text-lg font-bold uppercase tracking-tight text-ink/65 transition-colors hover:text-ink"
           >
             {label}
@@ -223,7 +248,10 @@ export default function SiteNav() {
           href={ticketHref}
           target={booking ? "_blank" : undefined}
           rel={booking ? "noopener noreferrer" : undefined}
-          onClick={() => setOpen(false)}
+          onClick={(e) => {
+            closeMenu();
+            jumpTo(e, ticketHref);
+          }}
           className={`mt-2 block rounded-full bg-ink px-4 py-2 text-center text-sm font-semibold text-white ${
             booking ? "cursor-pointer" : "cursor-default"
           }`}

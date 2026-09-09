@@ -56,7 +56,7 @@ function StoryCopy({
 
   const shown = on && !leaving;
   return (
-    <div className="overflow-hidden">
+    <div className="overflow-hidden" aria-hidden="true">
       <p
         // flex-centred: the copy is shorter than the reserved min-height on
         // phones, and block flow left it pinned to the top — visibly above
@@ -259,6 +259,50 @@ export default function StorySection() {
     wrap.style.maxHeight = `${cap}px`;
   }, [stableVh]);
 
+  useEffect(() => {
+    const releaseLock = () => {
+      cancelAnimationFrame(flingFrame.current);
+      flingFrame.current = 0;
+      touchOwned.current = false;
+      lastOwnedWheelAt.current = -Infinity;
+      lastInputAt.current = -Infinity;
+      unlockedSegmentCount.current = STORY_PHRASES.length;
+      applyCap();
+    };
+
+    // A menu click starts a programmatic scroll. Clear any prior input grace
+    // before it can be mistaken for touch momentum or keyboard scrolling.
+    const onNavClick = (e: MouseEvent) => {
+      if (e.target instanceof Element && e.target.closest(".site-nav a[href^='#']")) {
+        // menu jumps must never be blocked by any scroll intervention: the
+        // physical cap would stop them cold, so the lock stands down now
+        // (it used to stand down anyway once the jump sailed past the pin)
+        releaseLock();
+      }
+    };
+    const onFocusIn = (e: FocusEvent) => {
+      const section = sectionRef.current;
+      const target = e.target;
+      if (
+        !section ||
+        !(target instanceof HTMLElement) ||
+        unlockedSegmentCount.current >= STORY_PHRASES.length ||
+        !document.getElementById("fc-scroll-cap")?.contains(target) ||
+        section.contains(target) ||
+        !(section.compareDocumentPosition(target) & Node.DOCUMENT_POSITION_FOLLOWING)
+      ) return;
+      releaseLock();
+      target.scrollIntoView({ block: "center", behavior: "instant" });
+    };
+
+    window.addEventListener("click", onNavClick, { capture: true });
+    window.addEventListener("focusin", onFocusIn);
+    return () => {
+      window.removeEventListener("click", onNavClick, { capture: true });
+      window.removeEventListener("focusin", onFocusIn);
+    };
+  }, [applyCap]);
+
   // the cap must never outlive the section
   useEffect(
     () => () => {
@@ -434,19 +478,6 @@ export default function StorySection() {
       return window.scrollY + rect.top + segment * (unlockedSegmentCount.current + 1) - 1;
     };
 
-    // A menu click starts a programmatic scroll. Clear any prior input grace
-    // before it can be mistaken for touch momentum or keyboard scrolling.
-    const onNavClick = (e: MouseEvent) => {
-      if (e.target instanceof Element && e.target.closest(".site-nav a[href^='#']")) {
-        lastInputAt.current = -Infinity;
-        // menu jumps must never be blocked by any scroll intervention: the
-        // physical cap would stop them cold, so the lock stands down now
-        // (it used to stand down anyway once the jump sailed past the pin)
-        unlockedSegmentCount.current = STORY_PHRASES.length;
-        applyCap();
-      }
-    };
-
     const onWheel = (e: WheelEvent) => {
       if (unlockedSegmentCount.current >= STORY_PHRASES.length || e.ctrlKey) return;
       const now = performance.now();
@@ -605,7 +636,6 @@ export default function StorySection() {
         lastInputAt.current = performance.now();
     };
 
-    window.addEventListener("click", onNavClick, { capture: true });
     window.addEventListener("wheel", onWheel, { passive: false });
     window.addEventListener("touchstart", onTouchStart, { passive: true });
     window.addEventListener("touchmove", onTouchMove, { passive: false });
@@ -614,7 +644,6 @@ export default function StorySection() {
     window.addEventListener("keydown", onKeyDown);
     return () => {
       stopFling();
-      window.removeEventListener("click", onNavClick, { capture: true });
       window.removeEventListener("wheel", onWheel);
       window.removeEventListener("touchstart", onTouchStart);
       window.removeEventListener("touchmove", onTouchMove);
@@ -622,7 +651,7 @@ export default function StorySection() {
       window.removeEventListener("touchcancel", onTouchCancel);
       window.removeEventListener("keydown", onKeyDown);
     };
-  }, [motionActive, applyCap, stableVh]);
+  }, [motionActive, stableVh]);
 
   return (
     <section
@@ -633,6 +662,11 @@ export default function StorySection() {
       style={{ height: "calc(var(--fc-vh, 100svh) * 3.4)" }}
       data-nav-bg="#fafafd"
     >
+      <div className="sr-only">
+        {STORY_PHRASES.map((lines) => (
+          <p key={lines[0]}>{lines.join(" ")}</p>
+        ))}
+      </div>
       <div
         ref={motionRef}
         // svh, not dvh: see HeroSection — a dvh stage re-centres its copy on

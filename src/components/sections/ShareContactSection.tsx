@@ -31,17 +31,22 @@ function CopyButton({
   const { animate, confetti } = useConfetti();
 
   return (
-    <ClickFrame
-      label={label}
-      icon={icon}
-      href={href}
-      confettiText={copiedText}
-      animate={animate}
-      onClick={(e) => {
-        e.preventDefault();
-        navigator.clipboard?.writeText(copyText).then(confetti, () => {});
-      }}
-    />
+    <>
+      <ClickFrame
+        label={label}
+        icon={icon}
+        href={href}
+        confettiText={copiedText}
+        animate={animate}
+        onClick={(e) => {
+          e.preventDefault();
+          navigator.clipboard?.writeText(copyText).then(confetti, () => {});
+        }}
+      />
+      <span role="status" className="sr-only">
+        {animate ? copiedText : ""}
+      </span>
+    </>
   );
 }
 

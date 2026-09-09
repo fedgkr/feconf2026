@@ -82,6 +82,7 @@ export default function ExperienceSection() {
               type="button"
               className="fe-exp-arrow"
               aria-label="이전 Experience"
+              aria-controls="fe-exp-track"
               onClick={() => go(active - 1)}
             >
               ←
@@ -90,6 +91,7 @@ export default function ExperienceSection() {
               type="button"
               className="fe-exp-arrow"
               aria-label="다음 Experience"
+              aria-controls="fe-exp-track"
               onClick={() => go(active + 1)}
             >
               →
@@ -99,6 +101,9 @@ export default function ExperienceSection() {
         <div ref={playRef}>
           <div
             ref={gridRef}
+            id="fe-exp-track"
+            role="group"
+            aria-label="Experience 카드"
             className="fe-exp-grid"
             onScroll={onScroll}
             onPointerEnter={() => setPaused(true)}
@@ -109,6 +114,7 @@ export default function ExperienceSection() {
             {EXPERIENCE.cards.map((card, i) => (
               <article
                 key={card.no}
+                aria-current={i === active ? "true" : undefined}
                 className={`fe-exp-card ${i === active ? "is-active" : ""}`}
                 style={{
                   opacity: inView ? 1 : 0,

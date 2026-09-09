@@ -367,6 +367,7 @@ export default function HeroSection() {
       className="hero-sequence relative bg-white"
       style={{ height: `calc(var(--fc-vh, 100svh) * ${HERO_SCREENS})` }}
     >
+      <h1 className="sr-only">FEConf 2026</h1>
       <div
         ref={stageRef}
         // svh, not dvh: iOS Safari resizes the dynamic viewport every time its
