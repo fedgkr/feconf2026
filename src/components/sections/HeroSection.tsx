@@ -304,6 +304,12 @@ const HOLD_SCREENS = 1;
 export const HERO_SCREENS = HANDOVER_SCREENS + COUNT_SCREENS + HOLD_SCREENS;
 const YEARS_FROM = 1;
 const YEARS_TO = 10;
+/**
+ * The count is stepped through equal slots of scroll; the first year takes
+ * this many of them, so "1" holds three times as long as every other year.
+ */
+const FIRST_YEAR_SLOTS = 3;
+const COUNT_SLOTS = YEARS_TO - YEARS_FROM + FIRST_YEAR_SLOTS;
 
 const clamp01 = (v: number) => Math.min(1, Math.max(0, v));
 
@@ -328,9 +334,9 @@ export default function HeroSection() {
   // transitions play the wordmark out (up, fading) and the tagline in (up
   // from below); scrolling back above the line plays it in reverse. The
   // count is a scrub: from the handover line, the years step from 1 to 10
-  // evenly across the next two screens. Distances are measured against the
-  // section's own height rather than innerHeight, so mobile toolbar toggles
-  // cannot move any of the lines.
+  // across the next two screens in equal slots, with "1" holding for three.
+  // Distances are measured against the section's own height rather than
+  // innerHeight, so mobile toolbar toggles cannot move any of the lines.
   useScrollEffect(() => {
     const section = sectionRef.current;
     const stage = stageRef.current;
@@ -346,7 +352,8 @@ export default function HeroSection() {
     const years = yearsRef.current;
     if (years) {
       const progress = clamp01((along - HANDOVER_SCREENS) / COUNT_SCREENS);
-      const n = String(Math.round(YEARS_FROM + (YEARS_TO - YEARS_FROM) * progress));
+      const slot = Math.min(COUNT_SLOTS - 1, Math.floor(progress * COUNT_SLOTS));
+      const n = String(YEARS_FROM + Math.max(0, slot - (FIRST_YEAR_SLOTS - 1)));
       if (years.textContent !== n) years.textContent = n;
     }
   });
