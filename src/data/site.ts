@@ -639,9 +639,9 @@ export const SPONSORS_SECTION = {
       sponsors: [
         {
           name: "토스",
-          src: assetPath("/images/sponsor-toss.png"),
-          width: 450,
-          height: 137,
+          src: assetPath("/images/sponsor-toss.svg"),
+          width: 659,
+          height: 200,
         },
       ],
     },
@@ -664,9 +664,9 @@ export const SPONSORS_SECTION = {
       sponsors: [
         {
           name: "티켓타코",
-          src: assetPath("/images/sponsor-ticketaco.png"),
-          width: 520,
-          height: 208,
+          src: assetPath("/images/sponsor-ticketaco.svg"),
+          width: 1251,
+          height: 415,
         },
         {
           name: "제이펍",

@@ -3662,7 +3662,7 @@ body {
   font-size: clamp(28px, 3.1vw, 42px);
   font-weight: 800;
   line-height: 1.15;
-  color: var(--color-ink);
+  color: #000;
   text-align: center;
 }
 
