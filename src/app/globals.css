@@ -1947,7 +1947,7 @@ body {
   display: flex;
   align-items: center;
   justify-content: flex-end;
-  min-height: 36px;
+  min-height: 34px;
   width: 100%;
   padding-right: 38px;
   color: rgb(16 24 61 / 0.36);
@@ -1991,7 +1991,7 @@ body {
   justify-content: flex-end;
   width: 100%;
   border: 0;
-  min-height: 36px;
+  min-height: 34px;
   padding: 0 38px 0 0;
   background: transparent;
   color: rgb(16 24 61 / 0.58);
@@ -3024,7 +3024,7 @@ body {
     min-width: 0;
     border-right: 0;
     border-bottom: 0;
-    min-height: 36px;
+    min-height: 32px;
     padding: 0 34px 0 0;
   }
   .sched-timeflow-detail {
@@ -3224,7 +3224,7 @@ body {
   .sched-timeflow-item {
     flex-direction: row;
     align-items: center;
-    min-height: 44px;
+    min-height: 30px;
     padding: 0 24px 0 0;
   }
   .sched-timeflow-item::before {
@@ -3251,7 +3251,7 @@ body {
     font-size: 13px;
   }
   .sched-timeflow-ghost span {
-    min-height: 44px;
+    min-height: 30px;
     padding-right: 24px;
     font-size: 13px;
   }
