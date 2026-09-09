@@ -29,7 +29,7 @@ const EASE = "cubic-bezier(0.16, 1, 0.3, 1)";
 /** per-row entrance delay: the header row settles first, then row by row */
 const rowDelay = (row: number) => 120 + row * 80;
 
-type SessionListGroupId = "auditorium" | "b-hall" | "lightning";
+type SessionListGroupId = "auditorium" | "b-hall" | "lightning" | "networking";
 type ScheduleTopic = (typeof SCHEDULE_TOPIC_FILTERS)[number];
 type TopicFilter = "all" | ScheduleTopic;
 type TimeScheduleItem = {
@@ -63,6 +63,7 @@ type SessionListGroup = {
 
 const MAIN_GROUP = SCHEDULE_GROUPS.find((group) => group.id === "main");
 const LIGHTNING_GROUP = SCHEDULE_GROUPS.find((group) => group.id === "lightning");
+const TIME_SCHEDULE_ROWS = SCHEDULE_GROUPS.flatMap((group) => group.rows);
 const OVERVIEW_COLUMNS = ["session A", "session B", "Talk 1", "Talk 2"] as const;
 const SCHEDULE_TOPIC_FILTERS = [
   "AI 제품",
@@ -99,12 +100,18 @@ const TIME_SCHEDULE_SPACES: Array<{
     badge: "Talk 1 · Talk 2",
     halls: ["Talk 1", "Talk 2"],
   },
+  {
+    id: "networking",
+    title: "Networking",
+    badge: "Networking",
+    halls: ["Networking"],
+  },
 ];
 const TIMETABLE_START = 11 * 60;
 const TIMETABLE_END = 17 * 60;
 const TIMETABLE_STEP = 5;
 const TIMETABLE_SLOTS = (TIMETABLE_END - TIMETABLE_START) / TIMETABLE_STEP;
-const TIMEFLOW_TICK_STEP = 12;
+const TIMEFLOW_TICK_STEP = 5;
 const TIMEFLOW_GHOST_TICK_COUNT = 24;
 
 function fadeIn(inView: boolean, delay: number): CSSProperties {
@@ -117,6 +124,7 @@ function fadeIn(inView: boolean, delay: number): CSSProperties {
 function hallBadge(hall: Hall) {
   if (hall === "A Auditorium") return "A";
   if (hall === "B Hall") return "B";
+  if (hall === "Networking") return "N";
   return hall === "Talk 1" ? "1" : "2";
 }
 
@@ -162,11 +170,13 @@ function timetablePlacement(
 }
 
 function rowsForHall(hall: Hall): ScheduleRow[] {
-  if (!MAIN_GROUP) return [];
-  const hallIndex = MAIN_GROUP.halls.indexOf(hall);
-  if (hallIndex < 0) return [];
+  const group = SCHEDULE_GROUPS.find((candidate) =>
+    candidate.halls.includes(hall),
+  );
+  if (!group) return [];
+  const hallIndex = group.halls.indexOf(hall);
 
-  return MAIN_GROUP.rows.map((row) => {
+  return group.rows.map((row) => {
     const session = row.sessions[hallIndex];
 
     return session
@@ -216,11 +226,9 @@ function firstOverviewIdForTopic(selectedTopic: TopicFilter) {
 }
 
 function timeScheduleStartMinutes() {
-  const rows = [MAIN_GROUP?.rows ?? [], LIGHTNING_GROUP?.rows ?? []].flat();
-
   return Array.from(
     new Set(
-      rows
+      TIME_SCHEDULE_ROWS
         .filter(
           (row) =>
             row.kind !== "break" &&
@@ -232,9 +240,7 @@ function timeScheduleStartMinutes() {
 }
 
 function timeScheduleFinishMinute() {
-  const rows = [MAIN_GROUP?.rows ?? [], LIGHTNING_GROUP?.rows ?? []].flat();
-
-  return rows.reduce((latest, row) => {
+  return TIME_SCHEDULE_ROWS.reduce((latest, row) => {
     if (row.kind === "break" || !row.sessions.some(Boolean)) return latest;
 
     return Math.max(latest, parseRange(row.time).end);
@@ -254,15 +260,17 @@ function nearestTimeScheduleStart(minute: number, starts: number[]) {
   }, starts[0]);
 }
 
-function sessionsStartingAtTimeScheduleMinute(minute: number) {
-  const rows = [MAIN_GROUP?.rows ?? [], LIGHTNING_GROUP?.rows ?? []].flat();
-
-  return rows.flatMap((row) => {
+function sessionsAtTimeScheduleMinute(minute: number) {
+  return TIME_SCHEDULE_ROWS.flatMap((row) => {
     if (row.kind === "break") return [];
 
     return row.sessions
       .filter((session): session is Session => Boolean(session))
-      .filter((session) => parseRange(session.time).start === minute);
+      .filter((session) => {
+        const range = parseRange(session.time);
+
+        return range.start <= minute && minute < range.end;
+      });
   });
 }
 
@@ -271,7 +279,7 @@ function timeScheduleSelection(minute: number): TimeScheduleSelection {
     id: String(minute),
     minute,
     label: formatMinute(minute),
-    sessions: sessionsStartingAtTimeScheduleMinute(minute),
+    sessions: sessionsAtTimeScheduleMinute(minute),
   };
 }
 
@@ -402,6 +410,13 @@ function sessionListGroups(): SessionListGroup[] {
       description: "같은 시간대에 함께 열리는 라이트닝톡 두 발표를 묶어 보여줍니다.",
       items: lightningListItems(),
     },
+    {
+      id: "networking",
+      title: "Networking",
+      badge: "Networking",
+      description: "참가자들이 자유롭게 교류하는 네트워킹 시간을 보여줍니다.",
+      items: listItemsForHall("Networking"),
+    },
   ];
 }
 
@@ -478,9 +493,10 @@ function TimeSpaceCard({
   const isBreak = sessions.length === 0;
   const [expandedSessionIds, setExpandedSessionIds] = useState<string[]>([]);
   const firstSession = sessions[0];
-  const firstSessionId = firstSession
-    ? `${firstSession.hall}-${firstSession.time}-${firstSession.title}`
-    : null;
+  const firstSessionId =
+    firstSession && hasDetail(firstSession)
+      ? `${firstSession.hall}-${firstSession.time}-${firstSession.title}`
+      : null;
   const firstSessionExpanded = firstSessionId
     ? expandedSessionIds.includes(firstSessionId)
     : false;
@@ -525,6 +541,7 @@ function TimeSpaceCard({
         <div className="sched-timeflow-space-stack">
           {sessions.map((session, index) => {
             const sessionId = `${session.hall}-${session.time}-${session.title}`;
+            const detailVisible = hasDetail(session);
             const expanded = expandedSessionIds.includes(sessionId);
 
             return (
@@ -541,10 +558,13 @@ function TimeSpaceCard({
                 <div className="sched-timeflow-session-summary">
                   <h4>{session.title}</h4>
                 </div>
-                <p className="sched-timeflow-speaker">
-                  {session.speaker}
-                  {session.affiliation ? ` · ${session.affiliation}` : ""}
-                </p>
+                {(session.speaker || session.affiliation) && (
+                  <p className="sched-timeflow-speaker">
+                    {[session.speaker, session.affiliation]
+                      .filter(Boolean)
+                      .join(" · ")}
+                  </p>
+                )}
                 <div className="sched-timeflow-session-details">
                   {session.audience && (
                     <p className="sched-timeflow-audience">
@@ -555,7 +575,7 @@ function TimeSpaceCard({
                     <p className="sched-timeflow-desc">{session.description}</p>
                   )}
                 </div>
-                {index > 0 && (
+                {index > 0 && detailVisible && (
                   <span
                     className="sched-timeflow-session-state"
                     aria-hidden="true"
@@ -563,13 +583,15 @@ function TimeSpaceCard({
                     <TimeflowChevron />
                   </span>
                 )}
-                <button
-                  type="button"
-                  className="sched-timeflow-session-toggle"
-                  aria-expanded={expanded}
-                  aria-label={`${session.title} ${expanded ? "설명 접기" : "설명 보기"}`}
-                  onClick={() => toggleSession(sessionId)}
-                />
+                {detailVisible && (
+                  <button
+                    type="button"
+                    className="sched-timeflow-session-toggle"
+                    aria-expanded={expanded}
+                    aria-label={`${session.title} ${expanded ? "설명 접기" : "설명 보기"}`}
+                    onClick={() => toggleSession(sessionId)}
+                  />
+                )}
               </div>
             );
           })}
@@ -671,6 +693,7 @@ function TimeScheduleView() {
   const measureRef = useRef<HTMLDivElement>(null);
   const timeflowRef = useRef<HTMLDivElement>(null);
   const scrollTimer = useRef<number | null>(null);
+  const scrollSequenceStartId = useRef<string | null>(null);
   const dragState = useRef<{
     pointerId: number;
     startY: number;
@@ -679,6 +702,7 @@ function TimeScheduleView() {
   } | null>(null);
   const suppressClick = useRef(false);
   const [activeId, setActiveId] = useState(starts[0] ? String(starts[0]) : "");
+  const activeIdRef = useRef(activeId);
   const [isDragging, setIsDragging] = useState(false);
   const activeMinute = Number(activeId || starts[0]);
   const activeItem = starts.length ? timeScheduleSelection(activeMinute) : null;
@@ -767,6 +791,10 @@ function TimeScheduleView() {
     const list = listRef.current;
     if (!list || starts.length === 0) return;
 
+    if (scrollSequenceStartId.current === null) {
+      scrollSequenceStartId.current = activeIdRef.current;
+    }
+
     const center = list.scrollTop + list.clientHeight / 2;
     const closest = items.reduce((nearest, item) => {
       const target = list.querySelector<HTMLElement>(
@@ -784,8 +812,10 @@ function TimeScheduleView() {
       distance: Number.POSITIVE_INFINITY,
     }).item;
     const snapMinute = Number(closest.snapId);
+    const snapId = String(snapMinute);
 
-    setActiveId(String(snapMinute));
+    activeIdRef.current = snapId;
+    setActiveId(snapId);
 
     if (scrollTimer.current) {
       window.clearTimeout(scrollTimer.current);
@@ -794,7 +824,14 @@ function TimeScheduleView() {
     if (!shouldSnap) return;
 
     scrollTimer.current = window.setTimeout(() => {
-      scrollMinuteToCenter(snapMinute);
+      const selectionChanged = scrollSequenceStartId.current !== snapId;
+
+      scrollSequenceStartId.current = null;
+      scrollTimer.current = null;
+
+      if (selectionChanged) {
+        scrollMinuteToCenter(snapMinute);
+      }
     }, 120);
   };
 
@@ -810,6 +847,7 @@ function TimeScheduleView() {
       window.clearTimeout(scrollTimer.current);
     }
 
+    scrollSequenceStartId.current = activeIdRef.current;
     dragState.current = {
       pointerId: event.pointerId,
       startY: event.clientY,
@@ -917,6 +955,7 @@ function TimeScheduleView() {
                         return;
                       }
 
+                      activeIdRef.current = item.snapId;
                       setActiveId(item.snapId);
                       scrollMinuteToCenter(Number(item.snapId));
                     }}
