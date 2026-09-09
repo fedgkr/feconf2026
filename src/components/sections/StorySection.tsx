@@ -167,6 +167,21 @@ export default function StorySection() {
   const runAt = useRef(0);
   // fully unlocked segments; the full length also represents lock stand-down
   const unlockedSegmentCount = useRef(0);
+  // the segment the raw scroll offset points at, before the lock gate below
+  const rawPhase = useRef(0);
+  /**
+   * The copy never runs ahead of the lock. `along` can sit past the limit for
+   * whole frames: the limit is one pixel below the next segment, and a gesture
+   * that latched native before we could own it keeps scrolling — WebKit's
+   * elastic overscroll at the physical cap even reports an offset past the
+   * document bottom, which no clamp can pull back while the finger is down.
+   * Ungated, that painted the unread phrase and flipped back to the current
+   * one when the offset returned: the phrase-repeat artifact.
+   */
+  const gatedPhase = useCallback(
+    () => Math.min(rawPhase.current, unlockedSegmentCount.current),
+    [],
+  );
   const lockInit = useRef(false);
   const lastInputAt = useRef(-Infinity);
   const lastTouchY = useRef(0);
@@ -327,12 +342,12 @@ export default function StorySection() {
     applyCap();
 
     const progress = Math.min(1, Math.max(0, along / travel));
-    const next = Math.min(
+    rawPhase.current = Math.min(
       STORY_PHRASES.length - 1,
       Math.floor(progress * STORY_PHRASES.length),
     );
     if (!preservesProgress) {
-      setPhase(next);
+      setPhase(gatedPhase());
       const onStage = rect.top < vh * 0.72 && rect.bottom > vh * 0.2;
       if (onStage && !runAt.current) runAt.current = performance.now();
       if (onStage) setRun(true);
@@ -388,10 +403,14 @@ export default function StorySection() {
     if (shownPhase < 0) return;
     const timer = setTimeout(() => {
       unlockedSegmentCount.current = Math.max(unlockedSegmentCount.current, shownPhase + 1);
+      // the gate may have been holding the copy back: the page can rest past
+      // the boundary (the cap's slack while the browser chrome is expanded)
+      // with no further scroll event to re-run the pass, so publish it here
+      setPhase(gatedPhase());
       applyCap();
     }, PHRASE_SEEN_MS);
     return () => clearTimeout(timer);
-  }, [shownPhase, applyCap]);
+  }, [shownPhase, applyCap, gatedPhase]);
 
   // infinite loops park while the section is far offscreen
   const { ref: motionRef, inView: motionActive } = useInView<HTMLDivElement>({
