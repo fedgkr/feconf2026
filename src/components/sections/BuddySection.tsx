@@ -54,6 +54,9 @@ function CommandBox() {
       <button type="button" onClick={copy} className="fc-cmd-copy font-jbmono">
         {copied ? BUDDY.command.copied : BUDDY.command.copy}
       </button>
+      <span role="status" className="sr-only">
+        {copied ? BUDDY.command.copied : ""}
+      </span>
     </div>
   );
 }
