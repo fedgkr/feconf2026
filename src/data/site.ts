@@ -549,7 +549,9 @@ export const SCHEDULE = {
     // browser would show) so the click saves a ready-to-share image —
     // regenerate the PNG whenever the SVG is regenerated
     label: "FullSchedule.png",
-    href: assetPath("/images/generated/full-schedule-overview.png"),
+    href: assetPath(
+      "/images/generated/full-schedule-overview-networking-updated.png",
+    ),
     notice: "*스케줄은 추후 변경될 수 있습니다",
   },
 };
