@@ -3391,6 +3391,12 @@ body {
 /* Experience carousel                                                */
 /* ---------------------------------------------------------------- */
 
+.fe-exp-carousel-shell {
+  width: 100%;
+  max-width: 2000px;
+  margin-inline: auto;
+}
+
 .fe-exp-arrow {
   display: grid;
   place-items: center;

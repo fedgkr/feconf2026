@@ -70,14 +70,16 @@ export default function ExperienceSection() {
       className="overflow-hidden bg-surface text-navy"
     >
       <div className="mx-auto pt-24 sm:pt-36">
-        <div className="mx-auto mb-16 max-w-[1366px] px-[60px] max-sm:px-6">
+        <div className="mx-auto max-w-[1366px] px-[60px] max-sm:px-6">
           <SectionHeading
             title={EXPERIENCE.heading.title}
             subtitle={EXPERIENCE.heading.subtitle}
             className="!px-0"
             revealOnEntry
           />
-          <div className="mt-8 flex justify-end gap-[22px] max-sm:mt-7 max-sm:gap-[18px]">
+        </div>
+        <div className="fe-exp-carousel-shell">
+          <div className="mx-auto mb-16 mt-8 flex max-w-[1366px] justify-end gap-[22px] px-[60px] max-sm:mt-7 max-sm:gap-[18px] max-sm:px-6">
             <button
               type="button"
               className="fe-exp-arrow"
@@ -97,50 +99,50 @@ export default function ExperienceSection() {
               →
             </button>
           </div>
-        </div>
-        <div ref={playRef}>
-          <div
-            ref={gridRef}
-            id="fe-exp-track"
-            role="group"
-            aria-label="Experience 카드"
-            className="fe-exp-grid"
-            onScroll={onScroll}
-            onPointerEnter={() => setPaused(true)}
-            onPointerLeave={() => setPaused(false)}
-            onFocus={() => setPaused(true)}
-            onBlur={() => setPaused(false)}
-          >
-            {EXPERIENCE.cards.map((card, i) => (
-              <article
-                key={card.no}
-                aria-current={i === active ? "true" : undefined}
-                className={`fe-exp-card ${i === active ? "is-active" : ""}`}
-                style={{
-                  opacity: inView ? 1 : 0,
-                  transform: inView ? "translateY(0)" : "translateY(22px)",
-                  transition: `opacity 0.8s cubic-bezier(0.16,1,0.3,1) ${40 + i * 80}ms, transform 0.8s cubic-bezier(0.16,1,0.3,1) ${40 + i * 80}ms`,
-                }}
-              >
-                <img
-                  src={card.image}
-                  alt={card.alt}
-                  loading={i < 2 ? "eager" : "lazy"}
-                  decoding="async"
-                />
-                <div className="relative z-[2] flex h-full w-full flex-col p-6">
-                  <h3 className="text-[21px] font-bold leading-[1.2] text-white">
-                    {card.title}
-                  </h3>
-                  <p className="mt-1.5 break-keep text-sm font-medium leading-[1.35] text-white/85">
-                    {card.description}
-                  </p>
-                  <span className="font-jbmono mt-auto text-[13px] font-semibold leading-none text-white/80">
-                    {card.no}
-                  </span>
-                </div>
-              </article>
-            ))}
+          <div ref={playRef}>
+            <div
+              ref={gridRef}
+              id="fe-exp-track"
+              role="group"
+              aria-label="Experience 카드"
+              className="fe-exp-grid"
+              onScroll={onScroll}
+              onPointerEnter={() => setPaused(true)}
+              onPointerLeave={() => setPaused(false)}
+              onFocus={() => setPaused(true)}
+              onBlur={() => setPaused(false)}
+            >
+              {EXPERIENCE.cards.map((card, i) => (
+                <article
+                  key={card.no}
+                  aria-current={i === active ? "true" : undefined}
+                  className={`fe-exp-card ${i === active ? "is-active" : ""}`}
+                  style={{
+                    opacity: inView ? 1 : 0,
+                    transform: inView ? "translateY(0)" : "translateY(22px)",
+                    transition: `opacity 0.8s cubic-bezier(0.16,1,0.3,1) ${40 + i * 80}ms, transform 0.8s cubic-bezier(0.16,1,0.3,1) ${40 + i * 80}ms`,
+                  }}
+                >
+                  <img
+                    src={card.image}
+                    alt={card.alt}
+                    loading={i < 2 ? "eager" : "lazy"}
+                    decoding="async"
+                  />
+                  <div className="relative z-[2] flex h-full w-full flex-col p-6">
+                    <h3 className="text-[21px] font-bold leading-[1.2] text-white">
+                      {card.title}
+                    </h3>
+                    <p className="mt-1.5 break-keep text-sm font-medium leading-[1.35] text-white/85">
+                      {card.description}
+                    </p>
+                    <span className="font-jbmono mt-auto text-[13px] font-semibold leading-none text-white/80">
+                      {card.no}
+                    </span>
+                  </div>
+                </article>
+              ))}
+            </div>
           </div>
         </div>
       </div>
