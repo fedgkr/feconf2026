@@ -39,7 +39,7 @@ export default function SectionHeading({
     <div className={`px-[60px] max-sm:px-0 ${className}`}>
       <h2
         ref={titleRef}
-        className="font-display text-5xl font-semibold uppercase leading-[1.2] tracking-[-0.025em] text-navy sm:text-7xl md:text-[80px]"
+        className="font-display text-5xl leading-[1.2] font-semibold tracking-[-0.025em] text-navy uppercase sm:text-7xl md:text-[80px]"
       >
         <MultiLine lines={title} />
       </h2>

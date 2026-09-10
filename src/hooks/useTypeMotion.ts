@@ -5,6 +5,7 @@ import { gsap } from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { SplitText } from "gsap/SplitText";
 import { CustomEase } from "gsap/CustomEase";
+import { allowsHeightResize, prefersReducedMotion } from "@/hooks/useAnimation";
 
 /* GSAP SplitText typography layer, shared by every section:
  * lines (or words) rise out of a per-line mask when scrolled to and replay on
@@ -28,12 +29,6 @@ const PRESET = {
 } as const;
 const HEADING_REVEAL_PERCENT = 86;
 const HEADING_REVEAL_OFFSET_PROPERTY = "--heading-reveal-offset";
-
-const reducedMotion = () =>
-  window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-const allowsHeightResize = () =>
-  navigator.maxTouchPoints === 0 &&
-  window.matchMedia("(hover: hover) and (pointer: fine)").matches;
 
 /**
  * Splitting before the webfont settles bakes the fallback font's line breaks
@@ -68,7 +63,7 @@ export function useSplitReveal<T extends HTMLElement = HTMLHeadingElement>(
 
   useEffect(() => {
     const el = ref.current;
-    if (!el || reducedMotion()) return;
+    if (!el || prefersReducedMotion()) return;
     register();
 
     return whenReady(() => {

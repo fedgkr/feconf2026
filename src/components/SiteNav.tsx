@@ -2,10 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useScrollEffect } from "@/hooks/useAnimation";
-import {
-  useTicketBookingOpen,
-  useTicketLabel,
-} from "@/hooks/useTicketStatus";
+import { useTicketBookingOpen, useTicketLabel } from "@/hooks/useTicketStatus";
 import { NAV_MENU, TICKET_LINK } from "@/data/site";
 
 /** The sections the menu highlights, in document order. */
@@ -19,7 +16,9 @@ function isDarkSurface(bg: string) {
   const hex = /^#([0-9a-f]{6})$/i.exec(bg);
   if (!hex) return false;
   const n = parseInt(hex[1], 16);
-  const luma = (0.299 * ((n >> 16) & 255) + 0.587 * ((n >> 8) & 255) + 0.114 * (n & 255)) / 255;
+  const luma =
+    (0.299 * ((n >> 16) & 255) + 0.587 * ((n >> 8) & 255) + 0.114 * (n & 255)) /
+    255;
   return luma < 0.5;
 }
 
@@ -53,7 +52,10 @@ function jumpTo(e: React.MouseEvent, href: string) {
   // declare their clearance with scroll-margin-top
   const margin = parseFloat(style.scrollMarginTop) || 0;
   const top =
-    el.getBoundingClientRect().top - (matrix.m42 || 0) + window.scrollY - margin;
+    el.getBoundingClientRect().top -
+    (matrix.m42 || 0) +
+    window.scrollY -
+    margin;
   window.scrollTo({ top, behavior: "smooth" });
   history.pushState(null, "", href);
 }
@@ -92,7 +94,20 @@ export default function SiteNav() {
   const booking = useTicketBookingOpen();
   const ticketHref = booking ? TICKET_LINK.open.href : TICKET_LINK.href;
 
+  // The sections carrying `data-nav-bg` and the tracked menu targets never
+  // change shape after mount, so their elements are looked up once and
+  // reused every scroll frame instead of re-querying the DOM each time.
+  const navBgEls = useRef<HTMLElement[] | null>(null);
+  const trackedEls = useRef<(HTMLElement | null)[] | null>(null);
+
   useScrollEffect(() => {
+    navBgEls.current ??= [
+      ...document.querySelectorAll<HTMLElement>("[data-nav-bg]"),
+    ];
+    trackedEls.current ??= TRACKED.map(({ href }) =>
+      document.getElementById(href.slice(1)),
+    );
+
     // one pixel under the bar's own bottom edge, so the surface it reports is
     // the one it actually sits on at any header height
     const probe = Math.min(
@@ -100,7 +115,7 @@ export default function SiteNav() {
       Math.max(0, window.innerHeight - 1),
     );
     let bg = "transparent";
-    for (const el of document.querySelectorAll<HTMLElement>("[data-nav-bg]")) {
+    for (const el of navBgEls.current) {
       if (spans(el, probe)) bg = el.dataset.navBg!;
     }
     const rootStyle = document.documentElement.style;
@@ -121,10 +136,9 @@ export default function SiteNav() {
     // layout order regardless. The last section past the line wins.
     const line = window.scrollY + ACTIVE_LINE;
     let next: string = NAV_MENU[0].id;
-    for (const { id, href } of TRACKED) {
-      const el = document.getElementById(href.slice(1));
-      if (el && el.offsetTop <= line) next = id;
-    }
+    trackedEls.current.forEach((el, i) => {
+      if (el && el.offsetTop <= line) next = TRACKED[i].id;
+    });
     setActive(next);
   });
 
@@ -132,7 +146,9 @@ export default function SiteNav() {
   // under it wanted white text — including while the close is animating
   const whiteText = whiteInk && menuPaint === "off";
   const fg = whiteText ? "rgb(255, 255, 255)" : "rgb(21, 21, 21)";
-  const dim = whiteText ? "rgba(255, 255, 255, 0.35)" : "rgba(21, 21, 21, 0.35)";
+  const dim = whiteText
+    ? "rgba(255, 255, 255, 0.35)"
+    : "rgba(21, 21, 21, 0.35)";
   const closeMenu = () => {
     setOpen(false);
     menuToggle.current?.focus({ preventScroll: true });
@@ -153,7 +169,9 @@ export default function SiteNav() {
       className="site-nav fixed inset-x-0 top-0 z-50"
       style={{
         backgroundColor:
-          menuPaint === "on" ? "rgb(255, 255, 255)" : "var(--fe-nav-bg, transparent)",
+          menuPaint === "on"
+            ? "rgb(255, 255, 255)"
+            : "var(--fe-nav-bg, transparent)",
         transition: bgTransition,
       }}
       onKeyDown={(e) => {
@@ -178,7 +196,7 @@ export default function SiteNav() {
               href={href}
               onClick={(e) => jumpTo(e, href)}
               aria-current={id === active ? "location" : undefined}
-              className="font-display text-[24px] font-medium uppercase leading-[1.03] tracking-tight transition-colors duration-300"
+              className="font-display text-[24px] leading-[1.03] font-medium tracking-tight uppercase transition-colors duration-300"
               style={{ color: id === active ? fg : dim }}
             >
               {label}
@@ -189,7 +207,7 @@ export default function SiteNav() {
           href={ticketHref}
           target={booking ? "_blank" : undefined}
           rel={booking ? "noopener noreferrer" : undefined}
-          className={`font-display hidden text-[24px] font-semibold uppercase leading-[1.5] tracking-tight md:block ${
+          className={`font-display hidden text-[24px] leading-[1.5] font-semibold tracking-tight uppercase md:block ${
             booking ? "cursor-pointer" : "cursor-default"
           }`}
           style={{ color: fg, transition: "color 0.4s ease" }}
@@ -210,8 +228,19 @@ export default function SiteNav() {
           aria-controls="site-nav-menu"
           style={{ color: dim, transition: "color 0.4s ease" }}
         >
-          <svg width="28" height="28" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-            {open ? <path d="M6 6l12 12M6 18L18 6" /> : <path d="M4 6h16M4 12h16M4 18h16" />}
+          <svg
+            width="28"
+            height="28"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            viewBox="0 0 24 24"
+          >
+            {open ? (
+              <path d="M6 6l12 12M6 18L18 6" />
+            ) : (
+              <path d="M4 6h16M4 12h16M4 18h16" />
+            )}
           </svg>
         </button>
       </nav>
@@ -239,7 +268,7 @@ export default function SiteNav() {
               jumpTo(e, href);
             }}
             aria-current={id === active ? "location" : undefined}
-            className="block py-3 text-lg font-bold uppercase tracking-tight text-ink/65 transition-colors hover:text-ink"
+            className="block py-3 text-lg font-bold tracking-tight text-ink/65 uppercase transition-colors hover:text-ink"
           >
             {label}
           </a>

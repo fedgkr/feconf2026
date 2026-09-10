@@ -1,7 +1,12 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { useInView, useScrollEffect } from "@/hooks/useAnimation";
+import {
+  allowsHeightResize,
+  useInView,
+  useScrollEffect,
+  useStableViewportHeight,
+} from "@/hooks/useAnimation";
 import { useHeroMedia, useManagedVideo } from "@/hooks/useMedia";
 import { STORY_ASSETS, STORY_PHRASES } from "@/data/site";
 
@@ -36,10 +41,6 @@ function getScrollMetrics(sectionHeight: number, viewportHeight: number) {
   return { travel, segment: travel / STORY_PHRASES.length };
 }
 
-const allowsHeightResize = () =>
-  navigator.maxTouchPoints === 0 &&
-  window.matchMedia("(hover: hover) and (pointer: fine)").matches;
-
 function StoryCopy({
   lines,
   leaving,
@@ -61,7 +62,7 @@ function StoryCopy({
         // flex-centred: the copy is shorter than the reserved min-height on
         // phones, and block flow left it pinned to the top — visibly above
         // the centre line of the stage frame
-        className="flex min-h-[60px] flex-col items-center justify-center text-center text-xl font-semibold leading-[1.4] tracking-[-1.2px] text-ink sm:min-h-[90px] sm:text-2xl md:text-[32px]"
+        className="flex min-h-[60px] flex-col items-center justify-center text-center text-xl leading-[1.4] font-semibold tracking-[-1.2px] text-ink sm:min-h-[90px] sm:text-2xl md:text-[32px]"
         style={{
           opacity: shown ? 1 : 0,
           transform: leaving
@@ -131,7 +132,15 @@ function MediaMask({
       className={`fc-story-media-mask ${layerClass}`}
       style={{ maskImage: `url(${maskSrc})` }}
     >
-      <video ref={videoRef} src={src} loop muted playsInline preload="auto" aria-hidden="true" />
+      <video
+        ref={videoRef}
+        src={src}
+        loop
+        muted
+        playsInline
+        preload="auto"
+        aria-hidden="true"
+      />
     </div>
   );
 }
@@ -210,18 +219,8 @@ export default function StorySection() {
   // at the active limit makes overscrolling physically impossible: the
   // compositor clamps at its own scroll bounds. -1 means "no cap applied".
   const appliedCap = useRef(-1);
-  const stableViewport = useRef({ width: 0, height: 0 });
   const scrollMetrics = useRef<{ along: number; travel: number } | null>(null);
-  const stableVh = useCallback(() => {
-    const sv = stableViewport.current;
-    if (window.innerWidth !== sv.width) {
-      sv.width = window.innerWidth;
-      sv.height = window.innerHeight;
-    } else if (allowsHeightResize() || window.innerHeight > sv.height) {
-      sv.height = window.innerHeight;
-    }
-    return sv.height;
-  }, []);
+  const stableVh = useStableViewportHeight();
   const applyCap = useCallback(() => {
     const el = sectionRef.current;
     const wrap = document.getElementById("fc-scroll-cap");
@@ -276,7 +275,10 @@ export default function StorySection() {
     // A menu click starts a programmatic scroll. Clear any prior input grace
     // before it can be mistaken for touch momentum or keyboard scrolling.
     const onNavClick = (e: MouseEvent) => {
-      if (e.target instanceof Element && e.target.closest(".site-nav a[href^='#']")) {
+      if (
+        e.target instanceof Element &&
+        e.target.closest(".site-nav a[href^='#']")
+      ) {
         // menu jumps must never be blocked by any scroll intervention: the
         // physical cap would stop them cold, so the lock stands down now
         // (it used to stand down anyway once the jump sailed past the pin)
@@ -292,8 +294,12 @@ export default function StorySection() {
         unlockedSegmentCount.current >= STORY_PHRASES.length ||
         !document.getElementById("fc-scroll-cap")?.contains(target) ||
         section.contains(target) ||
-        !(section.compareDocumentPosition(target) & Node.DOCUMENT_POSITION_FOLLOWING)
-      ) return;
+        !(
+          section.compareDocumentPosition(target) &
+          Node.DOCUMENT_POSITION_FOLLOWING
+        )
+      )
+        return;
       releaseLock();
       target.scrollIntoView({ block: "center", behavior: "instant" });
     };
@@ -342,7 +348,10 @@ export default function StorySection() {
       previousMetrics.along >= 0 &&
       previousMetrics.along < previousMetrics.travel;
     if (preservesProgress) {
-      const progress = Math.min(1, Math.max(0, previousMetrics.along / previousMetrics.travel));
+      const progress = Math.min(
+        1,
+        Math.max(0, previousMetrics.along / previousMetrics.travel),
+      );
       const target = window.scrollY + rect.top + travel * progress;
       const wrap = document.getElementById("fc-scroll-cap");
       if (wrap && unlockedSegmentCount.current < STORY_PHRASES.length) {
@@ -355,14 +364,14 @@ export default function StorySection() {
       along = travel * progress;
       lastScrollY.current = target;
     }
-    const scrollingDown = !preservesProgress && window.scrollY > lastScrollY.current;
+    const scrollingDown =
+      !preservesProgress && window.scrollY > lastScrollY.current;
     lastScrollY.current = window.scrollY;
 
     // a load restored mid-story credits the phrases already scrolled past
     if (!lockInit.current) {
       lockInit.current = true;
-      if (along >= travel)
-        unlockedSegmentCount.current = STORY_PHRASES.length;
+      if (along >= travel) unlockedSegmentCount.current = STORY_PHRASES.length;
       else if (along > 0)
         unlockedSegmentCount.current = Math.min(
           STORY_PHRASES.length - 1,
@@ -464,7 +473,10 @@ export default function StorySection() {
   useEffect(() => {
     if (shownPhase < 0) return;
     const timer = setTimeout(() => {
-      unlockedSegmentCount.current = Math.max(unlockedSegmentCount.current, shownPhase + 1);
+      unlockedSegmentCount.current = Math.max(
+        unlockedSegmentCount.current,
+        shownPhase + 1,
+      );
       // the gate may have been holding the copy back: the page can rest past
       // the boundary (the cap's slack while the browser chrome is expanded)
       // with no further scroll event to re-run the pass, so publish it here
@@ -493,11 +505,17 @@ export default function StorySection() {
       if (!el) return Infinity;
       const rect = el.getBoundingClientRect();
       const { segment } = getScrollMetrics(el.offsetHeight, stableVh());
-      return window.scrollY + rect.top + segment * (unlockedSegmentCount.current + 1) - 1;
+      return (
+        window.scrollY +
+        rect.top +
+        segment * (unlockedSegmentCount.current + 1) -
+        1
+      );
     };
 
     const onWheel = (e: WheelEvent) => {
-      if (unlockedSegmentCount.current >= STORY_PHRASES.length || e.ctrlKey) return;
+      if (unlockedSegmentCount.current >= STORY_PHRASES.length || e.ctrlKey)
+        return;
       const now = performance.now();
       const unit =
         e.deltaMode === 1 ? 16 : e.deltaMode === 2 ? window.innerHeight : 1;
@@ -650,7 +668,10 @@ export default function StorySection() {
     };
 
     const onKeyDown = (e: KeyboardEvent) => {
-      if (unlockedSegmentCount.current < STORY_PHRASES.length && DOWN_KEYS.has(e.key))
+      if (
+        unlockedSegmentCount.current < STORY_PHRASES.length &&
+        DOWN_KEYS.has(e.key)
+      )
         lastInputAt.current = performance.now();
     };
 
@@ -724,7 +745,11 @@ export default function StorySection() {
         </div>
         <SnailStage key={snailEpoch} shown={shownPhase >= 1}>
           {(["fc-snail-a", "fc-snail-b"] as const).map((variant) => (
-            <div key={variant} className={`fc-snail-autoplay ${variant}`} aria-hidden="true">
+            <div
+              key={variant}
+              className={`fc-snail-autoplay ${variant}`}
+              aria-hidden="true"
+            >
               <img
                 src={STORY_ASSETS.snailSrc}
                 alt=""

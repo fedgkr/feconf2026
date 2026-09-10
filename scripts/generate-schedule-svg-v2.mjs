@@ -4,7 +4,10 @@ import path from "node:path";
 const root = process.cwd();
 const dataPath = path.join(root, "src/data/site.ts");
 const logoPath = path.join(root, "public/images/feconf-wordmark-black.svg");
-const outPath = path.join(root, "public/images/generated/full-schedule-overview.svg");
+const outPath = path.join(
+  root,
+  "public/images/generated/full-schedule-overview.svg",
+);
 
 const source = fs.readFileSync(dataPath, "utf8");
 const wordmarkSource = fs.readFileSync(logoPath, "utf8").trim();
@@ -61,7 +64,9 @@ const esc = (value) =>
 
 const attrText = (attrs = {}) =>
   Object.entries(attrs)
-    .filter(([, value]) => value !== undefined && value !== null && value !== false)
+    .filter(
+      ([, value]) => value !== undefined && value !== null && value !== false,
+    )
     .map(([key, value]) => ` ${key}="${esc(value)}"`)
     .join("");
 
@@ -72,7 +77,8 @@ const rect = (x, y, w, h, attrs = {}) =>
   single("rect", { x, y, width: w, height: h, ...attrs });
 const line = (x1, y1, x2, y2, attrs = {}) =>
   single("line", { x1, y1, x2, y2, ...attrs });
-const text = (x, y, value, attrs = {}) => el("text", { x, y, ...attrs }, esc(value));
+const text = (x, y, value, attrs = {}) =>
+  el("text", { x, y, ...attrs }, esc(value));
 
 function parseTime(value) {
   const [hour, minute] = value.split(":").map(Number);
@@ -124,12 +130,16 @@ function splitToken(token, maxWidth, size) {
 
 function wrap(value, maxWidth, size) {
   const lines = [];
-  const tokens = String(value).split(/(\s+)/).filter((token) => token.trim());
+  const tokens = String(value)
+    .split(/(\s+)/)
+    .filter((token) => token.trim());
   let current = "";
 
   for (const token of tokens) {
     const parts =
-      textWidth(token, size) > maxWidth ? splitToken(token, maxWidth, size) : [token];
+      textWidth(token, size) > maxWidth
+        ? splitToken(token, maxWidth, size)
+        : [token];
 
     for (const part of parts) {
       const next = current ? `${current} ${part}` : part;
@@ -282,7 +292,8 @@ function sessionBlock(session) {
   const contentW = colW - padX * 2;
   const metaSize = 20;
   const speakerSize = 21;
-  const hasDescription = isMainHall(session.hall) && Boolean(session.description);
+  const hasDescription =
+    isMainHall(session.hall) && Boolean(session.description);
   const titleAreaH = hasDescription
     ? Math.min(214, blockH * 0.36)
     : blockH - padTop - metaSize - titleGap - speakerBottom - 30;
@@ -297,14 +308,7 @@ function sessionBlock(session) {
   );
   const titleY = y + padTop + metaSize + titleGap;
   const titleH = title.lines.length * title.lineHeight;
-  const speaker = fit(
-    session.speaker,
-    contentW,
-    26,
-    speakerSize,
-    16,
-    1.2,
-  );
+  const speaker = fit(session.speaker, contentW, 26, speakerSize, 16, 1.2);
   const descriptionY = titleY + titleH + descGap;
   const description = hasDescription
     ? fit(
@@ -317,7 +321,9 @@ function sessionBlock(session) {
       )
     : null;
   const speakerY = description
-    ? descriptionY + (description.lines.length - 1) * description.lineHeight + descSpeakerGap
+    ? descriptionY +
+      (description.lines.length - 1) * description.lineHeight +
+      descSpeakerGap
     : y + blockH - speakerBottom;
   const surfaceH = description
     ? Math.min(blockH, Math.ceil(speakerY - y + speakerBottom))
@@ -405,7 +411,10 @@ function buildHeading() {
       multiline(
         x,
         headingY + 80,
-        ["느리지만 멈추지 않았던 10년을 보내온", "FECONF가 여러분을 기다립니다."],
+        [
+          "느리지만 멈추지 않았던 10년을 보내온",
+          "FECONF가 여러분을 기다립니다.",
+        ],
         {
           class: "body",
           "font-size": 30,
@@ -423,7 +432,9 @@ function buildGrid() {
   const parts = [];
   const labelY = tableY + spaceHeadH;
 
-  parts.push(rect(gridX, tableY, gridW, headH + timelineH, { fill: color.white }));
+  parts.push(
+    rect(gridX, tableY, gridW, headH + timelineH, { fill: color.white }),
+  );
   parts.push(buildEmptyCells());
 
   parts.push(
@@ -567,14 +578,18 @@ const svg = `<?xml version="1.0" encoding="UTF-8"?>
   </linearGradient>
 </defs>
 ${rect(0, 0, width, height, { fill: color.white })}
-${el("style", {}, `
+${el(
+  "style",
+  {},
+  `
 @import url("https://fonts.googleapis.com/css2?family=Special+Gothic:wdth,wght@75..125,400..700&amp;display=swap");
 @import url("https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css");
 .display { font-family: "Special Gothic", "Arial Black", sans-serif; font-stretch: 112.5%; }
 .body { font-family: "Pretendard Variable", Pretendard, "Apple SD Gothic Neo", "Noto Sans KR", Arial, sans-serif; }
 .mono { font-family: "JetBrains Mono", "SFMono-Regular", Menlo, monospace; }
 text { letter-spacing: 0; }
-`)}
+`,
+)}
 ${buildHeading()}
 ${buildGrid()}
 ${buildSessions()}

@@ -39,6 +39,7 @@ Never hardcode a `/images/...`-style path directly in a component or in `site.ts
 
 **Scroll/animation system.** The page relies on custom scroll-driven animation rather than a
 library, coordinated through `src/hooks/useAnimation.ts`:
+
 - All scroll/resize listeners across the page are coalesced into a single `requestAnimationFrame`
   via a shared subscriber set (`useScrollEffect`) — avoid adding new raw `scroll`/`resize`
   listeners in components; subscribe through this hook instead so layout is only read once per

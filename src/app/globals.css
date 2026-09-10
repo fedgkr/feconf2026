@@ -28,8 +28,15 @@ body {
   background: var(--color-white);
   color: var(--color-ink);
   font-family:
-    "Pretendard Variable", Pretendard, -apple-system, BlinkMacSystemFont,
-    system-ui, Roboto, "Apple SD Gothic Neo", "Noto Sans KR", sans-serif;
+    "Pretendard Variable",
+    Pretendard,
+    -apple-system,
+    BlinkMacSystemFont,
+    system-ui,
+    Roboto,
+    "Apple SD Gothic Neo",
+    "Noto Sans KR",
+    sans-serif;
   overflow-x: hidden;
   user-select: none;
   -webkit-user-select: none;
@@ -306,7 +313,6 @@ body {
 .hero-intro-canvas canvas {
   --scale-y: 10vw / 100vh;
 
-  
   transform: scale(calc(1vw / 6vw), calc(--scale-y));
   animation: fcLogoScaleOut 3.1s 0.65s cubic-bezier(0.65, 0, 0.35, 1) both;
 }
@@ -318,7 +324,6 @@ body {
   pointer-events: none;
   animation: fcLogoSurfaceInvert 3.1s 0.65s cubic-bezier(0.65, 0, 0.35, 1) both;
 
-
   --clip-width: 6vw;
   --clip-height: 5vw;
   --clip-skew: 2vw;
@@ -327,17 +332,21 @@ body {
     0% 0%,
     0% 100%,
     calc(50% - var(--clip-width) - var(--clip-skew)) 100%,
-    calc(50% - var(--clip-width) - var(--clip-skew)) calc(50% + var(--clip-height)),
-    calc(50% - var(--clip-width) + var(--clip-skew)) calc(50% - var(--clip-height)),
-    calc(50% + var(--clip-width) + var(--clip-skew)) calc(50% - var(--clip-height)),
-    calc(50% + var(--clip-width) - var(--clip-skew)) calc(50% + var(--clip-height)),
-    calc(50% - var(--clip-width) - var(--clip-skew)) calc(50% + var(--clip-height)),
+    calc(50% - var(--clip-width) - var(--clip-skew))
+      calc(50% + var(--clip-height)),
+    calc(50% - var(--clip-width) + var(--clip-skew))
+      calc(50% - var(--clip-height)),
+    calc(50% + var(--clip-width) + var(--clip-skew))
+      calc(50% - var(--clip-height)),
+    calc(50% + var(--clip-width) - var(--clip-skew))
+      calc(50% + var(--clip-height)),
+    calc(50% - var(--clip-width) - var(--clip-skew))
+      calc(50% + var(--clip-height)),
     calc(50% - var(--clip-width) - var(--clip-skew)) 100%,
     100% 100%,
     100% 0%
   );
 }
-
 
 /* the compressed-mark frame shown while the clusters are gathered;
  * background-image comes from the component (assetPath). The frame's own
@@ -467,7 +476,6 @@ body {
   animation: fcLogoFillInvert 3.1s 0.65s cubic-bezier(0.65, 0, 0.35, 1) both;
 }
 
-
 .hero-letter {
   position: absolute;
   z-index: 1;
@@ -545,16 +553,15 @@ body {
   }
 }
 
-
 @keyframes fcLogoScaleOut {
   0%,
   24% {
     transform: scale(calc(1vw / 6vw), calc(--scale-y));
   }
-  25%, 100% {
+  25%,
+  100% {
     transform: scale(1);
   }
-  
 }
 
 @keyframes fcLogoSurfaceInvert {
@@ -562,19 +569,24 @@ body {
     opacity: 1;
   }
   24% {
-      clip-path: polygon(
-    0% 0%,
-    0% 100%,
-    calc(50% - var(--clip-width) - var(--clip-skew)) 100%,
-    calc(50% - var(--clip-width) - var(--clip-skew)) calc(50% + var(--clip-height)),
-    calc(50% - var(--clip-width) + var(--clip-skew)) calc(50% - var(--clip-height)),
-    calc(50% + var(--clip-width) + var(--clip-skew)) calc(50% - var(--clip-height)),
-    calc(50% + var(--clip-width) - var(--clip-skew)) calc(50% + var(--clip-height)),
-    calc(50% - var(--clip-width) - var(--clip-skew)) calc(50% + var(--clip-height)),
-    calc(50% - var(--clip-width) - var(--clip-skew)) 100%,
-    100% 100%,
-    100% 0%
-  );
+    clip-path: polygon(
+      0% 0%,
+      0% 100%,
+      calc(50% - var(--clip-width) - var(--clip-skew)) 100%,
+      calc(50% - var(--clip-width) - var(--clip-skew))
+        calc(50% + var(--clip-height)),
+      calc(50% - var(--clip-width) + var(--clip-skew))
+        calc(50% - var(--clip-height)),
+      calc(50% + var(--clip-width) + var(--clip-skew))
+        calc(50% - var(--clip-height)),
+      calc(50% + var(--clip-width) - var(--clip-skew))
+        calc(50% + var(--clip-height)),
+      calc(50% - var(--clip-width) - var(--clip-skew))
+        calc(50% + var(--clip-height)),
+      calc(50% - var(--clip-width) - var(--clip-skew)) 100%,
+      100% 100%,
+      100% 0%
+    );
   }
   25% {
     clip-path: none;
@@ -774,7 +786,9 @@ body {
   --fc-story-grid-margin: clamp(20px, calc((100vw - 550px) / 2), 25%);
   --fc-story-box-h: 144px;
   --fc-story-line-gap: clamp(12px, 2.4vw, 30px);
-  --fc-story-line-x: calc(var(--fc-story-grid-margin) - var(--fc-story-line-gap));
+  --fc-story-line-x: calc(
+    var(--fc-story-grid-margin) - var(--fc-story-line-gap)
+  );
 }
 
 .fc-run .fc-vL,
@@ -2308,13 +2322,13 @@ body {
   + .sched-timeflow-space {
   border-top: 1px solid transparent;
   border-image: linear-gradient(
-    90deg,
-    rgb(212 218 237 / 0) 0,
-    var(--color-hairline) 30px,
-    var(--color-hairline) calc(100% - 30px),
-    rgb(212 218 237 / 0) 100%
-  )
-  1;
+      90deg,
+      rgb(212 218 237 / 0) 0,
+      var(--color-hairline) 30px,
+      var(--color-hairline) calc(100% - 30px),
+      rgb(212 218 237 / 0) 100%
+    )
+    1;
 }
 
 .sched-timeflow-spaces.is-vertical .sched-timeflow-space.is-break {
@@ -2838,7 +2852,11 @@ body {
     overflow: hidden;
   }
   .sched-section-inner {
-    --sched-stage-height: clamp(620px, calc(var(--fc-vh, 100svh) * 0.74), 760px);
+    --sched-stage-height: clamp(
+      620px,
+      calc(var(--fc-vh, 100svh) * 0.74),
+      760px
+    );
     --sched-stage-min-height: 1180px;
     --sched-heading-gap: 56px;
     --sched-download-gap: 40px;
@@ -3108,7 +3126,11 @@ body {
 
 @media (max-width: 639px) {
   .sched-section-inner {
-    --sched-stage-height: clamp(560px, calc(var(--fc-vh, 100svh) * 0.76), 680px);
+    --sched-stage-height: clamp(
+      560px,
+      calc(var(--fc-vh, 100svh) * 0.76),
+      680px
+    );
     --sched-stage-min-height: 960px;
     --sched-heading-gap: 40px;
     --sched-download-gap: 28px;
@@ -3121,10 +3143,7 @@ body {
     height: auto;
   }
   .sched-section-stage .sched-timeflow {
-    height: var(
-      --sched-mobile-content-height,
-      var(--sched-stage-min-height)
-    );
+    height: var(--sched-mobile-content-height, var(--sched-stage-min-height));
     min-height: 0;
   }
   .sched-wrap {

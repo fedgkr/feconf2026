@@ -62,7 +62,7 @@ export default function ClickFrame({
           rel={rel}
           download={download}
           onClick={onClick}
-          className="absolute left-[38px] right-[38px] top-[39px] z-40 flex h-[51px] items-center justify-center gap-2.5 text-lg font-semibold tracking-[-0.08px] text-navy"
+          className="absolute top-[39px] right-[38px] left-[38px] z-40 flex h-[51px] items-center justify-center gap-2.5 text-lg font-semibold tracking-[-0.08px] text-navy"
         >
           {confettiText ? (
             <span
@@ -76,7 +76,12 @@ export default function ClickFrame({
           ) : (
             label
           )}
-          <img src={ICONS[icon]} alt="" loading="lazy" className="size-[18px]" />
+          <img
+            src={ICONS[icon]}
+            alt=""
+            loading="lazy"
+            className="size-[18px]"
+          />
         </a>
       </div>
     </div>
