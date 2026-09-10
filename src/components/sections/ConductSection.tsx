@@ -1,7 +1,11 @@
 "use client";
 
 import SectionHeading from "../SectionHeading";
-import { useCoverRise, useInView, useStaggerChildren } from "@/hooks/useAnimation";
+import {
+  useCoverRise,
+  useInView,
+  useStaggerChildren,
+} from "@/hooks/useAnimation";
 import { CONDUCT } from "@/data/site";
 
 function GuidelineBody({ body }: { body: string }) {
@@ -10,7 +14,9 @@ function GuidelineBody({ body }: { body: string }) {
 
 export default function ConductSection() {
   const coverRef = useCoverRise<HTMLElement>();
-  const { ref: tableRef, inView } = useInView<HTMLDivElement>({ threshold: 0.1 });
+  const { ref: tableRef, inView } = useInView<HTMLDivElement>({
+    threshold: 0.1,
+  });
   const stagger = useStaggerChildren(inView, CONDUCT.guidelines.length, 120);
 
   return (
@@ -38,7 +44,7 @@ export default function ConductSection() {
                 <div key={title} style={stagger[i]}>
                   <div className="fe-line-h fe-fade-30 -mx-[30px] h-px max-sm:mx-0" />
                   <div className="coc-row flex flex-col gap-6 sm:gap-0">
-                    <h3 className="coc-title shrink-0 text-xl font-medium leading-[1.3] text-ink sm:text-[24px]">
+                    <h3 className="coc-title shrink-0 text-xl leading-[1.3] font-medium text-ink sm:text-[24px]">
                       {title}
                     </h3>
                     <div className="coc-body min-w-0 flex-1">

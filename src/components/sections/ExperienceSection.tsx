@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import SectionHeading from "../SectionHeading";
-import { useInView } from "@/hooks/useAnimation";
+import { useInView, useStaggerChildren } from "@/hooks/useAnimation";
 import { EXPERIENCE } from "@/data/site";
 
 const AUTOPLAY_MS = 3200;
@@ -23,6 +23,11 @@ export default function ExperienceSection() {
     threshold: 0.2,
     once: false,
   });
+  const stagger = useStaggerChildren(inView, EXPERIENCE.cards.length, 80, {
+    baseDelayMs: 40,
+    distancePx: 22,
+    durationS: 0.8,
+  });
 
   const go = useCallback((index: number) => {
     const grid = gridRef.current;
@@ -30,7 +35,10 @@ export default function ExperienceSection() {
     const cards = grid.children;
     const next = (index + cards.length) % cards.length;
     const card = cards[next] as HTMLElement;
-    grid.scrollTo({ left: card.offsetLeft - grid.offsetLeft, behavior: "smooth" });
+    grid.scrollTo({
+      left: card.offsetLeft - grid.offsetLeft,
+      behavior: "smooth",
+    });
     setActive(next);
   }, []);
 
@@ -116,11 +124,7 @@ export default function ExperienceSection() {
                 key={card.no}
                 aria-current={i === active ? "true" : undefined}
                 className={`fe-exp-card ${i === active ? "is-active" : ""}`}
-                style={{
-                  opacity: inView ? 1 : 0,
-                  transform: inView ? "translateY(0)" : "translateY(22px)",
-                  transition: `opacity 0.8s cubic-bezier(0.16,1,0.3,1) ${40 + i * 80}ms, transform 0.8s cubic-bezier(0.16,1,0.3,1) ${40 + i * 80}ms`,
-                }}
+                style={stagger[i]}
               >
                 <img
                   src={card.image}
@@ -129,13 +133,13 @@ export default function ExperienceSection() {
                   decoding="async"
                 />
                 <div className="relative z-[2] flex h-full w-full flex-col p-6">
-                  <h3 className="text-[21px] font-bold leading-[1.2] text-white">
+                  <h3 className="text-[21px] leading-[1.2] font-bold text-white">
                     {card.title}
                   </h3>
-                  <p className="mt-1.5 break-keep text-sm font-medium leading-[1.35] text-white/85">
+                  <p className="mt-1.5 text-sm leading-[1.35] font-medium break-keep text-white/85">
                     {card.description}
                   </p>
-                  <span className="font-jbmono mt-auto text-[13px] font-semibold leading-none text-white/80">
+                  <span className="font-jbmono mt-auto text-[13px] leading-none font-semibold text-white/80">
                     {card.no}
                   </span>
                 </div>

@@ -139,11 +139,7 @@ export const STORY_ASSETS = {
 /* ------------------------------ schedule ------------------------------ */
 
 export type Hall =
-  | "A Auditorium"
-  | "B Hall"
-  | "Talk 1"
-  | "Talk 2"
-  | "Networking";
+  "A Auditorium" | "B Hall" | "Talk 1" | "Talk 2" | "Networking";
 
 export interface Session {
   time: string;
@@ -215,7 +211,8 @@ export const SCHEDULE_GROUPS: ScheduleGroup[] = [
           {
             time: "11:50~12:20",
             hall: "A Auditorium",
-            title: "절대 지워지지 않는 E2E 테스트를 위해 필요한 것들: 디바이스 팜부터 JavaScript의 새 문법까지",
+            title:
+              "절대 지워지지 않는 E2E 테스트를 위해 필요한 것들: 디바이스 팜부터 JavaScript의 새 문법까지",
             speaker: "김지원, 박서진",
             affiliation: "토스",
             description:
@@ -321,7 +318,8 @@ export const SCHEDULE_GROUPS: ScheduleGroup[] = [
           {
             time: "14:40~15:10",
             hall: "B Hall",
-            title: "Lighthouse는 100점인데 왜 느릴까? - 미리캔버스로 짚어본 런타임 성능 개선 포인트",
+            title:
+              "Lighthouse는 100점인데 왜 느릴까? - 미리캔버스로 짚어본 런타임 성능 개선 포인트",
             speaker: "김해동",
             affiliation: "미리캔버스 엔진팀 요소E파트 리드",
             description:
@@ -335,7 +333,8 @@ export const SCHEDULE_GROUPS: ScheduleGroup[] = [
           {
             time: "15:10~15:40",
             hall: "A Auditorium",
-            title: "조합이 폭발하는 디자인 시스템, 이걸 눈으로도 테스트하라고요?",
+            title:
+              "조합이 폭발하는 디자인 시스템, 이걸 눈으로도 테스트하라고요?",
             speaker: "유길종",
             affiliation: "토스",
             description:
@@ -365,7 +364,8 @@ export const SCHEDULE_GROUPS: ScheduleGroup[] = [
           {
             time: "16:00~16:30",
             hall: "A Auditorium",
-            title: "붙어야 할 때와 떨어져야 할 때: Module Federation과 Web Component로 보는 결합의 트레이드오프",
+            title:
+              "붙어야 할 때와 떨어져야 할 때: Module Federation과 Web Component로 보는 결합의 트레이드오프",
             speaker: "진유림",
             affiliation: "토스",
             description:
@@ -381,14 +381,15 @@ export const SCHEDULE_GROUPS: ScheduleGroup[] = [
           {
             time: "16:20~16:50",
             hall: "B Hall",
-            title: "이미지 한 장을 편집 가능한 레이어로: Cloud AI에서 On-device AI와 WebGPU까지",
+            title:
+              "이미지 한 장을 편집 가능한 레이어로: Cloud AI에서 On-device AI와 WebGPU까지",
             speaker: "김민성",
             affiliation: "미리디",
             description:
               "이미지 한 장을 웹 에디터에서 편집 가능한 레이어로 만들려면 어떤 선택이 필요할까요? 생성형 AI에 모든 작업을 맡기며 마주한 품질, 지연, 비용의 문제에서 출발해 Cloud AI에서 On-device AI와 WebGPU까지 더 나은 편집 경험을 만들기 위해 내린 선택을 공유합니다.",
           },
         ],
-      }
+      },
     ],
   },
   {
@@ -468,7 +469,8 @@ export const SCHEDULE_GROUPS: ScheduleGroup[] = [
           {
             time: "12:15~12:30",
             hall: "Talk 2",
-            title: "AI는 디자인보다 데이터를 해석한다 - 정확한 코드 생성을 위한 데이터 품질 개선과 도구 제작 경험",
+            title:
+              "AI는 디자인보다 데이터를 해석한다 - 정확한 코드 생성을 위한 데이터 품질 개선과 도구 제작 경험",
             speaker: "김인숙",
             affiliation: "가비아",
             description:
@@ -519,7 +521,7 @@ export const SCHEDULE_GROUPS: ScheduleGroup[] = [
               "노래 가사가 떨어지고 쌓이는 인터랙션을 만들며 5fps 성능 문제를 추적한 과정을 이야기합니다.",
           },
         ],
-      }
+      },
     ],
   },
   {
@@ -567,9 +569,9 @@ export const SCHEDULE_GROUPS: ScheduleGroup[] = [
             title: "네트워킹 타임 4",
           },
         ],
-      }
+      },
     ],
-  }
+  },
 ];
 
 export const SCHEDULE = {

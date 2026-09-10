@@ -2,16 +2,14 @@ This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-
 
 ## Getting Started
 
-First, run the development server:
+This project uses [pnpm](https://pnpm.io) (pinned via the `packageManager` field in
+`package.json`, enforced by Corepack) — `npm`/`yarn`/`bun` will refuse to run.
+
+First, install dependencies and run the development server:
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
+pnpm install
 pnpm dev
-# or
-bun dev
 ```
 
 Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
@@ -29,8 +27,9 @@ To learn more about Next.js, take a look at the following resources:
 
 You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
 
-## Deploy on Vercel
+## Deployment
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+This site is statically exported (`output: "export"`) and deployed to GitHub Pages via
+`.github/workflows/deploy.yml` on every push to `main`, publishing to
+[fedgkr.github.io/feconf2026](https://fedgkr.github.io/feconf2026/), which redirects to the
+production domain [2026.feconf.kr](https://2026.feconf.kr/) (configured outside this repo).

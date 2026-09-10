@@ -1,6 +1,12 @@
 "use client";
 
-import { useEffect, useRef, useState, type CSSProperties } from "react";
+import {
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+  type CSSProperties,
+} from "react";
 
 interface UseInViewOptions {
   threshold?: number;
@@ -103,19 +109,54 @@ export function useStaggerChildren(
   inView: boolean,
   count: number,
   stepMs = 80,
+  {
+    baseDelayMs = 0,
+    distancePx = 40,
+    durationS = 0.7,
+  }: { baseDelayMs?: number; distancePx?: number; durationS?: number } = {},
 ): CSSProperties[] {
-  return Array.from({ length: count }, (_, i) => ({
-    opacity: inView ? 1 : 0,
-    transform: inView ? "translateY(0)" : "translateY(40px)",
-    transition: `opacity 0.7s cubic-bezier(0.16, 1, 0.3, 1) ${i * stepMs}ms, transform 0.7s cubic-bezier(0.16, 1, 0.3, 1) ${i * stepMs}ms`,
-  }));
+  return Array.from({ length: count }, (_, i) => {
+    const delay = baseDelayMs + i * stepMs;
+    return {
+      opacity: inView ? 1 : 0,
+      transform: inView ? "translateY(0)" : `translateY(${distancePx}px)`,
+      transition: `opacity ${durationS}s cubic-bezier(0.16, 1, 0.3, 1) ${delay}ms, transform ${durationS}s cubic-bezier(0.16, 1, 0.3, 1) ${delay}ms`,
+    };
+  });
 }
 
 const clamp01 = (v: number) => Math.min(1, Math.max(0, v));
 const smoothstep = (t: number) => t * t * (3 - 2 * t);
-const allowsHeightResize = () =>
+
+/** Devices with a fine pointer and hover keep a stable innerHeight; touch
+ * devices (mobile browser chrome) step it as toolbars hide and show. */
+export const allowsHeightResize = () =>
   navigator.maxTouchPoints === 0 &&
   window.matchMedia("(hover: hover) and (pointer: fine)").matches;
+
+/** Live `prefers-reduced-motion` check, read fresh at call time. */
+export const prefersReducedMotion = () =>
+  window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+/**
+ * Mobile Safari steps innerHeight up and down as its toolbar hides and shows
+ * mid-scroll; feeding that straight into a scroll calculation jolts it by
+ * tens of px on every toggle. Outside the fine-pointer desktop gate, keep the
+ * largest height seen at the current width so toolbar steps leave it alone.
+ */
+export function useStableViewportHeight() {
+  const stableViewport = useRef({ width: 0, height: 0 });
+  return useCallback(() => {
+    const sv = stableViewport.current;
+    if (window.innerWidth !== sv.width) {
+      sv.width = window.innerWidth;
+      sv.height = window.innerHeight;
+    } else if (allowsHeightResize() || window.innerHeight > sv.height) {
+      sv.height = window.innerHeight;
+    }
+    return sv.height;
+  }, []);
+}
 
 /**
  * The section rises from `distanceVh` below (default 80vh) into its place
@@ -128,12 +169,7 @@ export function useCoverRise<T extends HTMLElement = HTMLElement>(
   distanceVh = 80,
 ) {
   const ref = useRef<T | null>(null);
-  // Mobile Safari steps innerHeight up and down as its toolbar hides and
-  // shows mid-scroll; feeding that into the progress would jolt a mid-rise
-  // section by tens of px on every toggle (the boundary shake on slow
-  // scrolls). Outside the fine-pointer desktop gate, keep the largest height
-  // seen at the current width so toolbar steps leave the target alone.
-  const stableViewport = useRef({ width: 0, height: 0 });
+  const stableVh = useStableViewportHeight();
 
   useEffect(() => {
     ref.current?.classList.add("fc-cover");
@@ -142,14 +178,7 @@ export function useCoverRise<T extends HTMLElement = HTMLElement>(
   useScrollEffect(() => {
     const el = ref.current;
     if (!el) return;
-    const sv = stableViewport.current;
-    if (window.innerWidth !== sv.width) {
-      sv.width = window.innerWidth;
-      sv.height = window.innerHeight;
-    } else if (allowsHeightResize() || window.innerHeight > sv.height) {
-      sv.height = window.innerHeight;
-    }
-    const vh = sv.height;
+    const vh = stableVh();
     // the transform moves the box, so read the layout top from under it
     const rect = el.getBoundingClientRect();
     const matrix = new DOMMatrixReadOnly(getComputedStyle(el).transform);

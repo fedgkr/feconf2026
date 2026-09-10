@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useSyncExternalStore } from "react";
 import { heroMedia } from "@/lib/heroMedia";
+import { prefersReducedMotion } from "@/hooks/useAnimation";
 
 const noopSubscribe = () => () => {};
 
@@ -29,7 +30,7 @@ export function useManagedVideo(wanted: boolean) {
       wantedRef.current &&
       near.current &&
       !document.hidden &&
-      !window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+      !prefersReducedMotion();
     if (play && video.paused) video.play().catch(() => {});
     if (!play && !video.paused) video.pause();
   }, []);

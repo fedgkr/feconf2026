@@ -30,14 +30,17 @@ function CommandBox() {
   );
 
   const copy = () => {
-    navigator.clipboard?.writeText(BUDDY.command.text).then(() => {
-      setCopied(true);
-      if (resetTimer.current !== null) clearTimeout(resetTimer.current);
-      resetTimer.current = window.setTimeout(
-        () => setCopied(false),
-        COPIED_LABEL_MS,
-      );
-    }, () => {});
+    navigator.clipboard?.writeText(BUDDY.command.text).then(
+      () => {
+        setCopied(true);
+        if (resetTimer.current !== null) clearTimeout(resetTimer.current);
+        resetTimer.current = window.setTimeout(
+          () => setCopied(false),
+          COPIED_LABEL_MS,
+        );
+      },
+      () => {},
+    );
   };
 
   return (
@@ -82,7 +85,7 @@ export default function BuddySection() {
     <section
       ref={coverRef}
       data-nav-bg="#fafafd"
-      className="relative z-31 flex flex-col overflow-hidden bg-surface pb-24 pt-24 [--fc-cover-min-h:calc(var(--fc-vh,100vh)*.77-100px)] [--heading-reveal-offset:48px] sm:pb-36 sm:pt-36 sm:[--heading-reveal-offset:80px]"
+      className="relative z-31 flex flex-col overflow-hidden bg-surface pt-24 pb-24 [--fc-cover-min-h:calc(var(--fc-vh,100vh)*.77-100px)] [--heading-reveal-offset:48px] sm:pt-36 sm:pb-36 sm:[--heading-reveal-offset:80px]"
     >
       <div ref={layerRef} className="absolute inset-0 z-[1] overflow-hidden" />
       <div
@@ -90,9 +93,12 @@ export default function BuddySection() {
         // desktop floor is 77% of the old 520px, matching the 77vh section
         // height; the taller mobile floor opens a free lane between the copy
         // and the button so the snails spread through the middle too
-        className="pointer-events-none relative mx-auto flex min-h-[460px] w-full min-w-0 max-w-[1366px] flex-1 flex-col px-6 max-sm:px-5 sm:min-h-[300px]"
+        className="pointer-events-none relative mx-auto flex min-h-[460px] w-full max-w-[1366px] min-w-0 flex-1 flex-col px-6 max-sm:px-5 sm:min-h-[300px]"
       >
-        <div data-fc-keepout className="relative z-[3] [&_h2]:pointer-events-auto [&_p]:pointer-events-auto">
+        <div
+          data-fc-keepout
+          className="relative z-[3] [&_h2]:pointer-events-auto [&_p]:pointer-events-auto"
+        >
           <SectionHeading
             title={BUDDY.heading.title}
             subtitle={BUDDY.heading.subtitle}

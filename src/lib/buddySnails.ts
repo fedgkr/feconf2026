@@ -1,4 +1,5 @@
 import { BUDDY_SNAILS } from "@/data/site";
+import { prefersReducedMotion } from "@/hooks/useAnimation";
 
 /**
  * `COUNT` snails roam the Forever Buddy section: they crawl left along free
@@ -22,10 +23,42 @@ const BODY_HEX = /#FF5080/gi; // body colour in the source SVGs
 
 /** tap reactions: swap to `asset`, scoot forward, hop, briefly speed up */
 const TAP_MOTIONS = [
-  { asset: 1, hold: 420, advance: 34, lift: 22, boost: 1.4, duration: 520, ease: easeOutCubic },
-  { asset: 2, hold: 120, advance: 46, lift: 0, boost: 2.6, duration: 420, ease: easeOutCubic },
-  { asset: 2, hold: 520, advance: 24, lift: 6, boost: 1.7, duration: 560, ease: easeOutCubic },
-  { asset: 3, hold: 720, advance: 30, lift: 16, boost: 1.5, duration: 620, ease: easeOutBack },
+  {
+    asset: 1,
+    hold: 420,
+    advance: 34,
+    lift: 22,
+    boost: 1.4,
+    duration: 520,
+    ease: easeOutCubic,
+  },
+  {
+    asset: 2,
+    hold: 120,
+    advance: 46,
+    lift: 0,
+    boost: 2.6,
+    duration: 420,
+    ease: easeOutCubic,
+  },
+  {
+    asset: 2,
+    hold: 520,
+    advance: 24,
+    lift: 6,
+    boost: 1.7,
+    duration: 560,
+    ease: easeOutCubic,
+  },
+  {
+    asset: 3,
+    hold: 720,
+    advance: 30,
+    lift: 16,
+    boost: 1.5,
+    duration: 620,
+    ease: easeOutBack,
+  },
 ];
 
 function easeOutCubic(t: number) {
@@ -35,7 +68,8 @@ function easeOutBack(t: number) {
   const c1 = 1.70158;
   return 1 + (c1 + 1) * Math.pow(t - 1, 3) + c1 * Math.pow(t - 1, 2);
 }
-const clamp = (v: number, lo: number, hi: number) => (v < lo ? lo : v > hi ? hi : v);
+const clamp = (v: number, lo: number, hi: number) =>
+  v < lo ? lo : v > hi ? hi : v;
 
 interface Motion {
   start: number;
@@ -71,7 +105,7 @@ export function mountBuddySnails(
   stage: HTMLElement,
   accent?: string,
 ) {
-  const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const reduced = prefersReducedMotion();
   const snails: Snail[] = [];
   let W = 0;
   let H = 0;
@@ -115,16 +149,18 @@ export function mountBuddySnails(
 
   function keepOuts() {
     const layerBox = layer.getBoundingClientRect();
-    return [...stage.querySelectorAll<HTMLElement>("[data-fc-keepout]")].map((el) => {
-      const r = el.getBoundingClientRect();
-      return { y: r.top - layerBox.top, h: r.height };
-    });
+    return [...stage.querySelectorAll<HTMLElement>("[data-fc-keepout]")].map(
+      (el) => {
+        const r = el.getBoundingClientRect();
+        return { y: r.top - layerBox.top, h: r.height };
+      },
+    );
   }
 
-  function laneSlots(h: number) {
+  function laneSlots(h: number, outs: ReturnType<typeof keepOuts>) {
     const pad = 18;
     const gap = 10;
-    const intervals = keepOuts()
+    const intervals = outs
       .map((b) => [b.y - pad, b.y + b.h + pad] as [number, number])
       .sort((a, b) => a[0] - b[0]);
     const free: [number, number][] = [];
@@ -146,9 +182,9 @@ export function mountBuddySnails(
     return slots;
   }
 
-  function laneBad(y: number, h: number) {
+  function laneBad(y: number, h: number, outs: ReturnType<typeof keepOuts>) {
     const pad = 18;
-    return keepOuts().some((b) => !(y + h + pad <= b.y || b.y + b.h + pad <= y));
+    return outs.some((b) => !(y + h + pad <= b.y || b.y + b.h + pad <= y));
   }
 
   /* ---------- placement ---------- */
@@ -172,7 +208,8 @@ export function mountBuddySnails(
     const w = Math.round(SNAIL_W * scale);
     const h = Math.round(SNAIL_H * scale);
 
-    const slots = laneSlots(h);
+    const outs = keepOuts();
+    const slots = laneSlots(h, outs);
     for (let i = slots.length - 1; i > 0; i--) {
       const j = Math.floor(Math.random() * (i + 1));
       [slots[i], slots[j]] = [slots[j], slots[i]];
@@ -197,7 +234,8 @@ export function mountBuddySnails(
           s.w = w;
           s.h = h;
         }
-        if (!s.drag && laneBad(s.y, h) && slots.length) s.y = slots[k % slots.length];
+        if (!s.drag && laneBad(s.y, h, outs) && slots.length)
+          s.y = slots[k % slots.length];
         s.y = clamp(s.y, 0, Math.max(0, H - h));
         if (s.x > W) s.x = -w;
         draw(s);
@@ -236,7 +274,9 @@ export function mountBuddySnails(
         // seats within a lane split the track evenly, with jitter inside the
         // seat so nobody wraps around immediately or paints on a neighbour
         x: ((seat + 0.15 + Math.random() * 0.7) / laneShare) * (W + w) - w,
-        y: clamp(lane, 0, Math.max(0, H - h - 6)) + Math.round(Math.random() * 6),
+        y:
+          clamp(lane, 0, Math.max(0, H - h - 6)) +
+          Math.round(Math.random() * 6),
         drawnX: null,
         drawnY: null,
         speed: SPEED[0] + Math.random() * (SPEED[1] - SPEED[0]),
@@ -399,7 +439,8 @@ export function mountBuddySnails(
   /* ---------- lifecycle ---------- */
 
   place();
-  if (document.fonts?.ready) document.fonts.ready.then(() => !disposed && place());
+  if (document.fonts?.ready)
+    document.fonts.ready.then(() => !disposed && place());
 
   const observer = new IntersectionObserver(
     ([entry]) => {

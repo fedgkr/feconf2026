@@ -5,7 +5,7 @@ import * as THREE from "three";
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import { useHeroMedia } from "@/hooks/useMedia";
 import { useInView, useScrollEffect } from "@/hooks/useAnimation";
-import { FOOTER, HERO, HERO_LETTERS } from "@/data/site";
+import { FOOTER, HERO_LETTERS } from "@/data/site";
 import { assetPath } from "@/lib/assetPath";
 
 /**
@@ -53,7 +53,7 @@ const SPEED_SCALE = 30;
  * Stripe bounding-box origins in frame coordinates (y down), in paint order.
  * `speed` is the leftward drift in frame px/s, hand-varied per stripe.
  */
-let STRIPES: {
+const BASE_STRIPES: {
   x: number;
   y: number;
   color: string;
@@ -82,7 +82,13 @@ let STRIPES: {
   { x: 441.965, y: -16.922, color: "#30C068", speed: 51 },
   { x: 81.255, y: 645.982, color: "#0082FB", speed: 85 },
   { x: 308.708, y: 398.072, color: "#9189F6", speed: 40 },
-  { x: 308.708, y: 398.072, color: "#9189F6", speed: 59, gradTo: [685.462, 593.236] },
+  {
+    x: 308.708,
+    y: 398.072,
+    color: "#9189F6",
+    speed: 59,
+    gradTo: [685.462, 593.236],
+  },
   { x: -424.026, y: 794.093, color: "#9189F6", speed: 76 },
   { x: -414.971, y: 187.402, color: "#859D94", speed: 35 },
   { x: 469.28, y: -86.342, color: "#FFBBD0", speed: 90 },
@@ -102,39 +108,39 @@ let STRIPES: {
 // const RAMP_TO = [0xff, 0xc3, 0x00];
 
 function luminance(color: string): number {
-  const [r, g, b] = [1, 3, 5].map((i) => parseInt(color.slice(i, i + 2), 16) / 255);
+  const [r, g, b] = [1, 3, 5].map(
+    (i) => parseInt(color.slice(i, i + 2), 16) / 255,
+  );
   return 0.2126 * r + 0.7152 * g + 0.0722 * b;
 }
 
-const LUMS = STRIPES.map((s) => luminance(s.color));
+const LUMS = BASE_STRIPES.map((s) => luminance(s.color));
 const LOW = Math.min(...LUMS);
 const SPAN = Math.max(...LUMS) - LOW || 1;
 
 function toTwoTone(color: string, from: number[], to: number[]): string {
   const t = (luminance(color) - LOW) / SPAN;
-  const hex = from.map((c, ch) =>
-    Math.round(c + (to[ch] - c) * t)
-      .toString(16)
-      .padStart(2, "0"),
-  ).join("");
+  const hex = from
+    .map((c, ch) =>
+      Math.round(c + (to[ch] - c) * t)
+        .toString(16)
+        .padStart(2, "0"),
+    )
+    .join("");
 
   return `#${hex}`;
 }
 
-STRIPES = [
-  ...STRIPES,
-  ...STRIPES.map(stripe => {
-    return {
-      ...stripe,
-      x: STRIPE_W / 3 * 2 + stripe.x,
-    };
-  }),
-  ...STRIPES.map(stripe => {
-    return {
-      ...stripe,
-      x: STRIPE_W / 3 * 4 + stripe.x,
-    };
-  }),
+const STRIPES = [
+  ...BASE_STRIPES,
+  ...BASE_STRIPES.map((stripe) => ({
+    ...stripe,
+    x: (STRIPE_W / 3) * 2 + stripe.x,
+  })),
+  ...BASE_STRIPES.map((stripe) => ({
+    ...stripe,
+    x: (STRIPE_W / 3) * 4 + stripe.x,
+  })),
 ];
 
 const vertexShader = /* glsl */ `
@@ -190,9 +196,7 @@ export function useStripeDpr(): number | [number, number] {
   return useMemo(() => (phone ? 1 : ([1, 1.5] as [number, number])), [phone]);
 }
 
-export function StripeField(props: {
-  ramp: number[][],
-}) {
+export function StripeField(props: { ramp: number[][] }) {
   const rampFrom = props.ramp[0];
   const rampTo = props.ramp[1];
   const { width, height } = useThree((state) => state.size);
@@ -288,7 +292,38 @@ export function StripeField(props: {
   const scale = Math.max(width / FRAME_W, height / FRAME_H);
 
   return (
-    <mesh ref={meshRef} geometry={geometry} material={material} scale={[scale, scale, 1]} />
+    <mesh
+      ref={meshRef}
+      geometry={geometry}
+      material={material}
+      scale={[scale, scale, 1]}
+    />
+  );
+}
+
+/** The stripe field over a white ground, shared by the hero and footer. */
+export function StripeCanvas({
+  media,
+  dpr,
+  frameloop,
+  className,
+}: {
+  media: ReturnType<typeof useHeroMedia>;
+  dpr: number | [number, number];
+  frameloop: "always" | "never" | "demand";
+  className?: string;
+}) {
+  return (
+    <Canvas
+      orthographic
+      dpr={dpr}
+      frameloop={frameloop}
+      aria-hidden="true"
+      className={className}
+    >
+      <color attach="background" args={["#ffffff"]} />
+      {media && <StripeField ramp={media.ramp} />}
+    </Canvas>
   );
 }
 
@@ -352,7 +387,10 @@ export default function HeroSection() {
     const years = yearsRef.current;
     if (years) {
       const progress = clamp01((along - HANDOVER_SCREENS) / COUNT_SCREENS);
-      const slot = Math.min(COUNT_SLOTS - 1, Math.floor(progress * COUNT_SLOTS));
+      const slot = Math.min(
+        COUNT_SLOTS - 1,
+        Math.floor(progress * COUNT_SLOTS),
+      );
       const n = String(YEARS_FROM + Math.max(0, slot - (FIRST_YEAR_SLOTS - 1)));
       if (years.textContent !== n) years.textContent = n;
     }
@@ -379,10 +417,12 @@ export default function HeroSection() {
         data-pin="fixed"
         data-phase="logo"
       >
-        <Canvas orthographic dpr={dpr} frameloop={inView ? "always" : "never"} aria-hidden="true" className="hero-intro-canvas">
-          <color attach="background" args={["#ffffff"]} />
-          {media && <StripeField ramp={media.ramp}/>}
-        </Canvas>
+        <StripeCanvas
+          media={media}
+          dpr={dpr}
+          frameloop={inView ? "always" : "never"}
+          className="hero-intro-canvas"
+        />
         <div className="hero-intro-backdrop" aria-hidden="true" />
 
         <div className="hero-letter-frame-layer" aria-hidden="true">
@@ -393,7 +433,9 @@ export default function HeroSection() {
         <div className="hero-mark-anchor" aria-hidden="true">
           <div
             className="hero-letter-stack"
-            style={{ "--hero-logo-color": media?.accent } as React.CSSProperties}
+            style={
+              { "--hero-logo-color": media?.accent } as React.CSSProperties
+            }
           >
             {HERO_LETTERS.map(({ shiftX, shiftY, d }, i) => (
               <svg
