@@ -2,10 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useScrollEffect } from "@/hooks/useAnimation";
-import {
-  useTicketBookingOpen,
-  useTicketLabel,
-} from "@/hooks/useTicketStatus";
+import { useTicketLabel } from "@/hooks/useTicketStatus";
 import { NAV_MENU, TICKET_LINK } from "@/data/site";
 
 /** The sections the menu highlights, in document order. */
@@ -88,9 +85,7 @@ export default function SiteNav() {
   const [whiteInk, setWhiteInk] = useState(true);
   const [active, setActive] = useState<string>(NAV_MENU[0].id);
   const ticketLabel = useTicketLabel();
-  // the counter keeps counting either way; only the destination changes
-  const booking = useTicketBookingOpen();
-  const ticketHref = booking ? TICKET_LINK.open.href : TICKET_LINK.href;
+  const ticketHref = TICKET_LINK.href;
 
   useScrollEffect(() => {
     // one pixel under the bar's own bottom edge, so the surface it reports is
@@ -187,11 +182,9 @@ export default function SiteNav() {
         </div>
         <a
           href={ticketHref}
-          target={booking ? "_blank" : undefined}
-          rel={booking ? "noopener noreferrer" : undefined}
-          className={`font-display hidden text-[24px] font-semibold uppercase leading-[1.5] tracking-tight md:block ${
-            booking ? "cursor-pointer" : "cursor-default"
-          }`}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="font-display hidden cursor-pointer text-[24px] font-semibold uppercase leading-[1.5] tracking-tight md:block"
           style={{ color: fg, transition: "color 0.4s ease" }}
         >
           <span suppressHydrationWarning>{ticketLabel}</span>
@@ -246,15 +239,13 @@ export default function SiteNav() {
         ))}
         <a
           href={ticketHref}
-          target={booking ? "_blank" : undefined}
-          rel={booking ? "noopener noreferrer" : undefined}
+          target="_blank"
+          rel="noopener noreferrer"
           onClick={(e) => {
             closeMenu();
             jumpTo(e, ticketHref);
           }}
-          className={`mt-2 block rounded-full bg-ink px-4 py-2 text-center text-sm font-semibold text-white ${
-            booking ? "cursor-pointer" : "cursor-default"
-          }`}
+          className="mt-2 block cursor-pointer rounded-full bg-ink px-4 py-2 text-center text-sm font-semibold text-white"
         >
           <span suppressHydrationWarning>{ticketLabel}</span>
         </a>

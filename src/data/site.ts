@@ -22,9 +22,7 @@ export const TICKET_OPEN_AT = "2026-10-01T10:00:00+09:00";
 export const CONFERENCE_AT = "2026-10-24T10:00:00+09:00";
 
 export const TICKET_LINK = {
-  href: "#tickets",
-  /** booking, live from TICKET_OPEN_AT until the conference day arrives */
-  open: { href: "https://ticketa.co/event/t12vlmil" },
+  href: "https://ticketa.co/event/t12vlmil",
 };
 
 /**
@@ -195,25 +193,18 @@ export const SCHEDULE_GROUPS: ScheduleGroup[] = [
             hall: "A Auditorium",
             title: "후원사 세션 (피그마)",
           },
-          null,
-        ],
-      },
-      {
-        time: "11:20~11:50",
-        sessions: [
-          null,
           {
-            time: "11:20~11:50",
+            time: "11:00~11:30",
             hall: "B Hall",
             title: "후원사 세션 (와이스)",
           },
         ],
       },
       {
-        time: "11:50~12:20",
+        time: "11:55~12:25",
         sessions: [
           {
-            time: "11:50~12:20",
+            time: "11:55~12:25",
             hall: "A Auditorium",
             title: "절대 지워지지 않는 E2E 테스트를 위해 필요한 것들: 디바이스 팜부터 JavaScript의 새 문법까지",
             speaker: "김지원, 박서진",
@@ -221,15 +212,8 @@ export const SCHEDULE_GROUPS: ScheduleGroup[] = [
             description:
               "토스에서 E2E 테스트 작성 워크플로우를 갖추어 나가며 0개부터 1천 개가 넘는 E2E 테스트를 작성한 경험을 소개합니다. 지워지거나 깨지지 않는 E2E 테스트를 위해 안정적인 디바이스 팜을 구축하고, 새로운 JavaScript 문법을 도입한 경험을 공유합니다.",
           },
-          null,
-        ],
-      },
-      {
-        time: "12:10~12:40",
-        sessions: [
-          null,
           {
-            time: "12:10~12:40",
+            time: "11:55~12:25",
             hall: "B Hall",
             title: "웹처럼 배포하고, 앱처럼 그리기: 당근 앱에 Lynx 도입하기",
             speaker: "원지혁",
@@ -240,10 +224,10 @@ export const SCHEDULE_GROUPS: ScheduleGroup[] = [
         ],
       },
       {
-        time: "12:40~13:10",
+        time: "12:50~13:20",
         sessions: [
           {
-            time: "12:40~13:10",
+            time: "12:50~13:20",
             hall: "A Auditorium",
             title: "어느 날 옆자리 동료가 localhost:3000 링크를 보냈다",
             speaker: "이호연, 우창완",
@@ -251,15 +235,8 @@ export const SCHEDULE_GROUPS: ScheduleGroup[] = [
             description:
               "AI가 코드를 쓰기 시작하면서 3개월 만에 저장소가 1,000개 넘게 생겼습니다. 모두가 빠르게 만들 수 있게 됐지만, 제품의 하방은 누가 지킬까요? 1,000개의 폴리리포를 모노리포처럼 다루기 위해 만든 도구 Canopy를 소개합니다.",
           },
-          null,
-        ],
-      },
-      {
-        time: "13:00~13:30",
-        sessions: [
-          null,
           {
-            time: "13:00~13:30",
+            time: "12:50~13:20",
             hall: "B Hall",
             title: "디자인 시스템, 더 나아가서",
             speaker: "정현수",
@@ -270,10 +247,10 @@ export const SCHEDULE_GROUPS: ScheduleGroup[] = [
         ],
       },
       {
-        time: "13:30~14:00",
+        time: "13:45~14:15",
         sessions: [
           {
-            time: "13:30~14:00",
+            time: "13:45~14:15",
             hall: "A Auditorium",
             title: "React Native에 현대적인 빌드 도구 더하기: Rollipop 구현기",
             speaker: "이근혁",
@@ -281,15 +258,8 @@ export const SCHEDULE_GROUPS: ScheduleGroup[] = [
             description:
               "React Native에 현대적인 프론트엔드 빌드 도구를 적용하기 위해 Rolldown 기반 번들러 Rollipop을 구현한 과정을 소개합니다. Metro의 개발 경험을 유지하면서 성능과 확장성을 개선하기 위한 설계와 최적화 경험을 공유합니다.",
           },
-          null,
-        ],
-      },
-      {
-        time: "13:50~14:20",
-        sessions: [
-          null,
           {
-            time: "13:50~14:20",
+            time: "13:45~14:15",
             hall: "B Hall",
             title: "수백개 패키지의 모노레포와 함께 micro frontends로 전환하기",
             speaker: "김종현",
@@ -300,10 +270,10 @@ export const SCHEDULE_GROUPS: ScheduleGroup[] = [
         ],
       },
       {
-        time: "14:20~14:50",
+        time: "14:40~15:10",
         sessions: [
           {
-            time: "14:20~14:50",
+            time: "14:40~15:10",
             hall: "A Auditorium",
             title: "오프라인 우선 Micro Frontend 구축기",
             speaker: "나석주",
@@ -311,13 +281,6 @@ export const SCHEDULE_GROUPS: ScheduleGroup[] = [
             description:
               "오프라인 우선 웹 앱을 위해 아키텍처를 구성한 경험을 소개합니다. 멀티플랫폼에서 같은 프론트엔드 코드를 동작하게 만드는 웹뷰 번들 개념과 Micro Frontend를 안전하게 운영하기 위한 전략을 다룹니다.",
           },
-          null,
-        ],
-      },
-      {
-        time: "14:40~15:10",
-        sessions: [
-          null,
           {
             time: "14:40~15:10",
             hall: "B Hall",
@@ -330,10 +293,10 @@ export const SCHEDULE_GROUPS: ScheduleGroup[] = [
         ],
       },
       {
-        time: "15:10~15:40",
+        time: "15:35~16:05",
         sessions: [
           {
-            time: "15:10~15:40",
+            time: "15:35~16:05",
             hall: "A Auditorium",
             title: "조합이 폭발하는 디자인 시스템, 이걸 눈으로도 테스트하라고요?",
             speaker: "유길종",
@@ -341,15 +304,8 @@ export const SCHEDULE_GROUPS: ScheduleGroup[] = [
             description:
               "props, 서브컴포넌트, 다크모드, pseudo state가 만드는 수많은 UI 상태를 어떻게 검증할지 이야기합니다. 토스 디자인 시스템 TDS에서 조합적 폭발이 발생하는 컴포넌트의 시각 회귀 테스트를 운영하며 얻은 고민을 공유합니다.",
           },
-          null,
-        ],
-      },
-      {
-        time: "15:30~16:00",
-        sessions: [
-          null,
           {
-            time: "15:30~16:00",
+            time: "15:35~16:05",
             hall: "B Hall",
             title: "Agent First CMS",
             speaker: "이재승",
@@ -360,10 +316,10 @@ export const SCHEDULE_GROUPS: ScheduleGroup[] = [
         ],
       },
       {
-        time: "16:00~16:30",
+        time: "16:30~17:00",
         sessions: [
           {
-            time: "16:00~16:30",
+            time: "16:30~17:00",
             hall: "A Auditorium",
             title: "붙어야 할 때와 떨어져야 할 때: Module Federation과 Web Component로 보는 결합의 트레이드오프",
             speaker: "진유림",
@@ -371,15 +327,8 @@ export const SCHEDULE_GROUPS: ScheduleGroup[] = [
             description:
               "여러 제품에 배포되는 크로스앱 UI를 운영하며 Module Federation과 Web Component 사이에서 마주한 트레이드오프를 다룹니다. 의존성 충돌, 배포 통제, 공유 경계를 다시 설계하게 된 실제 경험을 공유합니다.",
           },
-          null,
-        ],
-      },
-      {
-        time: "16:20~16:50",
-        sessions: [
-          null,
           {
-            time: "16:20~16:50",
+            time: "16:30~17:00",
             hall: "B Hall",
             title: "이미지 한 장을 편집 가능한 레이어로: Cloud AI에서 On-device AI와 WebGPU까지",
             speaker: "김민성",
@@ -583,7 +532,7 @@ export const SCHEDULE = {
     // regenerate the PNG whenever the SVG is regenerated
     label: "FullSchedule.png",
     href: assetPath(
-      "/images/generated/full-schedule-overview-networking-updated.png",
+      "/images/generated/full-schedule-overview-0910.png",
     ),
     notice: "*스케줄은 추후 변경될 수 있습니다",
   },
