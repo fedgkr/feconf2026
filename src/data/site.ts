@@ -22,9 +22,7 @@ export const TICKET_OPEN_AT = "2026-10-01T10:00:00+09:00";
 export const CONFERENCE_AT = "2026-10-24T10:00:00+09:00";
 
 export const TICKET_LINK = {
-  href: "#tickets",
-  /** booking, live from TICKET_OPEN_AT until the conference day arrives */
-  open: { href: "https://ticketa.co/event/t12vlmil" },
+  href: "https://ticketa.co/event/t12vlmil",
 };
 
 /**
