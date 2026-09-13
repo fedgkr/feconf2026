@@ -362,12 +362,12 @@ export default function HeroSection() {
     <section
       ref={sectionRef}
       id="home"
-      aria-label="FEConf 2026 intro"
+      aria-label="FECONF 2026 intro"
       // the scroll track; the stage inside is what is drawn
       className="hero-sequence relative bg-white"
       style={{ height: `calc(var(--fc-vh, 100svh) * ${HERO_SCREENS})` }}
     >
-      <h1 className="sr-only">FEConf 2026</h1>
+      <h1 className="sr-only">FECONF 2026</h1>
       <div
         ref={stageRef}
         // svh, not dvh: iOS Safari resizes the dynamic viewport every time its

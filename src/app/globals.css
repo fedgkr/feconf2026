@@ -3630,7 +3630,13 @@ body {
   grid-template-columns: repeat(4, minmax(0, max-content));
 }
 
-.sponsor-tier-row.is-platinum .sponsor-tier-logos.is-count-4 {
+.sponsor-tier-logos.is-count-5 {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, max-content));
+}
+
+.sponsor-tier-row.is-platinum .sponsor-tier-logos.is-count-4,
+.sponsor-tier-row.is-platinum .sponsor-tier-logos.is-count-5 {
   column-gap: clamp(18px, 2.8vw, 28px);
 }
 
@@ -3745,12 +3751,18 @@ body {
   }
 
   .sponsor-tier-logos.is-count-2,
-  .sponsor-tier-logos.is-count-4 {
+  .sponsor-tier-logos.is-count-4,
+  .sponsor-tier-logos.is-count-5 {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
-  .sponsor-tier-row.is-platinum .sponsor-tier-logos.is-count-4 {
+  .sponsor-tier-row.is-platinum .sponsor-tier-logos.is-count-4,
+  .sponsor-tier-row.is-platinum .sponsor-tier-logos.is-count-5 {
     gap: 12px 8px;
+  }
+
+  .sponsor-tier-logos.is-count-5 .sponsor-cell:last-child {
+    grid-column: 1 / -1;
   }
 
   .sponsor-tier-row.is-special .sponsor-tier-logos.is-count-2 {
@@ -3789,6 +3801,10 @@ body {
     width: auto;
     max-width: min(98px, 25vw);
     max-height: 44px;
+  }
+
+  .sponsor-logo.is-platinum.is-kakaopay-securities {
+    max-width: 115px;
   }
 
   .sponsor-logo.is-special {
