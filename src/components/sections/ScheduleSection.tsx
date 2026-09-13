@@ -103,7 +103,7 @@ const TIME_SCHEDULE_SPACES: Array<{
   },
 ];
 const TIMETABLE_START = 11 * 60;
-const TIMETABLE_END = 17 * 60;
+const TIMETABLE_END = 17 * 60 + 30;
 const TIMETABLE_STEP = 5;
 const TIMETABLE_SLOTS = (TIMETABLE_END - TIMETABLE_START) / TIMETABLE_STEP;
 const TIMEFLOW_TICK_STEP = 12;
@@ -284,8 +284,9 @@ function timeScheduleItems(): TimeScheduleItem[] {
 
   const finishMinute = timeScheduleFinishMinute();
   const firstHour = Math.floor(starts[0] / 60) * 60;
-  const lastHour = Math.ceil(finishMinute / 60) * 60;
-  const tickCount = Math.floor((lastHour - firstHour) / TIMEFLOW_TICK_STEP);
+  const tickCount = Math.floor(
+    (finishMinute - firstHour) / TIMEFLOW_TICK_STEP,
+  );
   const tickMinutes = Array.from(
     new Set([
       ...Array.from(
