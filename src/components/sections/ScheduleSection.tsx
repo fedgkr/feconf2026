@@ -14,6 +14,7 @@ import Reveal from "../Reveal";
 import SectionHeading from "../SectionHeading";
 import { useInView } from "@/hooks/useAnimation";
 import { useManagedVideo } from "@/hooks/useMedia";
+import { GA_EVENT, trackEvent, trackSessionExpand } from "@/lib/analytics";
 import {
   HALL_COLOR,
   HERO,
@@ -495,10 +496,17 @@ function TimeSpaceCard({
     ? expandedSessionIds.includes(firstSessionId)
     : false;
   const toggleSession = (sessionId: string) => {
+    const expanding = !expandedSessionIds.includes(sessionId);
+    if (expanding) {
+      const session = sessions.find(
+        (item) => overviewIdForSession(item) === sessionId,
+      );
+      if (session) trackSessionExpand(session);
+    }
     setExpandedSessionIds((current) =>
-      current.includes(sessionId)
-        ? current.filter((id) => id !== sessionId)
-        : [...current, sessionId],
+      expanding
+        ? [...current, sessionId]
+        : current.filter((id) => id !== sessionId),
     );
   };
 
@@ -1643,6 +1651,11 @@ export default function ScheduleSection() {
             href={SCHEDULE.download.href}
             icon="download"
             download="FullSchedule.png"
+            onClick={() =>
+              trackEvent(GA_EVENT.downloadFullSchedule, {
+                file_name: "FullSchedule.png",
+              })
+            }
           />
           <p className="sched-download-note">{SCHEDULE.download.notice}</p>
         </Reveal>

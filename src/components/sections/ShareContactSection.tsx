@@ -6,6 +6,7 @@ import Reveal from "../Reveal";
 import SectionHeading from "../SectionHeading";
 import { useCoverRise } from "@/hooks/useAnimation";
 import { useConfetti } from "@/hooks/useConfetti";
+import { GA_EVENT, copyAndTrack } from "@/lib/analytics";
 import { SHARE_CONTACT } from "@/data/site";
 
 /** Halves the default 80vh so the gap after buddy reads shorter. */
@@ -21,12 +22,16 @@ function CopyButton({
   href,
   copyText,
   copiedText,
+  eventName,
 }: {
   label: string;
   icon: ClickFrameIcon;
   href: string;
   copyText: string;
   copiedText: string;
+  eventName:
+    | typeof GA_EVENT.copyContactEmail
+    | typeof GA_EVENT.copySiteShareLink;
 }) {
   const { animate, confetti } = useConfetti();
 
@@ -40,7 +45,9 @@ function CopyButton({
         animate={animate}
         onClick={(e) => {
           e.preventDefault();
-          navigator.clipboard?.writeText(copyText).then(confetti, () => {});
+          void copyAndTrack(eventName, copyText).then((ok) => {
+            if (ok) confetti();
+          });
         }}
       />
       <span role="status" className="sr-only">
@@ -100,6 +107,9 @@ export default function ShareContactSection() {
                 // the share row copies the href it points at
                 copyText={button.copyText ?? button.href}
                 copiedText={button.copiedText}
+                eventName={
+                  mail ? GA_EVENT.copyContactEmail : GA_EVENT.copySiteShareLink
+                }
               />
             ) : (
               <ClickFrame

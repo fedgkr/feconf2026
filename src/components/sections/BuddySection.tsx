@@ -5,6 +5,7 @@ import SectionHeading from "../SectionHeading";
 import { useCoverRise } from "@/hooks/useAnimation";
 import { useHeroMedia } from "@/hooks/useMedia";
 import { mountBuddySnails } from "@/lib/buddySnails";
+import { GA_EVENT, copyAndTrack, trackEvent } from "@/lib/analytics";
 import { BUDDY } from "@/data/site";
 
 /** Halves the default 80vh so the white gap after sponsors reads shorter. */
@@ -30,14 +31,17 @@ function CommandBox() {
   );
 
   const copy = () => {
-    navigator.clipboard?.writeText(BUDDY.command.text).then(() => {
-      setCopied(true);
-      if (resetTimer.current !== null) clearTimeout(resetTimer.current);
-      resetTimer.current = window.setTimeout(
-        () => setCopied(false),
-        COPIED_LABEL_MS,
-      );
-    }, () => {});
+    void copyAndTrack(GA_EVENT.copyBuddyNpxCommand, BUDDY.command.text).then(
+      (ok) => {
+        if (!ok) return;
+        setCopied(true);
+        if (resetTimer.current !== null) clearTimeout(resetTimer.current);
+        resetTimer.current = window.setTimeout(
+          () => setCopied(false),
+          COPIED_LABEL_MS,
+        );
+      },
+    );
   };
 
   return (
@@ -109,6 +113,7 @@ export default function BuddySection() {
               href={BUDDY.link.href}
               target="_blank"
               rel="noopener noreferrer"
+              onClick={() => trackEvent(GA_EVENT.openBuddyNpmPage)}
               className="inline-flex items-center gap-2 text-lg font-semibold tracking-[-0.08px] text-navy"
             >
               {BUDDY.link.label}
