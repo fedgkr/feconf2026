@@ -3693,7 +3693,7 @@ body {
   text-align: center;
 }
 
-@media (max-width: 965px) {
+@media (max-width: 1140px) {
   .sponsor-section-heading {
     padding-left: 0;
     padding-right: 0;
