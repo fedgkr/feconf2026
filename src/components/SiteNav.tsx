@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useScrollEffect } from "@/hooks/useAnimation";
 import { useTicketLabel } from "@/hooks/useTicketStatus";
+import { GA_EVENT, trackEvent } from "@/lib/analytics";
 import { NAV_MENU, TICKET_LINK } from "@/data/site";
 
 /** The sections the menu highlights, in document order. */
@@ -184,6 +185,7 @@ export default function SiteNav() {
           href={ticketHref}
           target="_blank"
           rel="noopener noreferrer"
+          onClick={() => trackEvent(GA_EVENT.clickTicketFromNav)}
           className="font-display hidden cursor-pointer text-[24px] font-semibold uppercase leading-[1.5] tracking-tight md:block"
           style={{ color: fg, transition: "color 0.4s ease" }}
         >
@@ -242,6 +244,7 @@ export default function SiteNav() {
           target="_blank"
           rel="noopener noreferrer"
           onClick={(e) => {
+            trackEvent(GA_EVENT.clickTicketFromNavMobile);
             closeMenu();
             jumpTo(e, ticketHref);
           }}
