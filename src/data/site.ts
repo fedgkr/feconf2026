@@ -566,21 +566,21 @@ export interface ExperienceCard {
 export const EXPERIENCE = {
   heading: {
     title: ["Experience"],
-    subtitle: ["FEConf 현장에서만 만나는", "다섯 가지 순간들을 소개합니다"],
+    subtitle: ["FECONF 현장에서만 만나는", "다섯 가지 순간들을 소개합니다"],
   },
   cards: [
     {
       no: "01",
       image: assetPath("/images/experience/feconf-experience-01.jpg"),
-      alt: "FEConf 체크인 데스크에서 참가자를 맞이하는 스태프들",
+      alt: "FECONF 체크인 데스크에서 참가자를 맞이하는 스태프들",
       title: "웰컴 체크인 데스크",
       description:
-        "FEConf의 하루를 부드럽게 시작할 수 있도록 현장에서 참가자를 맞이합니다.",
+        "FECONF의 하루를 부드럽게 시작할 수 있도록 현장에서 참가자를 맞이합니다.",
     },
     {
       no: "02",
       image: assetPath("/images/experience/feconf-experience-02.jpg"),
-      alt: "참가자에게 FEConf 출입 배지를 전달하는 모습",
+      alt: "참가자에게 FECONF 출입 배지를 전달하는 모습",
       title: "참가자 배지와 굿즈",
       description: "컨퍼런스 여정에 필요한 배지와 작은 환영 선물을 준비합니다.",
     },
@@ -595,7 +595,7 @@ export const EXPERIENCE = {
     {
       no: "04",
       image: assetPath("/images/experience/feconf-experience-04.jpg"),
-      alt: "FEConf 행사장 부스에서 참가자와 대화하는 모습",
+      alt: "FECONF 행사장 부스에서 참가자와 대화하는 모습",
       title: "커뮤니티 부스",
       description:
         "후원사와 커뮤니티를 만나 새로운 협업의 가능성을 발견해 보세요.",
@@ -603,7 +603,7 @@ export const EXPERIENCE = {
     {
       no: "05",
       image: assetPath("/images/experience/feconf-experience-05.jpg"),
-      alt: "FEConf 발표자가 무대에서 세션을 진행하는 모습",
+      alt: "FECONF 발표자가 무대에서 세션을 진행하는 모습",
       title: "깊이 있는 세션",
       description:
         "실무 경험이 담긴 발표를 통해 다음 프론트엔드 도전을 위한 힌트를 얻습니다.",
@@ -618,7 +618,7 @@ export interface Sponsor {
   src?: string;
   width?: number;
   height?: number;
-  logoVariant?: "jpub";
+  logoVariant?: "jpub" | "kakaopay-securities";
 }
 
 export interface SponsorTier {
@@ -668,6 +668,13 @@ export const SPONSORS_SECTION = {
           width: 1000,
           height: 219,
         },
+        {
+          name: "카카오페이증권",
+          src: assetPath("/images/sponsor-kakaopay-securities.svg"),
+          width: 626,
+          height: 132,
+          logoVariant: "kakaopay-securities",
+        },
       ],
     },
     {
@@ -709,7 +716,7 @@ export const SPONSORS_SECTION = {
 export const BUDDY = {
   heading: {
     title: ["FORWARD EVER", "Forever Buddy"],
-    subtitle: ["FEConf의 마스코트를 직접 키워보세요."],
+    subtitle: ["FECONF의 마스코트를 직접 키워보세요."],
   },
   command: {
     /** the prompt is decoration; only `text` reaches the clipboard */
@@ -743,19 +750,19 @@ export const CONDUCT = {
   guidelines: [
     {
       title: "다양성",
-      body: "FEConf는 개개인의 정체성과 개성 및 취향을 존중합니다. 하지만 성별, 성 정체성, 외모, 인종, 종교, 지역, 장애, 나이, 국가, 약자 등에 대한 혐오와 폭력은 어떤 방식이라도 허용하지 않습니다.",
+      body: "FECONF는 개개인의 정체성과 개성 및 취향을 존중합니다. 하지만 성별, 성 정체성, 외모, 인종, 종교, 지역, 장애, 나이, 국가, 약자 등에 대한 혐오와 폭력은 어떤 방식이라도 허용하지 않습니다.",
     },
     {
       title: "사회적 책임",
-      body: "FEConf참여자는 프론트엔드 분야의 성장에 대한 사회적 책임을 가집니다. 내가 알고 있는 지식은 아무리 작은 것이라도 다른 누군가에 도움을 줄 수 있습니다. 이를 다양한 방법으로 공유하세요.",
+      body: "FECONF참여자는 프론트엔드 분야의 성장에 대한 사회적 책임을 가집니다. 내가 알고 있는 지식은 아무리 작은 것이라도 다른 누군가에 도움을 줄 수 있습니다. 이를 다양한 방법으로 공유하세요.",
     },
     {
       title: "서로 돕고 협력하기",
-      body: "참여자의 다양한 배경이 협업과 커뮤니케이션을 방해하는 요소가 될 수 없습니다. 도움을 요청하기 전에 먼저 도움을 주고 자신의 생각을 자유롭게 표현할 수 있는 FEConf가 될 수 있도록 노력해 주세요.",
+      body: "참여자의 다양한 배경이 협업과 커뮤니케이션을 방해하는 요소가 될 수 없습니다. 도움을 요청하기 전에 먼저 도움을 주고 자신의 생각을 자유롭게 표현할 수 있는 FECONF가 될 수 있도록 노력해 주세요.",
     },
     {
       title: "지식 재산권 및 개인 정보",
-      body: "FEConf는 지식 재산권과 개인 정보 등의 권리를 존중합니다. 지식 재산권을 위배하거나 개인 정보를 침해하는 어떠한 콘텐츠도 FEConf에서 사용할 수 없습니다.",
+      body: "FECONF는 지식 재산권과 개인 정보 등의 권리를 존중합니다. 지식 재산권을 위배하거나 개인 정보를 침해하는 어떠한 콘텐츠도 FECONF에서 사용할 수 없습니다.",
     },
   ],
 };
@@ -785,7 +792,7 @@ export const SHARE_CONTACT = {
       lines: [
         "접근성 관련하여 행사 참석에 도움이 필요하실 경우,",
         "메일로 편하게 연락주세요.",
-        "프론트엔드 개발자에 의한, 프론트엔드 개발자를 위한 FEConf의 발전을 위해",
+        "프론트엔드 개발자에 의한, 프론트엔드 개발자를 위한 FECONF의 발전을 위해",
         "도움을 주실 분도 언제든 환영합니다.",
       ],
       mail: "feconf@googlegroups.com",
@@ -806,5 +813,5 @@ export const SHARE_CONTACT = {
 
 export const FOOTER = {
   bgSrc: assetPath("/images/footer-gradient-bg.png"),
-  note: "FEConf BY FEDG. 2026.10.24 SAT. 10:00 OPEN. LOTTE TOWER 35F SEOUL, KOREA",
+  note: "FECONF BY FEDG. 2026.10.24 SAT. 10:00 OPEN. LOTTE TOWER 35F SEOUL, KOREA",
 };
