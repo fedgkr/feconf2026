@@ -175,8 +175,8 @@ const fragmentShader = /* glsl */ `
  * art, so a lower buffer resolution is invisible — while the fill cost of 81
  * blended quads dominates the frame budget at full DPR (~20ms/frame at rest
  * on a desktop at DPR 2, measured). Phones ship DPR 3 on far weaker GPUs and
- * native scrolling exposes every dropped frame, so below the desktop-nav
- * breakpoint the buffer renders at 1x.
+ * native scrolling exposes every dropped frame, so below the separate 768px
+ * performance breakpoint the buffer renders at 1x.
  */
 export function useStripeDpr(): number | [number, number] {
   const [phone, setPhone] = useState(false);

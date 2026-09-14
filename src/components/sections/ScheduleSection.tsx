@@ -546,6 +546,12 @@ function TimeSpaceCard({
             const sessionId = `${session.hall}-${session.time}-${session.title}`;
             const detailVisible = hasDetail(session);
             const expanded = expandedSessionIds.includes(sessionId);
+            const byline =
+              session.affiliation === "미리디"
+                ? session.affiliation
+                : [session.speaker, session.affiliation]
+                    .filter(Boolean)
+                    .join(" · ");
 
             return (
               <div
@@ -561,12 +567,8 @@ function TimeSpaceCard({
                 <div className="sched-timeflow-session-summary">
                   <h4>{session.title}</h4>
                 </div>
-                {(session.speaker || session.affiliation) && (
-                  <p className="sched-timeflow-speaker">
-                    {[session.speaker, session.affiliation]
-                      .filter(Boolean)
-                      .join(" · ")}
-                  </p>
+                {byline && (
+                  <p className="sched-timeflow-speaker">{byline}</p>
                 )}
                 <div className="sched-timeflow-session-details">
                   {session.audience && (

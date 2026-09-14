@@ -167,7 +167,7 @@ export default function SiteNav() {
         className="mx-auto flex max-w-[1366px] items-center justify-between px-10 py-6"
         style={{ transition: "color 0.4s ease" }}
       >
-        <div className="hidden items-center gap-6 md:flex">
+        <div className="hidden items-center gap-6 min-[856px]:flex">
           {NAV_MENU.map(({ id, label, href }) => (
             <a
               key={id}
@@ -186,7 +186,7 @@ export default function SiteNav() {
           target="_blank"
           rel="noopener noreferrer"
           onClick={() => trackEvent(GA_EVENT.clickTicketFromNav)}
-          className="font-display hidden cursor-pointer text-[24px] font-semibold uppercase leading-[1.5] tracking-tight md:block"
+          className="font-display hidden cursor-pointer text-[24px] font-semibold uppercase leading-[1.5] tracking-tight min-[856px]:block"
           style={{ color: fg, transition: "color 0.4s ease" }}
         >
           <span suppressHydrationWarning>{ticketLabel}</span>
@@ -194,7 +194,7 @@ export default function SiteNav() {
         <button
           ref={menuToggle}
           type="button"
-          className="ml-auto md:hidden"
+          className="ml-auto min-[856px]:hidden"
           onClick={() => {
             const next = !open;
             setOpen(next);
@@ -216,7 +216,7 @@ export default function SiteNav() {
         id="site-nav-menu"
         inert={!open}
         aria-hidden={!open}
-        className="overflow-hidden bg-white md:hidden"
+        className="overflow-hidden bg-white min-[856px]:hidden"
         style={{
           maxHeight: open ? "300px" : "0",
           opacity: open ? 1 : 0,
