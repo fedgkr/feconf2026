@@ -3668,6 +3668,10 @@ body {
   max-height: 44px;
 }
 
+.sponsor-logo.is-miridih {
+  transform: translateY(3px);
+}
+
 .sponsor-logo.is-special {
   max-width: 164px;
   max-height: 46px;

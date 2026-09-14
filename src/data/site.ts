@@ -288,7 +288,7 @@ export const SCHEDULE_GROUPS: ScheduleGroup[] = [
             hall: "B Hall",
             title: "Lighthouse는 100점인데 왜 느릴까? - 미리캔버스로 짚어본 런타임 성능 개선 포인트",
             speaker: "김해동",
-            affiliation: "미리캔버스 엔진팀 요소E파트 리드",
+            affiliation: "미리디",
             description:
               "프론트엔드 성능이라고 하면 가장 먼저 떠오르는 것 중 하나가 Lighthouse입니다. 하지만 사용자는 페이지를 연 이후에 더 큰 불편을 느끼곤 합니다. WYSIWYG 에디터에서 사용자가 기대하는 즉각적인 반응을 위해 미리캔버스 엔진팀이 성능 피드백에 대응해온 경험을 공유합니다.",
           },
@@ -547,7 +547,7 @@ export const SCHEDULE = {
     // regenerate the PNG whenever the SVG is regenerated
     label: "FullSchedule.png",
     href: assetPath(
-      "/images/generated/full-schedule-overview-0913.png",
+      "/images/generated/full-schedule-overview-0914.png",
     ),
     notice: "*스케줄은 추후 변경될 수 있습니다",
   },
@@ -618,7 +618,7 @@ export interface Sponsor {
   src?: string;
   width?: number;
   height?: number;
-  logoVariant?: "jpub" | "kakaopay-securities";
+  logoVariant?: "jpub" | "kakaopay-securities" | "miridih";
 }
 
 export interface SponsorTier {
@@ -651,9 +651,10 @@ export const SPONSORS_SECTION = {
       sponsors: [
         {
           name: "미리디",
-          src: assetPath("/images/sponsor-miridih.png"),
-          width: 687,
-          height: 157,
+          src: assetPath("/images/sponsor-miridih.svg"),
+          width: 300,
+          height: 58.53,
+          logoVariant: "miridih",
         },
         { name: "당근", src: assetPath("/images/sponsor-2.svg") },
         {
