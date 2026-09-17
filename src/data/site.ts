@@ -286,11 +286,8 @@ export const SCHEDULE_GROUPS: ScheduleGroup[] = [
           {
             time: "14:20~14:50",
             hall: "B Hall",
-            title: "Lighthouse는 100점인데 왜 느릴까? - 미리캔버스로 짚어본 런타임 성능 개선 포인트",
-            speaker: "김해동",
-            affiliation: "미리디",
-            description:
-              "프론트엔드 성능이라고 하면 가장 먼저 떠오르는 것 중 하나가 Lighthouse입니다. 하지만 사용자는 페이지를 연 이후에 더 큰 불편을 느끼곤 합니다. WYSIWYG 에디터에서 사용자가 기대하는 즉각적인 반응을 위해 미리캔버스 엔진팀이 성능 피드백에 대응해온 경험을 공유합니다.",
+            title: "후원사 세션 (카카오페이증권)",
+            speaker: "이주승",
           },
         ],
       },
@@ -309,11 +306,11 @@ export const SCHEDULE_GROUPS: ScheduleGroup[] = [
           {
             time: "15:10~15:40",
             hall: "B Hall",
-            title: "Agent First CMS",
-            speaker: "이재승",
-            affiliation: "LG유플러스",
+            title: "Lighthouse는 100점인데 왜 느릴까? - 미리캔버스로 짚어본 런타임 성능 개선 포인트",
+            speaker: "김해동",
+            affiliation: "미리디",
             description:
-              "AI 에이전트를 활용해 HTML 기반 콘텐츠를 제작하는 CMS를 소개합니다. 사내 적용 경험을 바탕으로 에이전트 기반 백오피스를 만들 때 도움이 될 설계와 운영 포인트를 공유합니다.",
+              "프론트엔드 성능이라고 하면 가장 먼저 떠오르는 것 중 하나가 Lighthouse입니다. 하지만 사용자는 페이지를 연 이후에 더 큰 불편을 느끼곤 합니다. WYSIWYG 에디터에서 사용자가 기대하는 즉각적인 반응을 위해 미리캔버스 엔진팀이 성능 피드백에 대응해온 경험을 공유합니다.",
           },
         ],
       },
@@ -332,23 +329,31 @@ export const SCHEDULE_GROUPS: ScheduleGroup[] = [
           {
             time: "16:00~16:30",
             hall: "B Hall",
-            title: "이미지 한 장을 편집 가능한 레이어로: Cloud AI에서 On-device AI와 WebGPU까지",
-            speaker: "김민성",
-            affiliation: "미리디",
+            title: "Agent First CMS",
+            speaker: "이재승",
+            affiliation: "LG유플러스",
             description:
-              "이미지 한 장을 웹 에디터에서 편집 가능한 레이어로 만들려면 어떤 선택이 필요할까요? 생성형 AI에 모든 작업을 맡기며 마주한 품질, 지연, 비용의 문제에서 출발해 Cloud AI에서 On-device AI와 WebGPU까지 더 나은 편집 경험을 만들기 위해 내린 선택을 공유합니다.",
+              "AI 에이전트를 활용해 HTML 기반 콘텐츠를 제작하는 CMS를 소개합니다. 사내 적용 경험을 바탕으로 에이전트 기반 백오피스를 만들 때 도움이 될 설계와 운영 포인트를 공유합니다.",
           },
         ],
       },
       {
         time: "16:50~17:20",
         sessions: [
-          null,
+          {
+            time: "16:50~17:20",
+            hall: "A Auditorium",
+            title: "후원사 세션 (카카오페이증권)",
+            speaker: "김용찬",
+          },
           {
             time: "16:50~17:20",
             hall: "B Hall",
-            title: "후원사 세션 (카카오페이증권)",
-            speaker: "이주승",
+            title: "이미지 한 장을 편집 가능한 레이어로: Cloud AI에서 On-device AI와 WebGPU까지",
+            speaker: "김민성",
+            affiliation: "미리디",
+            description:
+              "이미지 한 장을 웹 에디터에서 편집 가능한 레이어로 만들려면 어떤 선택이 필요할까요? 생성형 AI에 모든 작업을 맡기며 마주한 품질, 지연, 비용의 문제에서 출발해 Cloud AI에서 On-device AI와 WebGPU까지 더 나은 편집 경험을 만들기 위해 내린 선택을 공유합니다.",
           },
         ],
       }
@@ -412,7 +417,7 @@ export const SCHEDULE_GROUPS: ScheduleGroup[] = [
             time: "11:50~12:05",
             hall: "Talk 1",
             title: "후원사 세션 (와이스)",
-            speaker: "박경민, 김은하, 이문규",
+            speaker: "박경민",
           },
           null,
         ],
@@ -547,7 +552,7 @@ export const SCHEDULE = {
     // regenerate the PNG whenever the SVG is regenerated
     label: "FullSchedule.png",
     href: assetPath(
-      "/images/generated/full-schedule-overview-0914.png",
+      "/images/generated/full-schedule-overview-0917.png",
     ),
     notice: "*스케줄은 추후 변경될 수 있습니다",
   },
