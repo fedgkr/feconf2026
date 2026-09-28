@@ -16,7 +16,7 @@ export const NAV_MENU = [
 ] as const;
 
 /** Ticket opening moment the D-day counters count down to. */
-export const TICKET_OPEN_AT = "2026-10-01T10:00:00+09:00";
+export const TICKET_OPEN_AT = "2026-10-01T11:00:00+09:00";
 
 /** Conference start; the counter switches to it once the ticket day passes. */
 export const CONFERENCE_AT = "2026-10-24T10:00:00+09:00";
