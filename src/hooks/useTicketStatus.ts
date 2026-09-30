@@ -51,12 +51,15 @@ function subscribe(onChange: () => void) {
 }
 
 /**
- * Live ticket counter label. The static export bakes the build-time string, so
- * render it with `suppressHydrationWarning` — a page viewed on a later day
- * hydrates to a different label by design.
+ * Live ticket counter label. The static export and hydration both render an
+ * empty label: a build-time label would be baked into the HTML, and React does
+ * not patch mismatched text on hydration, so a page viewed on a later day would
+ * keep the build day's count. The store re-reads right after mount and renders
+ * the label for the viewer's current date. Callers reserve the line height so
+ * the empty frame does not shift the layout.
  */
 export function useTicketLabel() {
-  return useSyncExternalStore(subscribe, label, label);
+  return useSyncExternalStore(subscribe, label, () => "");
 }
 
 /**
