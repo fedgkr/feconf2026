@@ -43,7 +43,7 @@ export default function FooterSection() {
         {FOOTER.note}
         </p>
         <p className="absolute right-16 top-1/2 -translate-y-1/2 whitespace-nowrap text-[24px] font-semibold uppercase leading-[1.1] text-white max-[900px]:inset-x-7 max-[900px]:top-[62%] max-[900px]:text-center max-[900px]:text-[20px]">
-          <span suppressHydrationWarning>{ticketLabel}</span>
+          <span>{ticketLabel}</span>
         </p>
       </div>
     </footer>

@@ -186,10 +186,10 @@ export default function SiteNav() {
           target="_blank"
           rel="noopener noreferrer"
           onClick={() => trackEvent(GA_EVENT.clickTicketFromNav)}
-          className="font-display hidden cursor-pointer text-[24px] font-semibold uppercase leading-[1.5] tracking-tight min-[856px]:block"
+          className="font-display hidden min-h-[1.5em] cursor-pointer text-[24px] font-semibold uppercase leading-[1.5] tracking-tight min-[856px]:block"
           style={{ color: fg, transition: "color 0.4s ease" }}
         >
-          <span suppressHydrationWarning>{ticketLabel}</span>
+          <span>{ticketLabel}</span>
         </a>
         <button
           ref={menuToggle}
@@ -250,7 +250,7 @@ export default function SiteNav() {
           }}
           className="mt-2 block cursor-pointer rounded-full bg-ink px-4 py-2 text-center text-sm font-semibold text-white"
         >
-          <span suppressHydrationWarning>{ticketLabel}</span>
+          <span>{ticketLabel}</span>
         </a>
       </div>
     </header>
