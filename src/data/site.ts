@@ -191,14 +191,20 @@ export const SCHEDULE_GROUPS: ScheduleGroup[] = [
           {
             time: "11:00~11:30",
             hall: "A Auditorium",
-            title: "후원사 세션 (피그마)",
+            title: "디자인과 개발의 경계가 사라진다면 — Figma가 그리는 프론트엔드의 미래",
             speaker: "Chase Wilson",
+            affiliation: "Figma",
+            description:
+              "디자이너와 개발자의 역할이 겹쳐지는 AI 시대, Figma가 바라보는 개발자 워크플로의 변화를 공유합니다. Code Layers와 MCP를 활용해 아이디어가 코드가 되는 과정을 라이브 데모로 보여드립니다.",
           },
           {
             time: "11:00~11:30",
             hall: "B Hall",
-            title: "후원사 세션 (와이스)",
+            title: "법대로 하는 프론트엔드 개발",
             speaker: "윤해민",
+            affiliation: "WYYYES(와이스)",
+            description:
+              "비개발자가 AI로 어드민을 구현하고 개발자가 검토하는 작은 팀에서, 합의한 정책을 ‘법’처럼 다룬 경험을 공유합니다. 정책을 구현의 기준으로 삼고 테스트와 검증까지 확장한 과정을 이야기합니다.",
           },
         ],
       },
@@ -286,8 +292,11 @@ export const SCHEDULE_GROUPS: ScheduleGroup[] = [
           {
             time: "14:20~14:50",
             hall: "B Hall",
-            title: "후원사 세션 (카카오페이증권)",
+            title: "신대륙을 향한 카카오페이증권 프론트엔드 항해기",
             speaker: "이주승",
+            affiliation: "카카오페이증권 FE코어팀",
+            description:
+              "하나의 서비스를 여러 앱으로 확장하기 위해 Micro Frontend 아키텍처와 공통 라이브러리 버전 관리 체계를 도입한 여정을 공유합니다. 구조의 변화와 설계 과정의 기술적 고민, 도입 이후의 성과를 다룹니다.",
           },
         ],
       },
@@ -343,8 +352,11 @@ export const SCHEDULE_GROUPS: ScheduleGroup[] = [
           {
             time: "16:50~17:20",
             hall: "A Auditorium",
-            title: "후원사 세션 (카카오페이증권)",
+            title: "외부 SDK를 뜯어 다시 만들었습니다: 번들 최적화와 테스트의 빈틈",
             speaker: "김용찬",
+            affiliation: "카카오페이증권",
+            description:
+              "외부 SDK의 원본을 복원하고 엔트리와 의존성을 재구성해 gzip 번들 크기를 69% 줄인 경험을 공유합니다. 대조 테스트가 놓친 동작을 찾으며 크기와 동작을 함께 검증한 최적화 과정을 다룹니다.",
           },
           {
             time: "16:50~17:20",
@@ -416,8 +428,11 @@ export const SCHEDULE_GROUPS: ScheduleGroup[] = [
           {
             time: "11:50~12:05",
             hall: "Talk 1",
-            title: "후원사 세션 (와이스)",
+            title: "미디어 축과 데이터 축으로 본 라이브 경매 구현",
             speaker: "박경민",
+            affiliation: "WYYYES(와이스)",
+            description:
+              "라이브 경매의 영상 전송과 실시간 데이터 흐름을 따라가며 설계 이유와 시행착오를 공유합니다.",
           },
           null,
         ],
@@ -552,7 +567,7 @@ export const SCHEDULE = {
     // regenerate the PNG whenever the SVG is regenerated
     label: "FullSchedule.png",
     href: assetPath(
-      "/images/generated/full-schedule-overview-0917.png",
+      "/images/generated/full-schedule-overview-0929.png",
     ),
     notice: "*스케줄은 추후 변경될 수 있습니다",
   },
