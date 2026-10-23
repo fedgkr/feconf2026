@@ -385,7 +385,7 @@ export const SCHEDULE_GROUPS: ScheduleGroup[] = [
             hall: "Talk 1",
             title: "AI와 똥손 개발자를 위한 디자인 가이드",
             speaker: "김해준",
-            affiliation: "onpoom.co.kr",
+            affiliation: "온품",
             description:
               "AI와 함께 일관된 UI를 만들기 위한 색상, 타이포그래피, 레이아웃 원칙을 소개합니다.",
           },
